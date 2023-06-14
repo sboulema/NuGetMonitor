@@ -5,10 +5,10 @@
     <DisplayName>NuGetMonitor</DisplayName>
     <Description xml:space="preserve">A Visual Studio extension that checks and notifies about available updates for the installed NuGet packages for the open solution.</Description>
     <MoreInfo>https://github.com/sboulema/NuGetMonitor</MoreInfo>
-    <License>LICENSE</License>
+    <License>src\LICENSE</License>
     <GettingStartedGuide>https://github.com/sboulema/NuGetMonitor/blob/main/README.md</GettingStartedGuide>
     <ReleaseNotes>https://github.com/sboulema/NuGetMonitor/releases</ReleaseNotes>
-    <Icon>NugetMonitor.ico</Icon>
+    <Icon>src\NugetMonitor.ico</Icon>
     <PreviewImage>Screenshot.png</PreviewImage>
     <Tags>nuget, updates, notification</Tags>
   </Metadata>
