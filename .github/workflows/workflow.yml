@@ -16,7 +16,7 @@ jobs:
     runs-on: windows-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v2   
+        uses: actions/checkout@v3   
 
       - name: Update Assembly Version
         uses: dannevesdantas/set-version-assemblyinfo@v.1.0.0
@@ -30,10 +30,10 @@ jobs:
           vsix-manifest-file: 'src\source.extension.vsixmanifest'
 
       - name: Setup MSBuild
-        uses: microsoft/setup-msbuild@v1.0.2
+        uses: microsoft/setup-msbuild@v1.1
 
       - name: NuGet restore
-        run: nuget restore NuGetMonitor.sln -ConfigFile nuget.config
+        run: nuget restore NuGetMonitor.sln
 
       - name: Build VSIX
         run: msbuild NuGetMonitor.sln /t:Rebuild /p:Configuration=Release
