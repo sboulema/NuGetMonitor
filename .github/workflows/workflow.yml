@@ -82,9 +82,7 @@ jobs:
           personal-access-code: ${{ secrets.VS_PUBLISHER_ACCESS_TOKEN }}
 
       - name: Publish to Open VSIX Gallery
-        uses: leandro-hermes/action-upload-file@v1.1.0
+        uses: fjogeleit/http-request-action@v1.14.0
         with:
-          host: 'www.vsixgallery.com'
-          path: '/api/upload?repo=${{ env.repoUrl }}&issuetracker=${{ env.repoUrl }}/issues'
-          https: true 
-          filePath: NuGetMonitor/src/bin/release/NuGetMonitor.vsix
+          url: 'https://www.vsixgallery.com/api/upload?repo=${{ env.repoUrl }}&issuetracker=${{ env.repoUrl }}/issues'
+          files: '{ "file": "${{ github.workspace }}/NuGetMonitor/src/bin/release/NuGetMonitor.vsix" }'
