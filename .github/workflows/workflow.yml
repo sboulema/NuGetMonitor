@@ -82,7 +82,7 @@ jobs:
           personal-access-code: ${{ secrets.VS_PUBLISHER_ACCESS_TOKEN }}
 
       - name: Publish to Open VSIX Gallery
-        uses: fjogeleit/http-request-action@v1.14.0
-        with:
-          url: 'https://www.vsixgallery.com/api/upload?repo=${{ env.repoUrl }}&issuetracker=${{ env.repoUrl }}/issues'
-          files: '{ "file": "${{ github.workspace }}\NuGetMonitor\src\bin\release\NuGetMonitor.vsix" }'
+        run: |
+           curl \
+           --location 'https://www.vsixgallery.com/api/upload?repo=${{ env.repoUrl }}&issuetracker=${{ env.repoUrl }}/issues' \
+           --form 'file=@"/${{ github.workspace }}\NuGetMonitor\src\bin\release\NuGetMonitor.vsix"'
