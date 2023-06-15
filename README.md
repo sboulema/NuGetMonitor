@@ -7,7 +7,8 @@ for the installed NuGet packages for the open solution.
 
 ## Features
 - Check for updates when a solution is opened
-- Works with .Net Framework projects and with .Net projects
+- Show InfoBar when updates are found
+- Works with .NET Framework projects and with .NET projects
 
 ## Installing
 [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=SamirBoulema.NuGetMonitor) [![Visual Studio Marketplace](https://img.shields.io/vscode-marketplace/v/SamirBoulema.NuGetMonitor.svg?style=flat)](https://marketplace.visualstudio.com/items?itemName=SamirBoulema.NuGetMonitor)
