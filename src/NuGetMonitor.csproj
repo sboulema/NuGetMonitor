@@ -81,12 +81,12 @@
       <Link>Resources\LICENSE</Link>
       <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
-      <Content Include="..\art\Screenshot.png">
+    <Content Include="..\art\Screenshot.png">
       <Link>Resources\Screenshot.png</Link>
       <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
-    <Content Include="NugetMonitor.ico">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    <Content Include="..\art\NugetMonitor.png">
+      <Link>Resources\NugetMonitor.png</Link>
       <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
   </ItemGroup>
