@@ -86,3 +86,4 @@ jobs:
         with:
           url: 'https://www.vsixgallery.com/api/upload?repo=${{ env.repoUrl }}&issuetracker=${{ env.repoUrl }}/issues'
           file: ${{ github.workspace }}/NuGetMonitor/src/bin/release/NuGetMonitor.vsix
+          contentType: application/octet-stream
