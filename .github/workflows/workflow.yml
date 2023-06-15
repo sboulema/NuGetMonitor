@@ -83,4 +83,4 @@ jobs:
 
       - name: Publish to Open VSIX Gallery
         run: |
-           curl -L 'https://www.vsixgallery.com/api/upload?repo=${{ env.repoUrl }}&issuetracker=${{ env.repoUrl }}/issues' -F 'file=@"/${{ github.workspace }}\NuGetMonitor\src\bin\release\NuGetMonitor.vsix"'
+           curl -L 'https://www.vsixgallery.com/api/upload?repo=${{ env.repoUrl }}&issuetracker=${{ env.repoUrl }}/issues' -F 'file=@"${{ github.workspace }}\NuGetMonitor\src\bin\release\NuGetMonitor.vsix"'
