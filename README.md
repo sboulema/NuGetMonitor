@@ -15,7 +15,7 @@ for the installed NuGet packages for the open solution.
 
 [Github Releases](https://github.com/sboulema/NuGetMonitor/releases)
 
-[Open VSIX Gallery](http://vsixgallery.com/extension/NuGetMonitor.2a6fbffe-f3fd-4bf8-98cc-5ae2c833a1c7)
+[Open VSIX Gallery](https://www.vsixgallery.com/extension/NuGetMonitor.2a6fbffe-f3fd-4bf8-98cc-5ae2c833a1c7)
 
 ## Screenshots
 [![Screenshot](https://raw.githubusercontent.com/sboulema/NuGetMonitor/main/art/Screenshot.png)](https://raw.githubusercontent.com/sboulema/NuGetMonitor/main/art/Screenshot.png)

@@ -85,8 +85,8 @@
       <Link>Resources\Screenshot.png</Link>
       <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
-    <Content Include="..\art\NugetMonitor.png">
-      <Link>Resources\NugetMonitor.png</Link>
+    <Content Include="..\art\NugetMonitor_90x90.png">
+      <Link>Resources\NugetMonitor_90x90.png</Link>
       <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
   </ItemGroup>
