@@ -13,7 +13,8 @@ namespace NuGetMonitor.Services
             var model = new InfoBarModel(
                 new[] {
                     new InfoBarTextSpan("NuGet updates available. "),
-                    new InfoBarHyperlink("Manage NuGet")
+                    new InfoBarHyperlink("Manage NuGet"),
+                    new InfoBarTextSpan(".")
                 },
                 KnownMonikers.NuGet,
                 true);

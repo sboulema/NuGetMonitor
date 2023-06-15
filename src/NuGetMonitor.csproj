@@ -77,8 +77,9 @@
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="LICENSE">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    <Content Include="..\LICENSE">
+      <Link>Resources\LICENSE</Link>
+      <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
     <Content Include="NugetMonitor.ico">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
