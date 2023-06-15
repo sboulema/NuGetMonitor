@@ -45,8 +45,8 @@ jobs:
         with:
           name: NuGetMonitor
           path: |
-            **\*.vsix
-            publish-manifest.json
+            **/*.vsix
+            src/publish-manifest.json
             readme.md
 
   release:
