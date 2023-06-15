@@ -24,7 +24,7 @@ jobs:
           version: ${{ env.version }}
 
       - name: Update Vsix Version
-        uses: cezarypiatek/VsixVersionAction@1.0
+        uses: cezarypiatek/VsixVersionAction@1.1
         with:
           version: ${{ env.version }}
           vsix-manifest-file: 'src\source.extension.vsixmanifest'
