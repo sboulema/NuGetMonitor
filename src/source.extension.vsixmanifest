@@ -9,7 +9,7 @@
         <GettingStartedGuide>https://github.com/sboulema/NuGetMonitor/blob/main/README.md</GettingStartedGuide>
         <ReleaseNotes>https://github.com/sboulema/NuGetMonitor/releases</ReleaseNotes>
         <Icon>NugetMonitor.ico</Icon>
-        <PreviewImage>Screenshot.png</PreviewImage>
+        <PreviewImage>Resources\Screenshot.png</PreviewImage>
         <Tags>nuget, updates, notification</Tags>
     </Metadata>
     <Installation>
