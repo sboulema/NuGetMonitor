@@ -25,7 +25,7 @@ A big thanks goes to [AnushaG2201](https://github.com/AnushaG2201)!
 
 I was playing with the idea for this extension for quite a while but never figured out how I would create this extension. 
 
-That is until I saw the [Nuget-updates-notifier](https://marketplace.visualstudio.com/items?itemName=Anusha.NugetPackageUpdateNotifier) ([Github](https://github.com/AnushaG2201/Nuget-updates-notifier)) which gave mt the remaining puzzle pieces, so that I could create my own version.
+That is until I saw the [Nuget-updates-notifier](https://marketplace.visualstudio.com/items?itemName=Anusha.NugetPackageUpdateNotifier) ([Github](https://github.com/AnushaG2201/Nuget-updates-notifier)) which gave me the remaining puzzle pieces, so that I could create my own version.
 
 ## Links
 [NuGet Client SDK / NuGet.Protocol](https://learn.microsoft.com/en-us/nuget/reference/nuget-client-sdk)
@@ -33,3 +33,5 @@ That is until I saw the [Nuget-updates-notifier](https://marketplace.visualstudi
 [Visual Studio Extensibility Cookbook - Notifications](https://www.vsixcookbook.com/recipes/notifications.html)
 
 [Invoke the Manage NuGet Packages dialog programmatically](https://devblogs.microsoft.com/nuget/invoke-manage-nuget-packages-dialog-programmatically/)
+
+[UpdatR packages](https://github.com/OskarKlintrot/UpdatR)

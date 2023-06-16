@@ -3,7 +3,7 @@
     <Metadata>
         <Identity Id="NuGetMonitor.2a6fbffe-f3fd-4bf8-98cc-5ae2c833a1c7" Version="1.0" Language="en-US" Publisher="Samir Boulema" />
         <DisplayName>NuGetMonitor</DisplayName>
-        <Description xml:space="preserve">A Visual Studio extension that checks and notifies about available updates for the installed NuGet packages for the open solution.</Description>
+        <Description xml:space="preserve">Check and notify about available updates for the installed NuGet packages for the open solution.</Description>
         <MoreInfo>https://github.com/sboulema/NuGetMonitor</MoreInfo>
         <License>Resources\LICENSE</License>
         <GettingStartedGuide>https://github.com/sboulema/NuGetMonitor/blob/main/README.md</GettingStartedGuide>

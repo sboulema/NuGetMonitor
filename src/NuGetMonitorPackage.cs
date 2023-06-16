@@ -11,7 +11,7 @@ namespace NuGetMonitor
 {
     [Guid(PackageGuidString)]
     [PackageRegistration(UseManagedResourcesOnly = true, AllowsBackgroundLoading = true)]
-    [ProvideAutoLoad(VSConstants.UICONTEXT.NoSolution_string, PackageAutoLoadFlags.BackgroundLoad)]
+    [ProvideAutoLoad(VSConstants.UICONTEXT.SolutionExistsAndFullyLoaded_string, PackageAutoLoadFlags.BackgroundLoad)]
     public sealed class NuGetMonitorPackage : ToolkitPackage
     {
         public const string PackageGuidString = "38279e01-6b27-4a29-9221-c4ea8748f16e";
@@ -21,6 +21,8 @@ namespace NuGetMonitor
             await JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
 
             MonitorService.RegisterEventHandler();
+
+            MonitorService.CheckForUpdates().FireAndForget();
         }
     }
 }

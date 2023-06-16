@@ -1,6 +1,5 @@
 ﻿using Community.VisualStudio.Toolkit;
 using NuGetMonitor.Models;
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -13,26 +12,24 @@ namespace NuGetMonitor.Services
 {
     public static class ProjectService
     {
-        public static async Task<IEnumerable<string>> GetProjectPaths()
+        public static async Task<IEnumerable<PackageReference>> GetPackageReferences()
         {
             var projects = await VS.Solutions.GetAllProjectsAsync();
-            var projectPaths = projects.Select(project => project.FullPath);
 
-            return projectPaths;
+            return projects
+                .Select(project => project.FullPath)
+                .ToList()
+                .SelectMany(path => GetPackageReferences(path));
         }
 
-        public static IEnumerable<PackageReference> GetPackageReferences(string projectPath)
+        private static IEnumerable<PackageReference> GetPackageReferences(string projectPath)
         {
             var xml = File.ReadAllText(projectPath);
             var doc = XDocument.Parse(xml);
 
             var packageReferences = doc
                 .XPathSelectElements("//PackageReference")
-                .Select(packageReference => new PackageReference
-                {
-                    Include = packageReference.Attribute("Include").Value,
-                    Version = new Version(packageReference.Attribute("Version").Value)
-                });
+                .Select(packageReference => new PackageReference(packageReference));
 
             return packageReferences;
         }

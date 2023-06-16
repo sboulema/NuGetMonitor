@@ -16,38 +16,13 @@ namespace NuGetMonitor.Services
             CheckForUpdates().FireAndForget();
         }
 
-        private static async Task CheckForUpdates()
+        public static async Task CheckForUpdates()
         {
-            var hasUpdates = await HasUpdates();
+            var packageReferences = await ProjectService.GetPackageReferences();
 
-            if (!hasUpdates)
-            {
-                return;
-            }
+            packageReferences = await NuGetService.CheckPackageReferences(packageReferences);
 
-            await InfoBarService.ShowInfoBar();
-        }
-
-        private static async Task<bool> HasUpdates()
-        {
-            var projectPaths = await ProjectService.GetProjectPaths();
-
-            foreach (var path in projectPaths)
-            {
-                var packageReferences = ProjectService.GetPackageReferences(path);
-
-                foreach (var packageReference in packageReferences)
-                {
-                    var latestVersion = await NuGetService.GetLatestVersion(packageReference.Include);
-
-                    if (latestVersion > packageReference.Version)
-                    {
-                        return true;
-                    }
-                }
-            }
-
-            return false;
+            await InfoBarService.ShowInfoBar(packageReferences);
         }
     }
 }
