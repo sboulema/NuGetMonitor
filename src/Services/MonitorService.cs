@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace NuGetMonitor.Services
 {
-    public class MonitorService
+    public static class MonitorService
     {
         public static void RegisterEventHandler()
         {
@@ -18,11 +18,11 @@ namespace NuGetMonitor.Services
 
         public static async Task CheckForUpdates()
         {
-            var packageReferences = await ProjectService.GetPackageReferences();
+            var packageIdentities = await ProjectService.GetPackageReferences().ConfigureAwait(true);
 
-            packageReferences = await NuGetService.CheckPackageReferences(packageReferences);
+            var packageReferences = await NuGetService.CheckPackageReferences(packageIdentities).ConfigureAwait(true);
 
-            await InfoBarService.ShowInfoBar(packageReferences);
+            await InfoBarService.ShowInfoBar(packageReferences).ConfigureAwait(true);
         }
     }
 }
