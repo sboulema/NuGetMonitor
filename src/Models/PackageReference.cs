@@ -1,5 +1,4 @@
 ﻿using NuGet.Packaging.Core;
-using NuGet.Versioning;
 
 namespace NuGetMonitor.Models
 {
