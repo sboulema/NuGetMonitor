@@ -14,7 +14,7 @@ namespace NuGetMonitor.Services
     {
         public static async Task<IEnumerable<PackageReference>> CheckPackageReferences(IReadOnlyCollection<PackageIdentity> packageIdentities)
         {
-            var sourceCacheContext = new SourceCacheContext();
+            using var sourceCacheContext = new SourceCacheContext();
 
             var identitiesById = packageIdentities.GroupBy(item => item.Id);
 
