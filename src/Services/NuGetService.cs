@@ -11,14 +11,13 @@ namespace NuGetMonitor.Services
 {
     public static class NuGetService
     {
-        public static async Task<List<PackageReference>> CheckPackageReferences(IEnumerable<PackageReference> packageReferences)
+        public static async Task<IEnumerable<PackageReference>> CheckPackageReferences(IEnumerable<PackageReference> packageReferences)
         {
             var result = await Task.WhenAll(
-                packageReferences
-                    .ToList()
-                    .Select(packageReference => CheckPackageReference(packageReference)));
+                packageReferences.Select(packageReference => CheckPackageReference(packageReference))
+            );
 
-            return result.ToList();
+            return result;
         }
 
         private static async Task<PackageReference> CheckPackageReference(PackageReference packageReference)

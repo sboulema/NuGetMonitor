@@ -1,11 +1,8 @@
 ﻿using Community.VisualStudio.Toolkit;
 using NuGetMonitor.Models;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using System.Xml.Linq;
-using System.Xml.XPath;
 
 
 namespace NuGetMonitor.Services
@@ -18,18 +15,20 @@ namespace NuGetMonitor.Services
 
             return projects
                 .Select(project => project.FullPath)
+                .SelectMany(GetPackageReferences)
                 .ToList()
-                .SelectMany(path => GetPackageReferences(path));
+                .AsReadOnly();
         }
 
         private static IEnumerable<PackageReference> GetPackageReferences(string projectPath)
         {
-            var xml = File.ReadAllText(projectPath);
-            var doc = XDocument.Parse(xml);
+            var project = new Microsoft.Build.Evaluation.Project(projectPath);
 
-            var packageReferences = doc
-                .XPathSelectElements("//PackageReference")
-                .Select(packageReference => new PackageReference(packageReference));
+            var items = project.AllEvaluatedItems.Where(item => item.ItemType == "PackageReference");
+
+            var packageReferences = items
+                .Select(PackageReference.Create)
+                .Where(item => item != null);
 
             return packageReferences;
         }
