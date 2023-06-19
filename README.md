@@ -6,9 +6,12 @@ for the installed NuGet packages for the open solution.
 [![Sponsor](https://img.shields.io/badge/-Sponsor-fafbfc?logo=GitHub%20Sponsors)](https://github.com/sponsors/sboulema)
 
 ## Features
-- Check for updates when a solution is opened
-- Show InfoBar when updates are found
+- Check for updates, deprecations and vulnerabilities when a solution is opened
+- Show InfoBar with update, deprecation and vulnerabilities count when any are found
 - Works with .NET Framework projects and with .NET projects
+
+## Support
+- Visual Studio 2022
 
 ## Installing
 [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=SamirBoulema.NuGetMonitor) [![Visual Studio Marketplace](https://img.shields.io/vscode-marketplace/v/SamirBoulema.NuGetMonitor.svg?style=flat)](https://marketplace.visualstudio.com/items?itemName=SamirBoulema.NuGetMonitor)
@@ -21,11 +24,18 @@ for the installed NuGet packages for the open solution.
 [![Screenshot](https://raw.githubusercontent.com/sboulema/NuGetMonitor/main/art/Screenshot.png)](https://raw.githubusercontent.com/sboulema/NuGetMonitor/main/art/Screenshot.png)
 
 ## Thanks
+
+### AnushaG2201
 A big thanks goes to [AnushaG2201](https://github.com/AnushaG2201)!
 
 I was playing with the idea for this extension for quite a while but never figured out how I would create this extension. 
 
 That is until I saw the [Nuget-updates-notifier](https://marketplace.visualstudio.com/items?itemName=Anusha.NugetPackageUpdateNotifier) ([Github](https://github.com/AnushaG2201/Nuget-updates-notifier)) which gave me the remaining puzzle pieces, so that I could create my own version.
+
+### tom-englert
+A big thanks goes to [tom-englert](https://github.com/tom-englert)!
+
+A massive improvement [PR](https://github.com/sboulema/NuGetMonitor/pull/4) really improved the quality of this extension. 
 
 ## Links
 [NuGet Client SDK / NuGet.Protocol](https://learn.microsoft.com/en-us/nuget/reference/nuget-client-sdk)

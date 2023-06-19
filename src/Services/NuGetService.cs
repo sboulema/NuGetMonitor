@@ -44,14 +44,16 @@ namespace NuGetMonitor.Services
                 .GetMetadataAsync(identity, sourceCacheContext, NullLogger.Instance, CancellationToken.None)
                 .ConfigureAwait(false);
 
-            if (metadata == null) 
+            if (metadata == null)
+            {
                 return new PackageReference(identity);
-            
+            }
+
             return new PackageReference(identity)
             {
                 IsVulnerable = metadata.Vulnerabilities != null,
                 IsDeprecated = await metadata.GetDeprecationMetadataAsync().ConfigureAwait(false) != null,
-                IsOutdated = await IsOutdated(identity, sourceCacheContext).ConfigureAwait(false)
+                IsOutdated = await IsOutdated(identity, sourceCacheContext).ConfigureAwait(false),
             };
         }
 
@@ -66,7 +68,9 @@ namespace NuGetMonitor.Services
                 .GetAllVersionsAsync(packageIdentity.Id, sourceCacheContext, NullLogger.Instance, CancellationToken.None)
                 .ConfigureAwait(false);
 
-            return versions.Last() > packageIdentity.Version;
+            var latestVersion = versions.Last(version => version.IsPrerelease == packageIdentity.Version.IsPrerelease);
+
+            return latestVersion > packageIdentity.Version;
         }
     }
 }

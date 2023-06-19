@@ -44,7 +44,9 @@ namespace NuGetMonitor.Services
             var versionValue = projectItem.GetMetadata("Version")?.EvaluatedValue;
 
             if (!NuGetVersion.TryParse(versionValue, out var version))
+            {
                 return null;
+            }
 
             return new PackageIdentity(id, version);
         }
