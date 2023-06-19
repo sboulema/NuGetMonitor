@@ -16,11 +16,13 @@ for the installed NuGet packages for the open solution.
 ## Installing
 [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=SamirBoulema.NuGetMonitor) [![Visual Studio Marketplace](https://img.shields.io/vscode-marketplace/v/SamirBoulema.NuGetMonitor.svg?style=flat)](https://marketplace.visualstudio.com/items?itemName=SamirBoulema.NuGetMonitor)
 
-[Github Releases](https://github.com/sboulema/NuGetMonitor/releases)
+[GitHub Releases](https://github.com/sboulema/NuGetMonitor/releases)
 
 [Open VSIX Gallery](https://www.vsixgallery.com/extension/NuGetMonitor.2a6fbffe-f3fd-4bf8-98cc-5ae2c833a1c7)
 
 ## Screenshots
+[![Screenshot](https://raw.githubusercontent.com/sboulema/NuGetMonitor/main/art/Screenshot2.png)](https://raw.githubusercontent.com/sboulema/NuGetMonitor/main/art/Screenshot2.png)
+
 [![Screenshot](https://raw.githubusercontent.com/sboulema/NuGetMonitor/main/art/Screenshot.png)](https://raw.githubusercontent.com/sboulema/NuGetMonitor/main/art/Screenshot.png)
 
 ## Thanks
@@ -30,7 +32,7 @@ A big thanks goes to [AnushaG2201](https://github.com/AnushaG2201)!
 
 I was playing with the idea for this extension for quite a while but never figured out how I would create this extension. 
 
-That is until I saw the [Nuget-updates-notifier](https://marketplace.visualstudio.com/items?itemName=Anusha.NugetPackageUpdateNotifier) ([Github](https://github.com/AnushaG2201/Nuget-updates-notifier)) which gave me the remaining puzzle pieces, so that I could create my own version.
+That is until I saw the [Nuget-updates-notifier](https://marketplace.visualstudio.com/items?itemName=Anusha.NugetPackageUpdateNotifier) ([GitHub](https://github.com/AnushaG2201/Nuget-updates-notifier)) which gave me the remaining puzzle pieces, so that I could create my own version.
 
 ### tom-englert
 A big thanks goes to [tom-englert](https://github.com/tom-englert)!

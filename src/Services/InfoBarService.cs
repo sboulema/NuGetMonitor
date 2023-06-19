@@ -56,7 +56,7 @@ namespace NuGetMonitor.Services
 
             if (outdatedCount > 0)
             {
-                textSpans.Add(new InfoBarTextSpan($"{outdatedCount} {(outdatedCount == 1 ? "update" : "updates")} available"));
+                textSpans.Add(new InfoBarTextSpan($"{outdatedCount} {(outdatedCount == 1 ? "update" : "updates")}"));
             }
 
             if (deprecatedCount > 0)
