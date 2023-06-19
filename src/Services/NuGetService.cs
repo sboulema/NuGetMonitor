@@ -13,9 +13,7 @@ namespace NuGetMonitor.Services
     {
         public static async Task<IEnumerable<PackageReference>> CheckPackageReferences(IEnumerable<PackageReference> packageReferences)
         {
-            var result = await Task.WhenAll(
-                packageReferences.Select(packageReference => CheckPackageReference(packageReference))
-            );
+            var result = await Task.WhenAll(packageReferences.Select(CheckPackageReference)).ConfigureAwait(false);
 
             return result;
         }
@@ -24,17 +22,22 @@ namespace NuGetMonitor.Services
         {
             var packageMetadataResource = await Repository.Factory
                 .GetCoreV3("https://api.nuget.org/v3/index.json")
-                .GetResourceAsync<PackageMetadataResource>();
+                .GetResourceAsync<PackageMetadataResource>()
+                .ConfigureAwait(false);
 
             var metadata = await packageMetadataResource.GetMetadataAsync(
                 packageReference.PackageIdentity,
                 new SourceCacheContext(),
                 NullLogger.Instance,
-                CancellationToken.None);
+                CancellationToken.None)
+                .ConfigureAwait(false);
 
-            packageReference.IsVulnerable = metadata.Vulnerabilities != null;
-            packageReference.IsDeprecated = await metadata.GetDeprecationMetadataAsync() != null;
-            packageReference.IsOutdated = await IsOutdated(packageReference);
+            if (metadata != null)
+            {
+                packageReference.IsVulnerable = metadata.Vulnerabilities != null;
+                packageReference.IsDeprecated = await metadata.GetDeprecationMetadataAsync().ConfigureAwait(false) != null;
+                packageReference.IsOutdated = await IsOutdated(packageReference).ConfigureAwait(false);
+            }
 
             return packageReference;
         }
@@ -43,13 +46,15 @@ namespace NuGetMonitor.Services
         {
             var packageResource = await Repository.Factory
                 .GetCoreV3("https://api.nuget.org/v3/index.json")
-                .GetResourceAsync<FindPackageByIdResource>();
+                .GetResourceAsync<FindPackageByIdResource>()
+                .ConfigureAwait(false);
 
             var versions = await packageResource.GetAllVersionsAsync(
                 packageReference.PackageIdentity.Id,
                 new SourceCacheContext(),
                 NullLogger.Instance,
-                CancellationToken.None);
+                CancellationToken.None)
+                .ConfigureAwait(false);
 
             return versions.Last() > packageReference.PackageIdentity.Version;
         }

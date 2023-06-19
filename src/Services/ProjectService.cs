@@ -11,13 +11,17 @@ namespace NuGetMonitor.Services
     {
         public static async Task<IEnumerable<PackageReference>> GetPackageReferences()
         {
-            var projects = await VS.Solutions.GetAllProjectsAsync();
+            var projects = await VS.Solutions.GetAllProjectsAsync().ConfigureAwait(false);
 
-            return projects
-                .Select(project => project.FullPath)
-                .SelectMany(GetPackageReferences)
-                .ToList()
-                .AsReadOnly();
+            var projectPaths = projects.Select(project => project.FullPath).ToArray();
+
+            var refTasks = projectPaths.Select(path => Task.Run(() => GetPackageReferences(path)));
+
+            var references = await Task.WhenAll(refTasks).ConfigureAwait(false);
+
+            return references
+                .SelectMany(items => items)
+                .ToArray();
         }
 
         private static IEnumerable<PackageReference> GetPackageReferences(string projectPath)
