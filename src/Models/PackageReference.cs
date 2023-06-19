@@ -5,7 +5,7 @@ namespace NuGetMonitor.Models
 {
     public class PackageReference
     {
-        private PackageReference(PackageIdentity packageIdentity)
+        public PackageReference(PackageIdentity packageIdentity)
         {
             PackageIdentity = packageIdentity;
         }
@@ -18,7 +18,8 @@ namespace NuGetMonitor.Models
 
         public bool IsOutdated { get; set; }
 
-        public static PackageReference Create(Microsoft.Build.Evaluation.ProjectItem projectItem)
+        // TODO: move to better place
+        public static PackageIdentity CreateIdentity(Microsoft.Build.Evaluation.ProjectItem projectItem)
         {
             var id = projectItem.EvaluatedInclude;
             var versionValue = projectItem.GetMetadata("Version")?.EvaluatedValue;
@@ -26,7 +27,10 @@ namespace NuGetMonitor.Models
             if (!NuGetVersion.TryParse(versionValue, out var version))
                 return null;
 
-            return new PackageReference(new PackageIdentity(id, version));
+            return new PackageIdentity(id, version);
         }
+
     }
+
+
 }

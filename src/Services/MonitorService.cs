@@ -18,9 +18,9 @@ namespace NuGetMonitor.Services
 
         public static async Task CheckForUpdates()
         {
-            var packageReferences = await ProjectService.GetPackageReferences().ConfigureAwait(true);
+            var packageIdentities = await ProjectService.GetPackageReferences().ConfigureAwait(true);
 
-            packageReferences = await NuGetService.CheckPackageReferences(packageReferences).ConfigureAwait(true);
+            var packageReferences = await NuGetService.CheckPackageReferences(packageIdentities).ConfigureAwait(true);
 
             await InfoBarService.ShowInfoBar(packageReferences).ConfigureAwait(true);
         }

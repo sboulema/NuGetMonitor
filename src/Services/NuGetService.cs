@@ -5,58 +5,70 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using NuGet.Packaging.Core;
 using PackageReference = NuGetMonitor.Models.PackageReference;
 
 namespace NuGetMonitor.Services
 {
     public static class NuGetService
     {
-        public static async Task<IEnumerable<PackageReference>> CheckPackageReferences(IEnumerable<PackageReference> packageReferences)
+        public static async Task<IEnumerable<PackageReference>> CheckPackageReferences(IReadOnlyCollection<PackageIdentity> packageIdentities)
         {
-            var result = await Task.WhenAll(packageReferences.Select(CheckPackageReference)).ConfigureAwait(false);
+            var sourceCacheContext = new SourceCacheContext();
+
+            var identitiesById = packageIdentities.GroupBy(item => item.Id);
+
+            var result = await Task
+                .WhenAll(identitiesById.Select(identities => CheckPackageReference(identities, sourceCacheContext)))
+                .ConfigureAwait(false);
 
             return result;
         }
 
-        private static async Task<PackageReference> CheckPackageReference(PackageReference packageReference)
+        private static async Task<PackageReference> CheckPackageReference(IGrouping<string, PackageIdentity> packageIdentities, SourceCacheContext sourceCacheContext)
         {
+            // TODO: read source repositories from nuget.config in solution directory and check all repos
+            //var packageSourceProvider = new PackageSourceProvider(new Settings(_solutionDirectory));
+            //var sourceRepositoryProvider = new SourceRepositoryProvider(packageSourceProvider, Repository.Provider.GetCoreV3());
+            //var repositories = sourceRepositoryProvider.GetRepositories().ToArray();
+
             var packageMetadataResource = await Repository.Factory
                 .GetCoreV3("https://api.nuget.org/v3/index.json")
                 .GetResourceAsync<PackageMetadataResource>()
                 .ConfigureAwait(false);
 
-            var metadata = await packageMetadataResource.GetMetadataAsync(
-                packageReference.PackageIdentity,
-                new SourceCacheContext(),
-                NullLogger.Instance,
-                CancellationToken.None)
+            // use the oldest reference with the smallest version
+            var identity = packageIdentities.OrderBy(item => item.Version.Version).First();
+
+            var metadata = await packageMetadataResource
+                .GetMetadataAsync(identity, sourceCacheContext, NullLogger.Instance, CancellationToken.None)
                 .ConfigureAwait(false);
 
             if (metadata != null)
             {
-                packageReference.IsVulnerable = metadata.Vulnerabilities != null;
-                packageReference.IsDeprecated = await metadata.GetDeprecationMetadataAsync().ConfigureAwait(false) != null;
-                packageReference.IsOutdated = await IsOutdated(packageReference).ConfigureAwait(false);
+                return new PackageReference(identity)
+                {
+                    IsVulnerable = metadata.Vulnerabilities != null,
+                    IsDeprecated = await metadata.GetDeprecationMetadataAsync().ConfigureAwait(false) != null,
+                    IsOutdated = await IsOutdated(identity, sourceCacheContext).ConfigureAwait(false)
+                };
             }
 
-            return packageReference;
+            return new PackageReference(identity);
         }
 
-        private static async Task<bool> IsOutdated(PackageReference packageReference)
+        private static async Task<bool> IsOutdated(PackageIdentity packageIdentity, SourceCacheContext sourceCacheContext)
         {
             var packageResource = await Repository.Factory
                 .GetCoreV3("https://api.nuget.org/v3/index.json")
                 .GetResourceAsync<FindPackageByIdResource>()
                 .ConfigureAwait(false);
 
-            var versions = await packageResource.GetAllVersionsAsync(
-                packageReference.PackageIdentity.Id,
-                new SourceCacheContext(),
-                NullLogger.Instance,
-                CancellationToken.None)
+            var versions = await packageResource
+                .GetAllVersionsAsync(packageIdentity.Id, sourceCacheContext, NullLogger.Instance, CancellationToken.None)
                 .ConfigureAwait(false);
 
-            return versions.Last() > packageReference.PackageIdentity.Version;
+            return versions.Last() > packageIdentity.Version;
         }
     }
 }
