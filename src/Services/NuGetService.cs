@@ -44,17 +44,15 @@ namespace NuGetMonitor.Services
                 .GetMetadataAsync(identity, sourceCacheContext, NullLogger.Instance, CancellationToken.None)
                 .ConfigureAwait(false);
 
-            if (metadata != null)
+            if (metadata == null) 
+                return new PackageReference(identity);
+            
+            return new PackageReference(identity)
             {
-                return new PackageReference(identity)
-                {
-                    IsVulnerable = metadata.Vulnerabilities != null,
-                    IsDeprecated = await metadata.GetDeprecationMetadataAsync().ConfigureAwait(false) != null,
-                    IsOutdated = await IsOutdated(identity, sourceCacheContext).ConfigureAwait(false)
-                };
-            }
-
-            return new PackageReference(identity);
+                IsVulnerable = metadata.Vulnerabilities != null,
+                IsDeprecated = await metadata.GetDeprecationMetadataAsync().ConfigureAwait(false) != null,
+                IsOutdated = await IsOutdated(identity, sourceCacheContext).ConfigureAwait(false)
+            };
         }
 
         private static async Task<bool> IsOutdated(PackageIdentity packageIdentity, SourceCacheContext sourceCacheContext)

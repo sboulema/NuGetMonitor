@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using NuGet.Packaging.Core;
+using NuGet.Versioning;
 
 
 namespace NuGetMonitor.Services
@@ -32,10 +33,21 @@ namespace NuGetMonitor.Services
             var items = project.AllEvaluatedItems.Where(item => item.ItemType == "PackageReference");
 
             var packageReferences = items
-                .Select(PackageReference.CreateIdentity)
+                .Select(CreateIdentity)
                 .Where(item => item != null);
 
             return packageReferences;
+        }
+
+        private static PackageIdentity CreateIdentity(Microsoft.Build.Evaluation.ProjectItem projectItem)
+        {
+            var id = projectItem.EvaluatedInclude;
+            var versionValue = projectItem.GetMetadata("Version")?.EvaluatedValue;
+
+            if (!NuGetVersion.TryParse(versionValue, out var version))
+                return null;
+
+            return new PackageIdentity(id, version);
         }
     }
 }

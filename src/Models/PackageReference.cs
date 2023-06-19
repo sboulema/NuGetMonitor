@@ -17,20 +17,5 @@ namespace NuGetMonitor.Models
         public bool IsDeprecated { get; set; }
 
         public bool IsOutdated { get; set; }
-
-        // TODO: move to better place
-        public static PackageIdentity CreateIdentity(Microsoft.Build.Evaluation.ProjectItem projectItem)
-        {
-            var id = projectItem.EvaluatedInclude;
-            var versionValue = projectItem.GetMetadata("Version")?.EvaluatedValue;
-
-            if (!NuGetVersion.TryParse(versionValue, out var version))
-                return null;
-
-            return new PackageIdentity(id, version);
-        }
-
     }
-
-
 }
