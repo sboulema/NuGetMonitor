@@ -84,48 +84,16 @@ namespace NuGetMonitor.Services
             return latestVersion > packageIdentity.Version;
         }
 
-        // https://learn.microsoft.com/en-us/nuget/consume-packages/configuring-nuget-behavior#config-file-locations-and-uses
         private static async Task<IEnumerable<SourceRepository>> GetSourceRepositories()
         {
-            var sourceRepositories = new List<SourceRepository>();
-
             var solution = await VS.Solutions.GetCurrentSolutionAsync().ConfigureAwait(false);
-            var solutionNuGetConfigPath = Path.GetDirectoryName(solution.FullPath);
+            var solutionDirectory = Path.GetDirectoryName(solution.FullPath);
 
-            sourceRepositories.AddRange(GetSourceRepositories(solutionNuGetConfigPath));
-
-            var userNuGetConfigPath = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                "NuGet");
-
-            sourceRepositories.AddRange(GetSourceRepositories(userNuGetConfigPath));
-
-            var computerNuGetConfigPath = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86),
-                "NuGet", "Config");
-
-            sourceRepositories.AddRange(
-                Directory
-                    .EnumerateFiles(computerNuGetConfigPath, "*.Config")
-                    .SelectMany(path => GetSourceRepositories(computerNuGetConfigPath, Path.GetFileName(path), true)));
-
-            return sourceRepositories
-                .GroupBy(repository => repository.PackageSource.SourceUri)
-                .Select(group => group.First());
-        }
-
-        private static IEnumerable<SourceRepository> GetSourceRepositories(
-            string path, string fileName = "NuGet.Config", bool isMachineWide = false)
-        {
-            if (!File.Exists(Path.Combine(path, fileName)))
-            {
-                return Enumerable.Empty<SourceRepository>();
-            }
-
-            var packageSourceProvider = new PackageSourceProvider(new Settings(path, fileName, isMachineWide));
+            var packageSourceProvider = new PackageSourceProvider(Settings.LoadDefaultSettings(solutionDirectory));
             var sourceRepositoryProvider = new SourceRepositoryProvider(packageSourceProvider, Repository.Provider.GetCoreV3());
-            var repositories = sourceRepositoryProvider.GetRepositories();
-            return repositories;
+            var sourceRepositories = sourceRepositoryProvider.GetRepositories();
+
+            return sourceRepositories;
         }
     }
 }
