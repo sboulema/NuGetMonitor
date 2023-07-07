@@ -11,6 +11,8 @@ namespace NuGetMonitor.Services
 {
     public class InfoBarService
     {
+        private static InfoBar _infoBar { get; set; }
+
         public static async Task ShowInfoBar(IEnumerable<PackageReference> packageReferences)
         {
             var outdatedCount = packageReferences.Count(packageRefence => packageRefence.IsOutdated);
@@ -29,11 +31,14 @@ namespace NuGetMonitor.Services
                 KnownMonikers.NuGet,
                 isCloseButtonVisible: true);
 
-            var infoBar = await VS.InfoBar.CreateAsync(ToolWindowGuids80.SolutionExplorer, model);
-            infoBar.ActionItemClicked += InfoBar_ActionItemClicked;
+            _infoBar = await VS.InfoBar.CreateAsync(ToolWindowGuids80.SolutionExplorer, model);
+            _infoBar.ActionItemClicked += InfoBar_ActionItemClicked;
 
-            await infoBar.TryShowInfoBarUIAsync();
+            await _infoBar.TryShowInfoBarUIAsync();
         }
+
+        public static void CloseInfoBar()
+            => _infoBar.Close();
 
         private static void InfoBar_ActionItemClicked(object sender, InfoBarActionItemEventArgs e)
         {
