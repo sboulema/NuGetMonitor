@@ -1,14 +1,8 @@
 ﻿using NuGet.Common;
 using NuGet.Protocol.Core.Types;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using NuGet.Packaging.Core;
 using PackageReference = NuGetMonitor.Models.PackageReference;
 using NuGet.Configuration;
-using System.IO;
-using System;
 using Community.VisualStudio.Toolkit;
 using Settings = NuGet.Configuration.Settings;
 
@@ -87,7 +81,7 @@ namespace NuGetMonitor.Services
         private static async Task<IEnumerable<SourceRepository>> GetSourceRepositories()
         {
             var solution = await VS.Solutions.GetCurrentSolutionAsync().ConfigureAwait(false);
-            var solutionDirectory = Path.GetDirectoryName(solution.FullPath);
+            var solutionDirectory = Path.GetDirectoryName(solution?.FullPath);
 
             var packageSourceProvider = new PackageSourceProvider(Settings.LoadDefaultSettings(solutionDirectory));
             var sourceRepositoryProvider = new SourceRepositoryProvider(packageSourceProvider, Repository.Provider.GetCoreV3());

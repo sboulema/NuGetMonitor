@@ -2,22 +2,19 @@
 using Microsoft.VisualStudio.Imaging;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Shell;
-using System.Threading.Tasks;
 using NuGetMonitor.Models;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace NuGetMonitor.Services
 {
     public class InfoBarService
     {
-        private static InfoBar _infoBar { get; set; }
+        private static InfoBar? _infoBar { get; set; }
 
-        public static async Task ShowInfoBar(IEnumerable<PackageReference> packageReferences)
+        public static async Task ShowInfoBar(IReadOnlyCollection<PackageReference> packageReferences)
         {
-            var outdatedCount = packageReferences.Count(packageRefence => packageRefence.IsOutdated);
-            var deprecatedCount = packageReferences.Count(packageRefence => packageRefence.IsDeprecated);
-            var vulnerableCount = packageReferences.Count(packageRefence => packageRefence.IsVulnerable);
+            var outdatedCount = packageReferences.Count(packageReference => packageReference.IsOutdated);
+            var deprecatedCount = packageReferences.Count(packageReference => packageReference.IsDeprecated);
+            var vulnerableCount = packageReferences.Count(packageReference => packageReference.IsVulnerable);
 
             if (outdatedCount == 0 &&
                 deprecatedCount == 0 &&
@@ -31,14 +28,14 @@ namespace NuGetMonitor.Services
                 KnownMonikers.NuGet,
                 isCloseButtonVisible: true);
 
-            _infoBar = await VS.InfoBar.CreateAsync(ToolWindowGuids80.SolutionExplorer, model);
+            _infoBar = await VS.InfoBar.CreateAsync(ToolWindowGuids80.SolutionExplorer, model) ?? throw new InvalidOperationException("Failed to create the info bar");
             _infoBar.ActionItemClicked += InfoBar_ActionItemClicked;
 
             await _infoBar.TryShowInfoBarUIAsync();
         }
 
         public static void CloseInfoBar()
-            => _infoBar.Close();
+            => _infoBar?.Close();
 
         private static void InfoBar_ActionItemClicked(object sender, InfoBarActionItemEventArgs e)
         {
@@ -49,7 +46,7 @@ namespace NuGetMonitor.Services
                 VS.Commands.ExecuteAsync("Tools.ManageNuGetPackagesForSolution").FireAndForget();
             }
 
-            (sender as InfoBar).Close();
+            (sender as InfoBar)?.Close();
         }
 
         private static List<IVsInfoBarTextSpan> GetTextSpans(int outdatedCount, int deprecatedCount, int vulnerableCount)

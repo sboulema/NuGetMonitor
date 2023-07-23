@@ -1,9 +1,7 @@
 ﻿using Community.VisualStudio.Toolkit;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using NuGet.Packaging.Core;
 using NuGet.Versioning;
+using TomsToolbox.Essentials;
 
 
 namespace NuGetMonitor.Services
@@ -14,7 +12,9 @@ namespace NuGetMonitor.Services
         {
             var projects = await VS.Solutions.GetAllProjectsAsync().ConfigureAwait(false);
 
-            var projectPaths = projects.Select(project => project.FullPath).ToArray();
+            var projectPaths = projects.Select(project => project.FullPath)
+                .ExceptNullItems()
+                .ToArray();
 
             var refTasks = projectPaths.Select(path => Task.Run(() => GetPackageReferences(path)));
 
@@ -33,12 +33,12 @@ namespace NuGetMonitor.Services
 
             var packageReferences = items
                 .Select(CreateIdentity)
-                .Where(item => item != null);
+                .ExceptNullItems();
 
             return packageReferences;
         }
 
-        private static PackageIdentity CreateIdentity(Microsoft.Build.Evaluation.ProjectItem projectItem)
+        private static PackageIdentity? CreateIdentity(Microsoft.Build.Evaluation.ProjectItem projectItem)
         {
             var id = projectItem.EvaluatedInclude;
             var versionValue = projectItem.GetMetadata("Version")?.EvaluatedValue;

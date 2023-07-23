@@ -1,6 +1,5 @@
 ﻿using Community.VisualStudio.Toolkit;
 using Microsoft.VisualStudio.Shell;
-using System.Threading.Tasks;
 
 namespace NuGetMonitor.Services
 {
@@ -15,7 +14,7 @@ namespace NuGetMonitor.Services
         private static void SolutionEvents_OnAfterCloseSolution()
             => InfoBarService.CloseInfoBar();
 
-        private static void SolutionEvents_OnAfterOpenSolution(Solution solution)
+        private static void SolutionEvents_OnAfterOpenSolution(Solution? solution)
             => CheckForUpdates().FireAndForget();
 
         public static async Task CheckForUpdates()
@@ -24,7 +23,7 @@ namespace NuGetMonitor.Services
 
             var packageReferences = await NuGetService.CheckPackageReferences(packageIdentities).ConfigureAwait(true);
 
-            await InfoBarService.ShowInfoBar(packageReferences).ConfigureAwait(true);
+            await InfoBarService.ShowInfoBar(packageReferences.ToArray()).ConfigureAwait(true);
         }
     }
 }
