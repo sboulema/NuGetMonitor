@@ -10,6 +10,7 @@ on:
 env:
   version: '1.2.${{ github.run_number }}'
   repoUrl: ${{ github.server_url }}/${{ github.repository }}
+  vsixPath: ${{ github.workspace }}/NuGetMonitor/src/bin/release/net48/win/NuGetMonitor.vsix
 
 jobs:
   build:
@@ -69,10 +70,10 @@ jobs:
       - name: Publish to Marketplace
         uses: cezarypiatek/VsixPublisherAction@1.0
         with:
-          extension-file: NuGetMonitor/src/bin/release/net48/win/NuGetMonitor.vsix
+          extension-file: ${{ env.vsixPath }}
           publish-manifest-file: NuGetMonitor/src/publish-manifest.json
           personal-access-code: ${{ secrets.VS_PUBLISHER_ACCESS_TOKEN }}
 
       - name: Publish to Open VSIX Gallery
         run: |
-           curl -L 'https://www.vsixgallery.com/api/upload?repo=${{ env.repoUrl }}&issuetracker=${{ env.repoUrl }}/issues' -F 'file=@"${{ github.workspace }}\NuGetMonitor\src\bin\release\NuGetMonitor.vsix"'
+           curl -L 'https://www.vsixgallery.com/api/upload?repo=${{ env.repoUrl }}&issuetracker=${{ env.repoUrl }}/issues' -F 'file=@"${{ env.vsixPath }}"'
