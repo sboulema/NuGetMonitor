@@ -1,20 +1,19 @@
 ﻿using NuGet.Packaging.Core;
 
-namespace NuGetMonitor.Models
+namespace NuGetMonitor.Models;
+
+public class PackageReference
 {
-    public class PackageReference
+    public PackageReference(PackageIdentity packageIdentity)
     {
-        public PackageReference(PackageIdentity packageIdentity)
-        {
-            PackageIdentity = packageIdentity;
-        }
-
-        public PackageIdentity PackageIdentity { get; }
-
-        public bool IsVulnerable { get; set; }
-
-        public bool IsDeprecated { get; set; }
-
-        public bool IsOutdated { get; set; }
+        PackageIdentity = packageIdentity;
     }
+
+    public PackageIdentity PackageIdentity { get; }
+
+    public bool IsVulnerable { get; set; }
+
+    public bool IsDeprecated { get; set; }
+
+    public bool IsOutdated { get; set; }
 }
