@@ -2,15 +2,8 @@
 
 namespace NuGetMonitor.Models;
 
-public class PackageReference
+public record PackageReference(PackageIdentity PackageIdentity)
 {
-    public PackageReference(PackageIdentity packageIdentity)
-    {
-        PackageIdentity = packageIdentity;
-    }
-
-    public PackageIdentity PackageIdentity { get; }
-
     public bool IsVulnerable { get; set; }
 
     public bool IsDeprecated { get; set; }

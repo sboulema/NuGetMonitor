@@ -5,17 +5,19 @@ using PackageReference = NuGetMonitor.Models.PackageReference;
 using NuGet.Configuration;
 using Community.VisualStudio.Toolkit;
 using Settings = NuGet.Configuration.Settings;
+using NuGetMonitor.Models;
 
 namespace NuGetMonitor.Services;
 
 public static class NuGetService
 {
-    public static async Task<IEnumerable<PackageReference>> CheckPackageReferences(
-        IReadOnlyCollection<PackageIdentity> packageIdentities)
+    public static async Task<IEnumerable<PackageReference>> CheckPackageReferences(IReadOnlyCollection<PackageReferenceEntry> references)
     {
         using var sourceCacheContext = new SourceCacheContext();
 
-        var identitiesById = packageIdentities.GroupBy(item => item.Id);
+        var identitiesById = references
+            .Select(item => item.Identity)
+            .GroupBy(item => item.Id);
 
         var sourceRepositories = await GetSourceRepositories().ConfigureAwait(false);
 
