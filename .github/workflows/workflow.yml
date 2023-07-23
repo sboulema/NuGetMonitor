@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - 'feature/**'
+  pull_request:
 
 env:
   version: '1.2.${{ github.run_number }}'
@@ -40,6 +41,7 @@ jobs:
             readme.md
 
   release:
+    if: github.ref_name == 'main'
     name: Release
     needs: build
     runs-on: windows-latest
