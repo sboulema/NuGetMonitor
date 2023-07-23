@@ -69,7 +69,7 @@ jobs:
       - name: Publish to Marketplace
         uses: cezarypiatek/VsixPublisherAction@1.0
         with:
-          extension-file: NuGetMonitor/src/bin/release/NuGetMonitor.vsix
+          extension-file: NuGetMonitor/src/bin/release/net48/win/NuGetMonitor.vsix
           publish-manifest-file: NuGetMonitor/src/publish-manifest.json
           personal-access-code: ${{ secrets.VS_PUBLISHER_ACCESS_TOKEN }}
 
