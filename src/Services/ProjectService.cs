@@ -1,54 +1,56 @@
 ﻿using Community.VisualStudio.Toolkit;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using Microsoft.Build.Evaluation;
 using NuGet.Packaging.Core;
 using NuGet.Versioning;
+using NuGetMonitor.Models;
+using TomsToolbox.Essentials;
 
+namespace NuGetMonitor.Services;
 
-namespace NuGetMonitor.Services
+public static class ProjectService
 {
-    public static class ProjectService
+    public static async Task<IReadOnlyCollection<PackageReferenceEntry>> GetPackageReferences()
     {
-        public static async Task<IReadOnlyCollection<PackageIdentity>> GetPackageReferences()
-        {
-            var projects = await VS.Solutions.GetAllProjectsAsync().ConfigureAwait(false);
+        var projects = await VS.Solutions.GetAllProjectsAsync().ConfigureAwait(false);
 
-            var projectPaths = projects.Select(project => project.FullPath).ToArray();
+        var projectPaths = projects.Select(project => project.FullPath)
+            .ExceptNullItems()
+            .ToArray();
 
-            var refTasks = projectPaths.Select(path => Task.Run(() => GetPackageReferences(path)));
+        var refTasks = projectPaths.Select(path => Task.Run(() => GetPackageReferences(path)));
 
-            var references = await Task.WhenAll(refTasks).ConfigureAwait(false);
+        var references = await Task.WhenAll(refTasks).ConfigureAwait(false);
 
-            return references
-                .SelectMany(items => items)
-                .ToArray();
-        }
+        return references
+            .SelectMany(items => items)
+            .ToArray();
+    }
 
-        private static IEnumerable<PackageIdentity> GetPackageReferences(string projectPath)
-        {
-            var project = new Microsoft.Build.Evaluation.Project(projectPath);
+    internal static IEnumerable<PackageReferenceEntry> GetPackageReferences(string projectPath)
+    {
+        var items = GetPackageReferenceItems(projectPath);
 
-            var items = project.AllEvaluatedItems.Where(item => item.ItemType == "PackageReference");
+        var packageReferences = items
+            .Select(CreateEntry)
+            .ExceptNullItems();
 
-            var packageReferences = items
-                .Select(CreateIdentity)
-                .Where(item => item != null);
+        return packageReferences;
+    }
 
-            return packageReferences;
-        }
+    internal static IEnumerable<ProjectItem> GetPackageReferenceItems(string projectPath)
+    {
+        var project = new Microsoft.Build.Evaluation.Project(projectPath);
 
-        private static PackageIdentity CreateIdentity(Microsoft.Build.Evaluation.ProjectItem projectItem)
-        {
-            var id = projectItem.EvaluatedInclude;
-            var versionValue = projectItem.GetMetadata("Version")?.EvaluatedValue;
+        return project.AllEvaluatedItems.Where(item => item.ItemType == "PackageReference");
+    }
 
-            if (!NuGetVersion.TryParse(versionValue, out var version))
-            {
-                return null;
-            }
+    private static PackageReferenceEntry? CreateEntry(ProjectItem projectItem)
+    {
+        var id = projectItem.EvaluatedInclude;
+        var versionValue = projectItem.GetMetadata("Version")?.EvaluatedValue;
 
-            return new PackageIdentity(id, version);
-        }
+        return NuGetVersion.TryParse(versionValue, out var version)
+            ? new PackageReferenceEntry(new PackageIdentity(id, version), projectItem)
+            : null;
     }
 }

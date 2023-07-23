@@ -1,4 +1,4 @@
-/src/bin
-/src/obj
-/.vs
-/src/*.user
+bin/
+obj/
+.vs
+*.user

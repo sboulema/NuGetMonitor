@@ -2,83 +2,79 @@
 using Microsoft.VisualStudio.Imaging;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Shell;
-using System.Threading.Tasks;
 using NuGetMonitor.Models;
-using System.Collections.Generic;
-using System.Linq;
 
-namespace NuGetMonitor.Services
+namespace NuGetMonitor.Services;
+
+public class InfoBarService
 {
-    public class InfoBarService
+    private static InfoBar? _infoBar { get; set; }
+
+    public static async Task ShowInfoBar(IReadOnlyCollection<PackageReference> packageReferences)
     {
-        private static InfoBar _infoBar { get; set; }
+        var outdatedCount = packageReferences.Count(packageReference => packageReference.IsOutdated);
+        var deprecatedCount = packageReferences.Count(packageReference => packageReference.IsDeprecated);
+        var vulnerableCount = packageReferences.Count(packageReference => packageReference.IsVulnerable);
 
-        public static async Task ShowInfoBar(IEnumerable<PackageReference> packageReferences)
+        if (outdatedCount == 0 &&
+            deprecatedCount == 0 &&
+            vulnerableCount == 0)
         {
-            var outdatedCount = packageReferences.Count(packageRefence => packageRefence.IsOutdated);
-            var deprecatedCount = packageReferences.Count(packageRefence => packageRefence.IsDeprecated);
-            var vulnerableCount = packageReferences.Count(packageRefence => packageRefence.IsVulnerable);
-
-            if (outdatedCount == 0 &&
-                deprecatedCount == 0 &&
-                vulnerableCount == 0)
-            {
-                return;
-            }
-
-            var model = new InfoBarModel(
-                GetTextSpans(outdatedCount, deprecatedCount, vulnerableCount),
-                KnownMonikers.NuGet,
-                isCloseButtonVisible: true);
-
-            _infoBar = await VS.InfoBar.CreateAsync(ToolWindowGuids80.SolutionExplorer, model);
-            _infoBar.ActionItemClicked += InfoBar_ActionItemClicked;
-
-            await _infoBar.TryShowInfoBarUIAsync();
+            return;
         }
 
-        public static void CloseInfoBar()
-            => _infoBar.Close();
+        var model = new InfoBarModel(
+            GetTextSpans(outdatedCount, deprecatedCount, vulnerableCount),
+            KnownMonikers.NuGet,
+            isCloseButtonVisible: true);
 
-        private static void InfoBar_ActionItemClicked(object sender, InfoBarActionItemEventArgs e)
+        _infoBar = await VS.InfoBar.CreateAsync(ToolWindowGuids80.SolutionExplorer, model) ?? throw new InvalidOperationException("Failed to create the info bar");
+        _infoBar.ActionItemClicked += InfoBar_ActionItemClicked;
+
+        await _infoBar.TryShowInfoBarUIAsync();
+    }
+
+    public static void CloseInfoBar()
+        => _infoBar?.Close();
+
+    private static void InfoBar_ActionItemClicked(object sender, InfoBarActionItemEventArgs e)
+    {
+        ThreadHelper.ThrowIfNotOnUIThread();
+
+        if (e.ActionItem.Text == "Manage")
         {
-            ThreadHelper.ThrowIfNotOnUIThread();
-
-            if (e.ActionItem.Text == "Manage")
-            {
-                VS.Commands.ExecuteAsync("Tools.ManageNuGetPackagesForSolution").FireAndForget();
-            }
-
-            (sender as InfoBar).Close();
+            VS.Commands.ExecuteAsync("Tools.ManageNuGetPackagesForSolution").FireAndForget();
         }
 
-        private static List<IVsInfoBarTextSpan> GetTextSpans(int outdatedCount, int deprecatedCount, int vulnerableCount)
+        (sender as InfoBar)?.Close();
+    }
+
+    private static List<IVsInfoBarTextSpan> GetTextSpans(int outdatedCount, int deprecatedCount, int vulnerableCount)
+    {
+        // Idea for showing counts, not sure if unicode icons in a InfoBar feel native
+        // new InfoBarTextSpan($"NuGet update: 🔼 {outdatedCount} ⚠ {deprecatedCount} 💀 {vulnerableCount}. "),
+
+        var textSpans = new List<IVsInfoBarTextSpan>();
+
+        if (outdatedCount > 0)
         {
-            // Idea for showing counts, not sure if unicode icons in a InfoBar feel native
-            // new InfoBarTextSpan($"NuGet update: 🔼 {outdatedCount} ⚠ {deprecatedCount} 💀 {vulnerableCount}. "),
-
-            var textSpans = new List<IVsInfoBarTextSpan>();
-
-            if (outdatedCount > 0)
-            {
-                textSpans.Add(new InfoBarTextSpan($"{outdatedCount} {(outdatedCount == 1 ? "update" : "updates")}"));
-            }
-
-            if (deprecatedCount > 0)
-            {
-                textSpans.Add(new InfoBarTextSpan($"{(textSpans.Any() ? ", " : string.Empty)}{deprecatedCount} {(deprecatedCount == 1 ? "deprecation" : "deprecations")}"));
-            }
-
-            if (vulnerableCount > 0)
-            {
-                textSpans.Add(new InfoBarTextSpan($"{(textSpans.Any() ? ", " : string.Empty)}{vulnerableCount} {(vulnerableCount == 1 ? "vulnerability" : "vulnerabilities")}"));
-            }
-
-            textSpans.Add(new InfoBarTextSpan(". "));
-            textSpans.Add(new InfoBarHyperlink("Manage"));
-            textSpans.Add(new InfoBarTextSpan(" packages."));
-
-            return textSpans;
+            textSpans.Add(new InfoBarTextSpan($"{outdatedCount} {(outdatedCount == 1 ? "update" : "updates")}"));
         }
+
+        if (deprecatedCount > 0)
+        {
+            textSpans.Add(new InfoBarTextSpan($"{(textSpans.Any() ? ", " : string.Empty)}{deprecatedCount} {(deprecatedCount == 1 ? "deprecation" : "deprecations")}"));
+        }
+
+        if (vulnerableCount > 0)
+        {
+            textSpans.Add(new InfoBarTextSpan($"{(textSpans.Any() ? ", " : string.Empty)}{vulnerableCount} {(vulnerableCount == 1 ? "vulnerability" : "vulnerabilities")}"));
+        }
+
+        textSpans.Add(new InfoBarTextSpan(". "));
+        textSpans.Add(new InfoBarHyperlink("Manage"));
+        textSpans.Add(new InfoBarTextSpan(" packages."));
+
+        return textSpans;
     }
 }
