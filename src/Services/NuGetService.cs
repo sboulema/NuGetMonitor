@@ -1,17 +1,18 @@
-﻿using NuGet.Common;
-using NuGet.Protocol.Core.Types;
-using NuGet.Packaging.Core;
-using PackageReference = NuGetMonitor.Models.PackageReference;
-using NuGet.Configuration;
+﻿using System.IO;
 using Community.VisualStudio.Toolkit;
-using Settings = NuGet.Configuration.Settings;
+using NuGet.Common;
+using NuGet.Configuration;
+using NuGet.Packaging.Core;
+using NuGet.Protocol.Core.Types;
 using NuGetMonitor.Models;
+using Settings = NuGet.Configuration.Settings;
 
 namespace NuGetMonitor.Services;
 
 public static class NuGetService
 {
-    public static async Task<IEnumerable<PackageReference>> CheckPackageReferences(IReadOnlyCollection<PackageReferenceEntry> references)
+    public static async Task<IEnumerable<PackageReference>> CheckPackageReferences(
+        IReadOnlyCollection<PackageReferenceEntry> references)
     {
         using var sourceCacheContext = new SourceCacheContext();
 
@@ -22,7 +23,8 @@ public static class NuGetService
         var sourceRepositories = await GetSourceRepositories().ConfigureAwait(false);
 
         var result = await Task
-            .WhenAll(identitiesById.Select(identities => CheckPackageReference(identities, sourceCacheContext, sourceRepositories)))
+            .WhenAll(identitiesById.Select(identities =>
+                CheckPackageReference(identities, sourceCacheContext, sourceRepositories)))
             .ConfigureAwait(false);
 
         return result;
@@ -86,7 +88,8 @@ public static class NuGetService
         var solutionDirectory = Path.GetDirectoryName(solution?.FullPath);
 
         var packageSourceProvider = new PackageSourceProvider(Settings.LoadDefaultSettings(solutionDirectory));
-        var sourceRepositoryProvider = new SourceRepositoryProvider(packageSourceProvider, Repository.Provider.GetCoreV3());
+        var sourceRepositoryProvider =
+            new SourceRepositoryProvider(packageSourceProvider, Repository.Provider.GetCoreV3());
         var sourceRepositories = sourceRepositoryProvider.GetRepositories();
 
         return sourceRepositories;

@@ -4,11 +4,10 @@ using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo("Tests")]
 
-namespace System.Runtime.CompilerServices
+namespace System.Runtime.CompilerServices;
+
+[ExcludeFromCodeCoverage]
+[DebuggerNonUserCode]
+internal static class IsExternalInit
 {
-    [ExcludeFromCodeCoverage]
-    [DebuggerNonUserCode]
-    internal static class IsExternalInit
-    {
-    }
 }
