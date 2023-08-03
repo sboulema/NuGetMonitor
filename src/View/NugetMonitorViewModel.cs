@@ -65,7 +65,7 @@ internal partial class NugetMonitorViewModel : INotifyPropertyChanged
 
             var loadVersionTasks = Packages.Select(item => item.Load());
 
-            await Task.WhenAll(loadVersionTasks);
+            await Task.WhenAll(loadVersionTasks).ConfigureAwait(false);
 
             IsLoading = false;
         }

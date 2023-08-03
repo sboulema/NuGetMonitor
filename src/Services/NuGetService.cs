@@ -46,20 +46,28 @@ public static class NuGetService
 
     public static async Task<Package> GetPackage(string packageId)
     {
-        return await GetPackageCacheEntry(packageId, _session).GetPackage();
+        return await GetPackageCacheEntry(packageId, _session).GetValue().ConfigureAwait(false);
     }
 
-    private static async Task<PackageInfo?> GetPackageInfo(IGrouping<string, PackageIdentity> packageIdentities, Session session)
+    public static async Task<PackageInfo?> GetPackageInfo(PackageIdentity packageIdentity)
     {
-        var (_, versions, sourceRepository) = await GetPackageCacheEntry(packageIdentities.Key, session).GetPackage().ConfigureAwait(false);
+        return await GetPackageInfoCacheEntry(packageIdentity, _session).GetValue().ConfigureAwait(false);
+    }
+
+    private static async Task<PackageInfo?> GetPackageInfo(IEnumerable<PackageIdentity> packageIdentities, Session session)
+    {
+        // if multiple version are provided, use the oldest reference with the smallest version
+        var packageIdentity = packageIdentities.OrderBy(item => item.Version.Version).First();
+
+        return await GetPackageInfoCacheEntry(packageIdentity, session).GetValue().ConfigureAwait(false);
+    }
+
+    private static async Task<PackageInfo?> GetPackageInfo(PackageIdentity packageIdentity, Session session)
+    {
+        var (_, versions, sourceRepository) = await GetPackageCacheEntry(packageIdentity.Id, session).GetValue().ConfigureAwait(false);
 
         if (sourceRepository is null)
-        {
             return null;
-        }
-
-        // use the oldest reference with the smallest version
-        var packageIdentity = packageIdentities.OrderBy(item => item.Version.Version).First();
 
         var packageMetadataResource = await sourceRepository
             .GetResourceAsync<PackageMetadataResource>(session.CancellationToken)
@@ -76,7 +84,7 @@ public static class NuGetService
 
         return new PackageInfo(packageIdentity)
         {
-            IsVulnerable = metadata.Vulnerabilities != null,
+            Vulnerabilities = metadata.Vulnerabilities?.ToArray(),
             IsDeprecated = await metadata.GetDeprecationMetadataAsync().ConfigureAwait(false) != null,
             IsOutdated = IsOutdated(packageIdentity, versions)
         };
@@ -91,7 +99,19 @@ public static class NuGetService
             return new PackageCacheEntry(packageId, session);
         }
 
-        return session.PackageCache.GetOrCreate(packageId, Factory) ?? throw new InvalidOperationException("Failed to get package from cache");
+        return session.Cache.GetOrCreate(packageId, Factory) ?? throw new InvalidOperationException("Failed to get package from cache");
+    }
+
+    private static PackageInfoCacheEntry GetPackageInfoCacheEntry(PackageIdentity packageIdentity, Session session)
+    {
+        PackageInfoCacheEntry Factory(ICacheEntry cacheEntry)
+        {
+            cacheEntry.AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24);
+
+            return new PackageInfoCacheEntry(packageIdentity, session);
+        }
+
+        return session.Cache.GetOrCreate(packageIdentity, Factory) ?? throw new InvalidOperationException("Failed to get package from cache");
     }
 
     private static bool IsOutdated(PackageIdentity packageIdentity, IEnumerable<NuGetVersion> versions)
@@ -149,7 +169,7 @@ public static class NuGetService
             Load(packageId, session);
         }
 
-        public Task<Package> GetPackage()
+        public Task<Package> GetValue()
         {
             return _taskCompletionSource.Task;
         }
@@ -158,7 +178,6 @@ public static class NuGetService
         {
             try
             {
-                // var (sourceRepository, versions) = await Task.Run(async () => await GetPackageVersions(packageId, session).ConfigureAwait(false)).ConfigureAwait(false);
                 var (sourceRepository, versions) = await GetPackageVersions(packageId, session).ConfigureAwait(false);
 
                 var package = new Package(packageId, versions, sourceRepository);
@@ -172,12 +191,41 @@ public static class NuGetService
         }
     }
 
+    private class PackageInfoCacheEntry
+    {
+        private readonly TaskCompletionSource<PackageInfo?> _taskCompletionSource = new();
+
+        public PackageInfoCacheEntry(PackageIdentity packageIdentity, Session session)
+        {
+            Load(packageIdentity, session);
+        }
+
+        public Task<PackageInfo?> GetValue()
+        {
+            return _taskCompletionSource.Task;
+        }
+
+        private async void Load(PackageIdentity packageIdentity, Session session)
+        {
+            try
+            {
+                var info = await GetPackageInfo(packageIdentity, session).ConfigureAwait(false);
+
+                _taskCompletionSource.SetResult(info);
+            }
+            catch
+            {
+                _taskCompletionSource.SetResult(null);
+            }
+        }
+    }
+
     private class Session : IDisposable
     {
         private readonly CancellationTokenSource _cancellationTokenSource = new();
         private ICollection<SourceRepository>? _sourceRepositories;
 
-        public readonly MemoryCache PackageCache = new(new MemoryCacheOptions { });
+        public readonly MemoryCache Cache = new(new MemoryCacheOptions { });
 
         public readonly SourceCacheContext SourceCacheContext = new();
 

@@ -4,6 +4,7 @@ using NuGet.Packaging.Core;
 using NuGet.Versioning;
 using NuGetMonitor.Models;
 using NuGetMonitor.Services;
+using PropertyChanged;
 using TomsToolbox.Wpf;
 
 namespace NuGetMonitor.View
@@ -22,9 +23,24 @@ namespace NuGetMonitor.View
 
         public IGrouping<PackageIdentity, PackageReferenceEntry> Items { get; }
 
+        [OnChangedMethod(nameof(OnIdentityChanged))]
         public PackageIdentity Identity { get; private set; }
 
         public string ProjectPaths { get; }
+
+        public Package? Package { get; private set; }
+
+        public NuGetVersion? SelectedVersion { get; set; }
+
+        public bool IsUpdateAvailable => SelectedVersion != Identity.Version;
+
+        public bool IsUpToDate => !IsUpdateAvailable;
+
+        public bool IsSelected { get; set; }
+
+        public ICommand Update => new DelegateCommand(() => { _owner.Update(this); });
+
+        public PackageInfo? PackageInfo { get; private set; }
 
         public async Task Load()
         {
@@ -33,19 +49,14 @@ namespace NuGetMonitor.View
             IsSelected = IsUpdateAvailable;
         }
 
-        public Package? Package { get; private set; }
-
-        public NuGetVersion? SelectedVersion { get; set; }
-
-        public bool IsUpdateAvailable => SelectedVersion != Identity.Version;
-
-        public bool IsSelected { get; set; }
-
-        public ICommand Update => new DelegateCommand(() => { _owner.Update(this); });
-
         public void ApplyVersion()
         {
             Identity = new PackageIdentity(Identity.Id, SelectedVersion);
+        }
+
+        private async void OnIdentityChanged()
+        {
+            PackageInfo = await NuGetService.GetPackageInfo(Identity).ConfigureAwait(false);
         }
     }
 }
