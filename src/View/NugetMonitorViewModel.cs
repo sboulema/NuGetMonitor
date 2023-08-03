@@ -106,6 +106,7 @@ internal partial class NugetMonitorViewModel : INotifyPropertyChanged
         using var projectCollection = new ProjectCollection();
 
         var packageReferencesByProject = packageViewModels
+            .Where(viewModel => viewModel.IsUpdateAvailable)
             .SelectMany(viewModel => viewModel.Items.Select(item => new { item.Identity, item.ProjectItem.Xml.ContainingProject.FullPath, viewModel.SelectedVersion }))
             .GroupBy(item => item.FullPath);
 

@@ -37,7 +37,7 @@ namespace NuGetMonitor.View
 
         public NuGetVersion? SelectedVersion { get; set; }
 
-        public bool IsUpdateAvailable => SelectedVersion > Identity.Version;
+        public bool IsUpdateAvailable => SelectedVersion != Identity.Version;
 
         public bool IsSelected { get; set; }
 

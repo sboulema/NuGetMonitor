@@ -5,13 +5,17 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:view="clr-namespace:NuGetMonitor.View"
              xmlns:toms="urn:TomsToolbox"
+             xmlns:styles="urn:TomsToolbox.Wpf.Styles"
              xmlns:toolkit="clr-namespace:Community.VisualStudio.Toolkit;assembly=Community.VisualStudio.Toolkit"
              toolkit:Themes.UseVsTheme="True"             
              mc:Ignorable="d" d:DesignHeight="450" d:DesignWidth="800"
              DataContext="{x:Static view:NugetMonitorViewModel.Instance}">
+  <UserControl.Resources>
+    <ResourceDictionary Source="/NuGetMonitor;component/Resources/VSColorScheme.xaml" />
+  </UserControl.Resources>
   <Grid>
     <DockPanel>
-      <ToolBar DockPanel.Dock="Top">
+      <ToolBar DockPanel.Dock="Top" Style="{DynamicResource {x:Static styles:ResourceKeys.ToolBarStyle}}">
         <Button Command="{Binding SoftRefreshCommand}">Soft Refresh</Button>
         <Button Command="{Binding HardRefreshCommand}">Hard Refresh</Button>
         <Button Command="{Binding UpdateSelectedCommand}">Update Selected</Button>
@@ -20,10 +24,27 @@
       <DataGrid ItemsSource="{Binding Packages}"
                 AutoGenerateColumns="False"
                 IsReadOnly="True"
+                Style="{DynamicResource {x:Static styles:ResourceKeys.DataGridStyle}}"
+                VerticalContentAlignment="Center"
                 toms:MultiSelectorExtensions.SelectionBinding="{Binding SelectedPackages}">
+        <DataGrid.CellStyle>
+          <Style TargetType="DataGridCell" BasedOn="{StaticResource {x:Static styles:ResourceKeys.DataGridCellStyle}}">
+            <Style.Triggers>
+              <Trigger Property="IsSelected" Value="True">
+                <Setter Property="Background" Value="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}" />
+                <Setter Property="BorderBrush" Value="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}" />
+              </Trigger>
+            </Style.Triggers>
+          </Style>
+        </DataGrid.CellStyle>
         <DataGrid.RowStyle>
-          <Style TargetType="DataGridRow">
+          <Style TargetType="DataGridRow" BasedOn="{StaticResource {x:Static styles:ResourceKeys.DataGridRowStyle}}">
             <Setter Property="IsSelected" Value="{Binding IsSelected}" />
+            <Style.Triggers>
+              <Trigger Property="IsSelected" Value="True">
+                <Setter Property="Background" Value="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}" />
+              </Trigger>
+            </Style.Triggers>
           </Style>
         </DataGrid.RowStyle>
         <DataGrid.Columns>
@@ -40,7 +61,7 @@
               <DataTemplate>
                 <Grid>
                   <Grid.Resources>
-                    <Style TargetType="ComboBox" BasedOn="{StaticResource {x:Static ToolBar.ComboBoxStyleKey}}">
+                    <Style TargetType="ComboBox" BasedOn="{StaticResource {x:Static styles:ResourceKeys.DataGridComboBoxEditingElementStyle}}">
                       <Style.Triggers>
                         <Trigger Property="IsDropDownOpen" Value="False">
                           <Setter Property="Background" Value="Transparent" />
@@ -50,7 +71,7 @@
                     </Style>
                   </Grid.Resources>
                   <ComboBox ItemsSource="{Binding Package.Versions}"
-                            SelectedItem="{Binding SelectedVersion}"
+                            SelectedItem="{Binding SelectedVersion, UpdateSourceTrigger=PropertyChanged}"
                             HorizontalAlignment="Right" />
                   <Grid x:Name="LoadingItemText" Visibility="Collapsed">
                     <ProgressBar IsIndeterminate="True" />
@@ -74,8 +95,8 @@
                   <Button.Template>
                     <ControlTemplate TargetType="{x:Type Button}">
                       <Grid Width="16" Height="16" Background="Transparent" HorizontalAlignment="Center" VerticalAlignment="Center">
-                        <Ellipse x:Name="Ellipse" Width="16" Height="16" Stroke="Black" StrokeThickness="1" />
-                        <Path Data="M8,4 L8,13 M5,8 L8,4 L11,8" Stroke="Black" StrokeThickness="1"/>
+                        <Ellipse x:Name="Ellipse" Width="16" Height="16" Stroke="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}" StrokeThickness="1" />
+                        <Path Data="M8,4 L8,13 M5,8 L8,4 L11,8" Stroke="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}" StrokeThickness="1"/>
                       </Grid>
                       <ControlTemplate.Triggers>
                         <Trigger Property="IsEnabled" Value="False">
