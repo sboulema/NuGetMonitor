@@ -2,7 +2,7 @@
 using System.ComponentModel.Design;
 using Task = System.Threading.Tasks.Task;
 
-namespace NuGetMonitor;
+namespace NuGetMonitor.View;
 
 /// <summary>
 /// Command handler
@@ -17,7 +17,7 @@ internal sealed class NuGetMonitorCommand
     /// <summary>
     /// Command menu group (command set GUID).
     /// </summary>
-    public static readonly Guid CommandSet = new Guid("df4cd5dd-21c1-4666-8b25-bffe33b47ac1");
+    public static readonly Guid CommandSet = new("df4cd5dd-21c1-4666-8b25-bffe33b47ac1");
 
     /// <summary>
     /// VS Package that provides this command, not null.
@@ -70,7 +70,7 @@ internal sealed class NuGetMonitorCommand
         // the UI thread.
         await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(package.DisposalToken);
 
-        var commandService = await package.GetServiceAsync((typeof(IMenuCommandService))) as OleMenuCommandService ?? throw new InvalidOperationException("Failed to get menu command service");
+        var commandService = await package.GetServiceAsync(typeof(IMenuCommandService)).ConfigureAwait(true) as OleMenuCommandService ?? throw new InvalidOperationException("Failed to get menu command service");
         Instance = new NuGetMonitorCommand(package, commandService);
     }
 
@@ -83,12 +83,12 @@ internal sealed class NuGetMonitorCommand
     {
         _package.JoinableTaskFactory.RunAsync(async delegate
         {
-            var window = await _package.ShowToolWindowAsync(typeof(NuGetMonitor), 0, true, _package.DisposalToken);
-            if ((null == window) || (null == window.Frame))
+            var window = await _package.ShowToolWindowAsync(typeof(NuGetMonitorToolWindow), 0, true, _package.DisposalToken).ConfigureAwait(false);
+            if (null == window || null == window.Frame)
             {
                 throw new NotSupportedException("Cannot create tool window");
             }
         }).FireAndForget();
-           
+
     }
 }

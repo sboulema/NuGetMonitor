@@ -62,7 +62,7 @@ csharp_indent_labels = one_less_than_current
 csharp_space_around_binary_operators = before_and_after
 csharp_using_directive_placement = outside_namespace:suggestion
 csharp_prefer_simple_using_statement = true:suggestion
-csharp_prefer_braces = true:warning
+csharp_prefer_braces = when_multiline:warning
 csharp_prefer_simple_default_expression = true:suggestion
 
 csharp_style_namespace_declarations = block_scoped:silent

@@ -1,6 +1,4 @@
-﻿using System.Windows;
-
-namespace NuGetMonitor;
+﻿namespace NuGetMonitor.View;
 
 /// <summary>
 /// Interaction logic for NugetMonitorControl.xaml
@@ -10,10 +8,5 @@ public partial class NuGetMonitorControl
     public NuGetMonitorControl()
     {
         InitializeComponent();
-    }
-
-    private void ButtonBase_OnClick(object sender, RoutedEventArgs e)
-    {
-        MessageBox.Show("Click");
     }
 }

@@ -1,7 +1,7 @@
 ﻿using Microsoft.VisualStudio.Shell;
 using System.Runtime.InteropServices;
 
-namespace NuGetMonitor;
+namespace NuGetMonitor.View;
 
 /// <summary>
 /// This class implements the tool window exposed by this package and hosts a user control.
@@ -15,12 +15,12 @@ namespace NuGetMonitor;
 /// </para>
 /// </remarks>
 [Guid("6ce47eec-3296-48f5-9dec-8883a276a7c8")]
-public sealed class NuGetMonitor : ToolWindowPane
+public sealed class NuGetMonitorToolWindow : ToolWindowPane
 {
     /// <summary>
-    /// Initializes a new instance of the <see cref="NuGetMonitor"/> class.
+    /// Initializes a new instance of the <see cref="NuGetMonitorToolWindow"/> class.
     /// </summary>
-    public NuGetMonitor() : base(null)
+    public NuGetMonitorToolWindow() : base(null)
     {
         Caption = "NuGet Monitor";
 

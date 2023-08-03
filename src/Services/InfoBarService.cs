@@ -6,11 +6,11 @@ using NuGetMonitor.Models;
 
 namespace NuGetMonitor.Services;
 
-public class InfoBarService
+public static class InfoBarService
 {
     private static InfoBar? _infoBar { get; set; }
 
-    public static async Task ShowInfoBar(IReadOnlyCollection<PackageReference> packageReferences)
+    public static async Task ShowInfoBar(IReadOnlyCollection<PackageInfo> packageReferences)
     {
         var outdatedCount = packageReferences.Count(packageReference => packageReference.IsOutdated);
         var deprecatedCount = packageReferences.Count(packageReference => packageReference.IsDeprecated);
@@ -28,10 +28,10 @@ public class InfoBarService
             KnownMonikers.NuGet,
             isCloseButtonVisible: true);
 
-        _infoBar = await VS.InfoBar.CreateAsync(ToolWindowGuids80.SolutionExplorer, model) ?? throw new InvalidOperationException("Failed to create the info bar");
+        _infoBar = await VS.InfoBar.CreateAsync(ToolWindowGuids80.SolutionExplorer, model).ConfigureAwait(true) ?? throw new InvalidOperationException("Failed to create the info bar");
         _infoBar.ActionItemClicked += InfoBar_ActionItemClicked;
 
-        await _infoBar.TryShowInfoBarUIAsync();
+        await _infoBar.TryShowInfoBarUIAsync().ConfigureAwait(true);
     }
 
     public static void CloseInfoBar()

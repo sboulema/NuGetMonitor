@@ -2,7 +2,7 @@
 
 namespace NuGetMonitor.Models;
 
-public record PackageReference(PackageIdentity PackageIdentity)
+public record PackageInfo(PackageIdentity PackageIdentity)
 {
     public bool IsVulnerable { get; set; }
 

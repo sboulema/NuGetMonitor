@@ -3,4 +3,4 @@ using NuGet.Packaging.Core;
 
 namespace NuGetMonitor.Models;
 
-public record PackageReferenceEntry(PackageIdentity Identity, ProjectItem ProjectItem);
+public record PackageReferenceEntry(PackageIdentity Identity, ProjectItem ProjectItem, string RelativePath);
