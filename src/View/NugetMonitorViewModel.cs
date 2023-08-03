@@ -33,7 +33,7 @@ internal partial class PackageViewModel : INotifyPropertyChanged
 
     public async Task Load()
     {
-        Package = await Task.Run(async () => await NuGetService.GetPackage(Identity.Id)).ConfigureAwait(false);
+        Package = await NuGetService.GetPackage(Identity.Id).ConfigureAwait(false);
         SelectedVersion = Package.Versions.FirstOrDefault(i => !i.IsPrerelease && i >= Identity.Version) ?? Package.Versions.FirstOrDefault();
         IsSelected = IsUpdateAvailable;
     }
@@ -58,8 +58,6 @@ internal partial class NugetMonitorViewModel : INotifyPropertyChanged
 {
     public static readonly NugetMonitorViewModel Instance = new();
 
-    public static readonly string[] LoadingList = { "Loading " };
-
     private NugetMonitorViewModel()
     {
         VS.Events.SolutionEvents.OnAfterOpenSolution += SolutionEvents_OnAfterOpenSolution;
@@ -71,7 +69,7 @@ internal partial class NugetMonitorViewModel : INotifyPropertyChanged
         Load();
     }
 
-    public async void Load()
+    private async void Load()
     {
         try
         {
@@ -114,12 +112,13 @@ internal partial class NugetMonitorViewModel : INotifyPropertyChanged
 
     private void HardRefresh()
     {
-        // TODO: clear all caches and reload everything
+        NuGetService.ClearCache();
+        Load();
     }
     
     private void SoftRefresh()
     {
-        // TODO: rescan solution        
+        Load();     
     }
 
     public void Update(PackageViewModel packageViewModel)
