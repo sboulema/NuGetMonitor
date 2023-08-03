@@ -3,12 +3,18 @@ using Microsoft.VisualStudio.Imaging;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Shell;
 using NuGetMonitor.Models;
+using NuGetMonitor.View;
 
 namespace NuGetMonitor.Services;
 
 public static class InfoBarService
 {
     private static InfoBar? _infoBar { get; set; }
+
+    private enum Actions
+    {
+        Manage
+    }
 
     public static async Task ShowInfoBar(IReadOnlyCollection<PackageInfo> packageReferences)
     {
@@ -41,9 +47,9 @@ public static class InfoBarService
     {
         ThreadHelper.ThrowIfNotOnUIThread();
 
-        if (e.ActionItem.Text == "Manage")
+        if (e.ActionItem.ActionContext is Actions.Manage)
         {
-            VS.Commands.ExecuteAsync("Tools.ManageNuGetPackagesForSolution").FireAndForget();
+            NuGetMonitorCommand.Instance?.ShowToolWindow();
         }
 
         (sender as InfoBar)?.Close();
@@ -72,8 +78,9 @@ public static class InfoBarService
         }
 
         textSpans.Add(new InfoBarTextSpan(". "));
-        textSpans.Add(new InfoBarHyperlink("Manage"));
+        textSpans.Add(new InfoBarHyperlink("Manage", Actions.Manage));
         textSpans.Add(new InfoBarTextSpan(" packages."));
+
 
         return textSpans;
     }

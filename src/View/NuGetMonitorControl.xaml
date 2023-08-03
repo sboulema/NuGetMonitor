@@ -15,6 +15,7 @@
         <Button Command="{Binding SoftRefreshCommand}">Soft Refresh</Button>
         <Button Command="{Binding HardRefreshCommand}">Hard Refresh</Button>
         <Button Command="{Binding UpdateSelectedCommand}">Update Selected</Button>
+        <Button Command="{Binding ShowNuGetPackageManagerCommand}">NuGet Package Manager</Button>
       </ToolBar>
       <DataGrid ItemsSource="{Binding Packages}"
                 AutoGenerateColumns="False"

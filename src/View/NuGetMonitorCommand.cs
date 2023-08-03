@@ -74,12 +74,7 @@ internal sealed class NuGetMonitorCommand
         Instance = new NuGetMonitorCommand(package, commandService);
     }
 
-    /// <summary>
-    /// Shows the tool window when the menu item is clicked.
-    /// </summary>
-    /// <param name="sender">The event sender.</param>
-    /// <param name="e">The event args.</param>
-    private void Execute(object sender, EventArgs e)
+    public void ShowToolWindow()
     {
         _package.JoinableTaskFactory.RunAsync(async delegate
         {
@@ -89,6 +84,10 @@ internal sealed class NuGetMonitorCommand
                 throw new NotSupportedException("Cannot create tool window");
             }
         }).FireAndForget();
+    }
 
+    private void Execute(object sender, EventArgs e)
+    {
+        ShowToolWindow();
     }
 }
