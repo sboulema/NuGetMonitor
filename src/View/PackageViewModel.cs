@@ -36,6 +36,8 @@ namespace NuGetMonitor.View
 
         public bool IsUpToDate => !IsUpdateAvailable;
 
+        public bool IsLoading => Package == null;
+
         public bool IsSelected { get; set; }
 
         public ICommand Update => new DelegateCommand(() => { _owner.Update(this); });

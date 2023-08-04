@@ -7,28 +7,33 @@
              xmlns:toms="urn:TomsToolbox"
              xmlns:styles="urn:TomsToolbox.Wpf.Styles"
              xmlns:toolkit="clr-namespace:Community.VisualStudio.Toolkit;assembly=Community.VisualStudio.Toolkit"
-             xmlns:dgx="urn:tom-englert.de/DataGridExtensions"
+             xmlns:imaging="clr-namespace:Microsoft.VisualStudio.Imaging;assembly=Microsoft.VisualStudio.Imaging"
+             xmlns:imageCatalog="clr-namespace:Microsoft.VisualStudio.Imaging;assembly=Microsoft.VisualStudio.ImageCatalog"
              toolkit:Themes.UseVsTheme="True"             
              mc:Ignorable="d" d:DesignHeight="450" d:DesignWidth="800"
              DataContext="{x:Static view:NugetMonitorViewModel.Instance}">
   <UserControl.Resources>
     <ResourceDictionary Source="/NuGetMonitor;component/Resources/VSColorScheme.xaml" />
   </UserControl.Resources>
-  <Grid>
+  <Grid FocusManager.FocusedElement="{Binding ElementName=DataGrid}">
     <DockPanel>
       <ToolBar DockPanel.Dock="Top" Style="{DynamicResource {x:Static styles:ResourceKeys.ToolBarStyle}}">
         <Button Command="{Binding UpdateSelectedCommand}"
                 ToolTip="Update Selected Items">
           <Grid Width="16" Height="16" Background="Transparent" HorizontalAlignment="Center" VerticalAlignment="Center">
-            <Ellipse x:Name="Ellipse" Width="16" Height="16" Stroke="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}" StrokeThickness="1" />
+            <Ellipse Width="16" Height="16" Stroke="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}" StrokeThickness="1" />
             <Path Data="M8,4 L8,13 M5,8 L8,4 L11,8" Stroke="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}" StrokeThickness="1"/>
           </Grid>
         </Button>
-        <Button Command="{Binding SoftRefreshCommand}">Soft Refresh</Button>
-        <Button Command="{Binding HardRefreshCommand}">Hard Refresh</Button>
-        <Button Command="{Binding ShowNuGetPackageManagerCommand}">NuGet Package Manager</Button>
+        <Button Command="{Binding HardRefreshCommand}" ToolTip="Refresh">
+          <imaging:CrispImage Width="16" Height="16" Moniker="{x:Static imageCatalog:KnownMonikers.Refresh}" />
+        </Button>
+        <Button Command="{Binding ShowNuGetPackageManagerCommand}" ToolTip="Launch NuGet Package Manager">
+          <imaging:CrispImage Width="16" Height="16" Moniker="{x:Static imageCatalog:KnownMonikers.NuGet}" />
+        </Button>
       </ToolBar>
-      <DataGrid ItemsSource="{Binding Packages}"
+      <DataGrid x:Name="DataGrid" 
+                ItemsSource="{Binding Packages}"
                 AutoGenerateColumns="False"
                 IsReadOnly="True"
                 Style="{DynamicResource {x:Static styles:ResourceKeys.DataGridStyle}}"
@@ -81,12 +86,11 @@
                             SelectedItem="{Binding SelectedVersion, UpdateSourceTrigger=PropertyChanged}"
                             HorizontalAlignment="Right" />
                   <Grid x:Name="LoadingItemText" Visibility="Collapsed">
-                    <ProgressBar IsIndeterminate="True" />
                     <TextBlock Text="Loading..." VerticalAlignment="Center" HorizontalAlignment="Center" />
                   </Grid>
                 </Grid>
                 <DataTemplate.Triggers>
-                  <DataTrigger Binding="{Binding Package}" Value="{x:Null}">
+                  <DataTrigger Binding="{Binding IsLoading}" Value="true">
                     <Setter TargetName="LoadingItemText" Property="Visibility" Value="Visible" />
                   </DataTrigger>
                 </DataTemplate.Triggers>
@@ -122,7 +126,7 @@
           <DataGridTextColumn Header="Issues" Width="*" Binding="{Binding PackageInfo.Issues, FallbackValue=''}" />
         </DataGrid.Columns>
       </DataGrid>
-      
+
     </DockPanel>
     <toms:LoadingIndicator IsActive="{Binding IsLoading}" Header="Loading..." />
   </Grid>
