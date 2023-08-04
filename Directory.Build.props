@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project>
   <PropertyGroup>
-    <Version Condition="'$(Version)' == ''">0.0.0.1</Version>
+    <Version Condition="'$(Version)' == ''">99.0.0.0</Version>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Nullable.Extended.Analyzer" Version="1.10.4539" PrivateAssets="All" />
