@@ -38,8 +38,6 @@ namespace NuGetMonitor.View
 
         public bool IsLoading => Package == null;
 
-        public bool IsSelected { get; set; }
-
         public ICommand Update => new DelegateCommand(() => { _owner.Update(this); });
 
         public PackageInfo? PackageInfo { get; private set; }
@@ -48,7 +46,6 @@ namespace NuGetMonitor.View
         {
             Package = await NuGetService.GetPackage(Identity.Id).ConfigureAwait(false);
             SelectedVersion = Package.Versions.FirstOrDefault(i => !i.IsPrerelease && i >= Identity.Version) ?? Package.Versions.FirstOrDefault();
-            IsSelected = IsUpdateAvailable;
         }
 
         public void ApplyVersion()

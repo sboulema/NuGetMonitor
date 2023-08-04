@@ -54,16 +54,15 @@
         <DataGrid.CellStyle>
           <Style TargetType="DataGridCell" BasedOn="{StaticResource {x:Static styles:ResourceKeys.DataGridCellStyle}}">
             <Style.Triggers>
-              <Trigger Property="IsSelected" Value="True">
+              <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource FindAncestor, AncestorType=DataGridRow}}" Value="True">
                 <Setter Property="Background" Value="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}" />
                 <Setter Property="BorderBrush" Value="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}" />
-              </Trigger>
+              </DataTrigger>
             </Style.Triggers>
           </Style>
         </DataGrid.CellStyle>
         <DataGrid.RowStyle>
           <Style TargetType="DataGridRow" BasedOn="{StaticResource {x:Static styles:ResourceKeys.DataGridRowStyle}}">
-            <Setter Property="IsSelected" Value="{Binding IsSelected}" />
             <Style.Triggers>
               <Trigger Property="IsSelected" Value="True">
                 <Setter Property="Background" Value="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}" />
@@ -84,19 +83,27 @@
             <DataGridTemplateColumn.CellTemplate>
               <DataTemplate>
                 <Grid>
-                  <Grid.Resources>
-                    <Style TargetType="ComboBox" BasedOn="{StaticResource {x:Static styles:ResourceKeys.DataGridComboBoxEditingElementStyle}}">
-                      <Style.Triggers>
-                        <Trigger Property="IsDropDownOpen" Value="False">
-                          <Setter Property="Background" Value="Transparent" />
-                          <Setter Property="BorderBrush" Value="Transparent" />
-                        </Trigger>
-                      </Style.Triggers>
-                    </Style>
-                  </Grid.Resources>
                   <ComboBox ItemsSource="{Binding Package.Versions}"
                             SelectedItem="{Binding SelectedVersion, UpdateSourceTrigger=PropertyChanged}"
-                            HorizontalAlignment="Right" />
+                            HorizontalAlignment="Right">
+                    <ComboBox.Style>
+                      <Style TargetType="ComboBox" BasedOn="{StaticResource {x:Static styles:ResourceKeys.DataGridComboBoxEditingElementStyle}}">
+                        <Style.Triggers>
+                          <Trigger Property="IsDropDownOpen" Value="False">
+                            <Setter Property="Background" Value="Transparent" />
+                            <Setter Property="BorderBrush" Value="Transparent" />
+                          </Trigger>
+                          <MultiDataTrigger>
+                            <MultiDataTrigger.Conditions>
+                              <Condition Binding="{Binding IsSelected, RelativeSource={RelativeSource FindAncestor, AncestorType=DataGridRow}}" Value="True" />
+                              <Condition Binding="{Binding IsKeyboardFocusWithin, RelativeSource={RelativeSource FindAncestor, AncestorType=DataGridRow}}" Value="True" />
+                            </MultiDataTrigger.Conditions>
+                            <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.HighlightTextBrushKey}}" />
+                          </MultiDataTrigger>
+                        </Style.Triggers>
+                      </Style>
+                    </ComboBox.Style>
+                  </ComboBox>
                   <TextBlock x:Name="LoadingItemText" Text="Loading..." VerticalAlignment="Center" HorizontalAlignment="Center" Visibility="Collapsed"/>
                 </Grid>
                 <DataTemplate.Triggers>
@@ -117,8 +124,8 @@
                   <Button.Template>
                     <ControlTemplate TargetType="{x:Type Button}">
                       <Grid Width="16" Height="16" Background="Transparent" HorizontalAlignment="Center" VerticalAlignment="Center">
-                        <Ellipse x:Name="Ellipse" Width="16" Height="16" Stroke="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}" StrokeThickness="1" />
-                        <Path Data="M8,4 L8,13 M5,8 L8,4 L11,8" Stroke="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}" StrokeThickness="1"/>
+                        <Ellipse x:Name="Ellipse" Width="16" Height="16" Stroke="{TemplateBinding Foreground}" StrokeThickness="1" />
+                        <Path Data="M8,4 L8,13 M5,8 L8,4 L11,8" Stroke="{TemplateBinding Foreground}" StrokeThickness="1"/>
                       </Grid>
                       <ControlTemplate.Triggers>
                         <Trigger Property="IsEnabled" Value="False">
@@ -127,6 +134,16 @@
                         <Trigger Property="IsPressed" Value="True">
                           <Setter TargetName="Ellipse" Property="Fill" Value="Gray" />
                         </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                          <Setter TargetName="Ellipse" Property="Fill" Value="Gray" />
+                        </Trigger>
+                        <MultiDataTrigger>
+                          <MultiDataTrigger.Conditions>
+                            <Condition Binding="{Binding IsSelected, RelativeSource={RelativeSource FindAncestor, AncestorType=DataGridRow}}" Value="True" />
+                            <Condition Binding="{Binding IsKeyboardFocusWithin, RelativeSource={RelativeSource FindAncestor, AncestorType=DataGridRow}}" Value="True" />
+                          </MultiDataTrigger.Conditions>
+                          <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.HighlightTextBrushKey}}" />
+                        </MultiDataTrigger>
                       </ControlTemplate.Triggers>
                     </ControlTemplate>
                   </Button.Template>
