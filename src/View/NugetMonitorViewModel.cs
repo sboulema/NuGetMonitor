@@ -28,7 +28,7 @@ internal partial class NugetMonitorViewModel : INotifyPropertyChanged
 
     public bool IsLoading { get; set; } = true;
 
-    public ICommand UpdateSelectedCommand => new DelegateCommand(UpdateSelected);
+    public ICommand UpdateSelectedCommand => new DelegateCommand(() => SelectedPackages.Any(item => item.IsUpdateAvailable), UpdateSelected);
 
     public ICommand SoftRefreshCommand => new DelegateCommand(SoftRefresh);
 
