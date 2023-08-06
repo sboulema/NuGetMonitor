@@ -10,18 +10,28 @@ namespace NuGetMonitor.Services;
 
 public static class ProjectService
 {
-    private static readonly DelegateEqualityComparer<PackageReferenceEntry> _packageReferenceIdentityComparer = new(item => $"{item?.Identity}|{item?.ProjectItem.Xml.ContainingProject.FullPath}");
+    private static readonly DelegateEqualityComparer<PackageReferenceEntry> _packageReferenceIdentityComparer = new(item => $"{item?.Identity}|{item?.RelativePath}");
+
+    private static ProjectCollection _projectCollection = new();
+
+    static ProjectService()
+    {
+        VS.Events.SolutionEvents.OnAfterCloseSolution += SolutionEvents_OnAfterCloseSolution;
+    }
+
+    private static void SolutionEvents_OnAfterCloseSolution()
+    {
+        Interlocked.Exchange(ref _projectCollection, new ProjectCollection()).Dispose();
+    }
 
     public static async Task<IReadOnlyCollection<PackageReferenceEntry>> GetPackageReferences()
     {
         var solutionPath = (await VS.Solutions.GetCurrentSolutionAsync().ConfigureAwait(true))?.FullPath;
 
         if (solutionPath.IsNullOrEmpty())
-        {
             return Array.Empty<PackageReferenceEntry>();
-        }
 
-        using var projectCollection = new ProjectCollection();
+        var projectCollection = _projectCollection;
 
         var projects = await VS.Solutions.GetAllProjectsAsync().ConfigureAwait(false);
 
@@ -29,16 +39,17 @@ public static class ProjectService
             .ExceptNullItems()
             .ToArray();
 
-        var refTasks = projectPaths.Select(path => Task.Run(() => GetPackageReferences(projectCollection, path, solutionPath)));
+        return await Task.Run(() =>
+        {
+            var references = projectPaths.Select(path => GetPackageReferences(projectCollection, path, solutionPath));
 
-        var references = await Task.WhenAll(refTasks).ConfigureAwait(false);
-
-        return references
-            .SelectMany(items => items)
-            .Distinct(_packageReferenceIdentityComparer)
-            .OrderBy(item => item.Identity)
-            .ThenBy(item => item.RelativePath)
-            .ToArray();
+            return references
+                .SelectMany(items => items)
+                .Distinct(_packageReferenceIdentityComparer)
+                .OrderBy(item => item.Identity)
+                .ThenBy(item => item.RelativePath)
+                .ToArray();
+        }).ConfigureAwait(false);
     }
 
     internal static IEnumerable<PackageReferenceEntry> GetPackageReferences(ProjectCollection projectCollection, string projectPath, string solutionPath)
@@ -56,9 +67,11 @@ public static class ProjectService
     {
         try
         {
-            var project = projectCollection.LoadProject(projectPath);
-
-            return project.AllEvaluatedItems.Where(IsEditablePackageReference);
+            lock (projectCollection)
+            {
+                var project = projectCollection.LoadProject(projectPath);
+                return project.AllEvaluatedItems.Where(IsEditablePackageReference);
+            }
         }
         catch
         {
