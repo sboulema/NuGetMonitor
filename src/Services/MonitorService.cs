@@ -1,4 +1,5 @@
-﻿using Community.VisualStudio.Toolkit;
+﻿using System.Diagnostics;
+using Community.VisualStudio.Toolkit;
 using Microsoft.VisualStudio.Shell;
 
 namespace NuGetMonitor.Services;
@@ -9,6 +10,7 @@ public static class MonitorService
     {
         VS.Events.SolutionEvents.OnAfterOpenSolution += SolutionEvents_OnAfterOpenSolution;
         VS.Events.SolutionEvents.OnAfterCloseSolution += SolutionEvents_OnAfterCloseSolution;
+        VS.Events.ShellEvents.ShutdownStarted += NuGetService.Shutdown;
     }
 
     private static void SolutionEvents_OnAfterCloseSolution()
@@ -19,10 +21,17 @@ public static class MonitorService
 
     public static async Task CheckForUpdates()
     {
-        var packageIdentities = await ProjectService.GetPackageReferences().ConfigureAwait(true);
+        try
+        {
+            var packageIdentities = await ProjectService.GetPackageReferences().ConfigureAwait(true);
 
-        var packageReferences = await NuGetService.CheckPackageReferences(packageIdentities).ConfigureAwait(true);
+            var packageReferences = await NuGetService.CheckPackageReferences(packageIdentities).ConfigureAwait(true);
 
-        await InfoBarService.ShowInfoBar(packageReferences.ToArray()).ConfigureAwait(true);
+            await InfoBarService.ShowInfoBar(packageReferences.ToArray()).ConfigureAwait(true);
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine(ex.Message);
+        }
     }
 }

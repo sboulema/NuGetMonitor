@@ -34,7 +34,7 @@ internal partial class NugetMonitorViewModel : INotifyPropertyChanged
 
     public ICommand HardRefreshCommand => new DelegateCommand(HardRefresh);
     
-    public ICommand ShowNuGetPackageManagerCommand => new DelegateCommand(ShowNuGetPackageManager);
+    public static ICommand ShowNuGetPackageManagerCommand => new DelegateCommand(ShowNuGetPackageManager);
 
     private void SolutionEvents_OnAfterOpenSolution(Solution? obj)
     {
@@ -101,7 +101,7 @@ internal partial class NugetMonitorViewModel : INotifyPropertyChanged
         Update(SelectedPackages.ToArray());
     }
 
-    private void Update(ICollection<PackageViewModel> packageViewModels)
+    private static void Update(ICollection<PackageViewModel> packageViewModels)
     {
         using var projectCollection = new ProjectCollection();
 

@@ -12,24 +12,16 @@ public static class ProjectService
 {
     private static readonly DelegateEqualityComparer<PackageReferenceEntry> _packageReferenceIdentityComparer = new(item => $"{item?.Identity}|{item?.ProjectItem.Xml.ContainingProject.FullPath}");
 
-    private static ProjectCollection _projectCollection = new();
-    private static string? _solutionPath;
-
     public static async Task<IReadOnlyCollection<PackageReferenceEntry>> GetPackageReferences()
     {
         var solutionPath = (await VS.Solutions.GetCurrentSolutionAsync().ConfigureAwait(true))?.FullPath;
-
-        if (solutionPath != _solutionPath)
-        {
-            _projectCollection?.Dispose();
-            _projectCollection = new ProjectCollection();
-            _solutionPath = solutionPath;
-        }
 
         if (solutionPath.IsNullOrEmpty())
         {
             return Array.Empty<PackageReferenceEntry>();
         }
+
+        using var projectCollection = new ProjectCollection();
 
         var projects = await VS.Solutions.GetAllProjectsAsync().ConfigureAwait(false);
 
@@ -37,7 +29,7 @@ public static class ProjectService
             .ExceptNullItems()
             .ToArray();
 
-        var refTasks = projectPaths.Select(path => Task.Run(() => GetPackageReferences(path, solutionPath)));
+        var refTasks = projectPaths.Select(path => Task.Run(() => GetPackageReferences(projectCollection, path, solutionPath)));
 
         var references = await Task.WhenAll(refTasks).ConfigureAwait(false);
 
@@ -49,9 +41,9 @@ public static class ProjectService
             .ToArray();
     }
 
-    internal static IEnumerable<PackageReferenceEntry> GetPackageReferences(string projectPath, string solutionPath)
+    internal static IEnumerable<PackageReferenceEntry> GetPackageReferences(ProjectCollection projectCollection, string projectPath, string solutionPath)
     {
-        var items = GetPackageReferenceItems(projectPath);
+        var items = GetPackageReferenceItems(projectCollection, projectPath);
 
         var packageReferences = items
             .Select(item => CreateEntry(item, solutionPath))
@@ -60,11 +52,11 @@ public static class ProjectService
         return packageReferences;
     }
 
-    internal static IEnumerable<ProjectItem> GetPackageReferenceItems(string projectPath)
+    internal static IEnumerable<ProjectItem> GetPackageReferenceItems(ProjectCollection projectCollection, string projectPath)
     {
         try
         {
-            var project = _projectCollection.LoadProject(projectPath);
+            var project = projectCollection.LoadProject(projectPath);
 
             return project.AllEvaluatedItems.Where(IsEditablePackageReference);
         }
@@ -81,7 +73,7 @@ public static class ProjectService
 
     public static bool IsEditablePackageReference(string itemType, IEnumerable<KeyValuePair<string, string?>> metadataEntries)
     {
-        return string.Equals(itemType, "PackageReference", StringComparison.OrdinalIgnoreCase) 
+        return string.Equals(itemType, "PackageReference", StringComparison.OrdinalIgnoreCase)
                && metadataEntries.All(metadata => !string.Equals(metadata.Key, "Condition", StringComparison.OrdinalIgnoreCase) || string.IsNullOrWhiteSpace(metadata.Value));
     }
 

@@ -45,7 +45,10 @@ namespace NuGetMonitor.View
         public async Task Load()
         {
             Package = await NuGetService.GetPackage(Identity.Id).ConfigureAwait(false);
-            SelectedVersion = Package.Versions.FirstOrDefault(i => !i.IsPrerelease && i >= Identity.Version) ?? Package.Versions.FirstOrDefault();
+
+            var versions = Package?.Versions ?? Array.Empty<NuGetVersion>();
+            
+            SelectedVersion = versions.FirstOrDefault(i => !i.IsPrerelease && i >= Identity.Version) ?? versions.FirstOrDefault();
         }
 
         public void ApplyVersion()
