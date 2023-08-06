@@ -99,7 +99,10 @@ public static class NuGetService
             return new PackageCacheEntry(packageId, session);
         }
 
-        return session.Cache.GetOrCreate(packageId, Factory) ?? throw new InvalidOperationException("Failed to get package from cache");
+        lock (session)
+        {
+            return session.Cache.GetOrCreate(packageId, Factory) ?? throw new InvalidOperationException("Failed to get package from cache");
+        }
     }
 
     private static PackageInfoCacheEntry GetPackageInfoCacheEntry(PackageIdentity packageIdentity, Session session)
@@ -111,7 +114,10 @@ public static class NuGetService
             return new PackageInfoCacheEntry(packageIdentity, session);
         }
 
-        return session.Cache.GetOrCreate(packageIdentity, Factory) ?? throw new InvalidOperationException("Failed to get package from cache");
+        lock (session)
+        {
+            return session.Cache.GetOrCreate(packageIdentity, Factory) ?? throw new InvalidOperationException("Failed to get package from cache");
+        }
     }
 
     private static bool IsOutdated(PackageIdentity packageIdentity, IEnumerable<NuGetVersion> versions)
@@ -255,6 +261,8 @@ public static class NuGetService
         {
             _cancellationTokenSource.Cancel();
             _cancellationTokenSource.Dispose();
+            SourceCacheContext.Dispose();
+            Cache.Dispose();
         }
     }
 }
