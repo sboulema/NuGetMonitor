@@ -27,7 +27,7 @@ public static class MonitorService
 
             var packageReferences = await NuGetService.CheckPackageReferences(packageIdentities).ConfigureAwait(true);
 
-            await InfoBarService.ShowInfoBar(packageReferences.ToArray()).ConfigureAwait(true);
+            InfoBarService.ShowInfoBar(packageReferences.ToArray()).FireAndForget();
         }
         catch (Exception ex)
         {

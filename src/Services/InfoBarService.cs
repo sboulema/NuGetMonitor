@@ -4,6 +4,7 @@ using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Shell;
 using NuGetMonitor.Models;
 using NuGetMonitor.View;
+using TomsToolbox.Essentials;
 
 namespace NuGetMonitor.Services;
 
@@ -16,32 +17,28 @@ public static class InfoBarService
         Manage
     }
 
-    public static async Task ShowInfoBar(IReadOnlyCollection<PackageInfo> packageReferences)
+    public static async Task ShowInfoBar(IReadOnlyCollection<PackageInfo> topLevelPackages)
     {
-        var outdatedCount = packageReferences.Count(packageReference => packageReference.IsOutdated);
-        var deprecatedCount = packageReferences.Count(packageReference => packageReference.IsDeprecated);
-        var vulnerableCount = packageReferences.Count(packageReference => packageReference.IsVulnerable);
-
-        if (outdatedCount == 0 &&
-            deprecatedCount == 0 &&
-            vulnerableCount == 0)
-        {
+        var infoTexts = string.Join(", ", GetInfoTexts(topLevelPackages).ExceptNullItems());
+        if (string.IsNullOrEmpty(infoTexts))
             return;
-        }
 
-        var model = new InfoBarModel(
-            GetTextSpans(outdatedCount, deprecatedCount, vulnerableCount),
-            KnownMonikers.NuGet,
-            isCloseButtonVisible: true);
+        var textSpans = new[]
+        {
+            new InfoBarTextSpan(infoTexts),
+            new InfoBarTextSpan(". "),
+            new InfoBarHyperlink("Manage", Actions.Manage),
+            new InfoBarTextSpan(" packages.")
+        };
+
+        var model = new InfoBarModel(textSpans, KnownMonikers.NuGet, isCloseButtonVisible: true);
 
         _infoBar = await VS.InfoBar.CreateAsync(ToolWindowGuids80.SolutionExplorer, model).ConfigureAwait(true) ?? throw new InvalidOperationException("Failed to create the info bar");
         _infoBar.ActionItemClicked += InfoBar_ActionItemClicked;
-
-        await _infoBar.TryShowInfoBarUIAsync().ConfigureAwait(true);
+        _infoBar.TryShowInfoBarUIAsync().FireAndForget();
     }
 
-    public static void CloseInfoBar()
-        => _infoBar?.Close();
+    public static void CloseInfoBar() => _infoBar?.Close();
 
     private static void InfoBar_ActionItemClicked(object sender, InfoBarActionItemEventArgs e)
     {
@@ -55,33 +52,32 @@ public static class InfoBarService
         (sender as InfoBar)?.Close();
     }
 
-    private static List<IVsInfoBarTextSpan> GetTextSpans(int outdatedCount, int deprecatedCount, int vulnerableCount)
+    private static IEnumerable<string?> GetInfoTexts(IReadOnlyCollection<PackageInfo> topLevelPackages)
     {
         // Idea for showing counts, not sure if unicode icons in a InfoBar feel native
         // new InfoBarTextSpan($"NuGet update: 🔼 {outdatedCount} ⚠ {deprecatedCount} 💀 {vulnerableCount}. "),
 
-        var textSpans = new List<IVsInfoBarTextSpan>();
+        yield return CountedDescription(topLevelPackages, "update", item => item.IsOutdated);
+        yield return CountedDescription(topLevelPackages,"deprecation", item => item.IsDeprecated);
+        yield return CountedDescription(topLevelPackages, "vulnerability", item => item.IsVulnerable);
+    }
 
-        if (outdatedCount > 0)
+    public static string? CountedDescription<T>(this IEnumerable<T> items, string singular, Func<T, bool> selector)
+    {
+        var count = items.Count(selector);
+
+        switch (count)
         {
-            textSpans.Add(new InfoBarTextSpan($"{outdatedCount} {(outdatedCount == 1 ? "update" : "updates")}"));
+            case <= 0:
+                return null;
+            case 1:
+                return $"1 {singular}";
+            default:
+            {
+                var plural = (singular.EndsWith("y")) ? singular.Substring(0, singular.Length - 1) + "ies" : singular + "s";
+
+                return $"{count} {plural}";
+            }
         }
-
-        if (deprecatedCount > 0)
-        {
-            textSpans.Add(new InfoBarTextSpan($"{(textSpans.Any() ? ", " : string.Empty)}{deprecatedCount} {(deprecatedCount == 1 ? "deprecation" : "deprecations")}"));
-        }
-
-        if (vulnerableCount > 0)
-        {
-            textSpans.Add(new InfoBarTextSpan($"{(textSpans.Any() ? ", " : string.Empty)}{vulnerableCount} {(vulnerableCount == 1 ? "vulnerability" : "vulnerabilities")}"));
-        }
-
-        textSpans.Add(new InfoBarTextSpan(". "));
-        textSpans.Add(new InfoBarHyperlink("Manage", Actions.Manage));
-        textSpans.Add(new InfoBarTextSpan(" packages."));
-
-
-        return textSpans;
     }
 }

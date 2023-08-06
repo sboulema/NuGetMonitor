@@ -1,5 +1,7 @@
 ﻿using NuGet.Packaging.Core;
 using NuGet.Protocol;
+using NuGetMonitor.Services;
+using TomsToolbox.Essentials;
 
 namespace NuGetMonitor.Models;
 
@@ -13,14 +15,13 @@ public record PackageInfo(PackageIdentity PackageIdentity)
 
     public bool IsOutdated { get; set; }
 
-    public string Issues => string.Join(", ", GetIssues());
+    public string Issues => string.Join(", ", GetIssues().ExceptNullItems());
 
-    private IEnumerable<string> GetIssues()
+    private IEnumerable<string?> GetIssues()
     {
         if (IsDeprecated) 
             yield return "Deprecated";
 
-        if (Vulnerabilities?.Count > 0)
-            yield return $"{Vulnerabilities.Count} vulnerabilities";
+        yield return Vulnerabilities?.CountedDescription("vulnerability", _ => true);
     }
 }
