@@ -11,11 +11,8 @@ namespace NuGetMonitor.View
 {
     internal partial class PackageViewModel : INotifyPropertyChanged
     {
-        private readonly NugetMonitorViewModel _owner;
-
-        public PackageViewModel(IGrouping<PackageIdentity, PackageReferenceEntry> items, NugetMonitorViewModel owner)
+        public PackageViewModel(IGrouping<PackageIdentity, PackageReferenceEntry> items)
         {
-            _owner = owner;
             Items = items;
             Identity = items.Key;
             ProjectPaths = string.Join(", ", items.Select(item => item.RelativePath));
@@ -38,17 +35,24 @@ namespace NuGetMonitor.View
 
         public bool IsLoading => Package == null;
 
-        public ICommand Update => new DelegateCommand(() => { _owner.Update(this); });
+        public ICommand Update => new DelegateCommand(() => { NugetMonitorViewModel.Update(this); });
 
         public PackageInfo? PackageInfo { get; private set; }
 
         public async Task Load()
         {
-            Package = await NuGetService.GetPackage(Identity.Id).ConfigureAwait(false);
+            try
+            {
+                Package = await NuGetService.GetPackage(Identity.Id).ConfigureAwait(false);
 
-            var versions = Package?.Versions ?? Array.Empty<NuGetVersion>();
-            
-            SelectedVersion = versions.FirstOrDefault(i => !i.IsPrerelease && i >= Identity.Version) ?? versions.FirstOrDefault();
+                var versions = Package?.Versions ?? Array.Empty<NuGetVersion>();
+
+                SelectedVersion = versions.FirstOrDefault(i => !i.IsPrerelease && i >= Identity.Version) ?? versions.FirstOrDefault();
+            }
+            catch (OperationCanceledException)
+            {
+                // session cancelled
+            }
         }
 
         public void ApplyVersion()
@@ -58,7 +62,14 @@ namespace NuGetMonitor.View
 
         private async void OnIdentityChanged()
         {
-            PackageInfo = await NuGetService.GetPackageInfo(Identity).ConfigureAwait(false);
+            try
+            {
+                PackageInfo = await NuGetService.GetPackageInfo(Identity).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+                // session cancelled
+            }
         }
     }
 }

@@ -3,6 +3,7 @@ indent_size = 2
 indent_style = space
 trim_trailing_whitespace = true
 end_of_line = crlf
+max_line_length = off
 
 [*.cs]
 indent_size = 4
@@ -129,3 +130,9 @@ dotnet_diagnostic.VSTHRD100.severity = suggestion
 
 # CA1062: Validate arguments of public methods
 dotnet_diagnostic.CA1062.severity = suggestion
+
+# CA1724: Type names should not match namespaces
+dotnet_diagnostic.CA1724.severity = suggestion
+
+# NX0001: Find general usages of the NullForgiving operator
+dotnet_diagnostic.NX0001.severity = warning

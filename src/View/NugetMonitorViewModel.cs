@@ -58,7 +58,7 @@ internal partial class NugetMonitorViewModel : INotifyPropertyChanged
 
             var items = packageReferences
                 .GroupBy(item => item.Identity)
-                .Select(group => new PackageViewModel(group, this))
+                .Select(group => new PackageViewModel(group))
                 .ToArray();
 
             Packages.AddRange(items);
@@ -91,7 +91,7 @@ internal partial class NugetMonitorViewModel : INotifyPropertyChanged
         Load();
     }
 
-    public void Update(PackageViewModel packageViewModel)
+    public static void Update(PackageViewModel packageViewModel)
     {
         Update(new[] { packageViewModel });
     }

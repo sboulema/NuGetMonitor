@@ -5,10 +5,8 @@ using TomsToolbox.Essentials;
 
 namespace NuGetMonitor.Models;
 
-public record PackageInfo(PackageIdentity PackageIdentity)
+public record PackageInfo(PackageIdentity PackageIdentity, Package Package, ICollection<PackageVulnerabilityMetadata>? Vulnerabilities)
 {
-    public ICollection<PackageVulnerabilityMetadata>? Vulnerabilities { get; set; }
-
     public bool IsVulnerable => Vulnerabilities?.Count > 0;
 
     public bool IsDeprecated { get; set; }
@@ -22,6 +20,6 @@ public record PackageInfo(PackageIdentity PackageIdentity)
         if (IsDeprecated) 
             yield return "Deprecated";
 
-        yield return Vulnerabilities?.CountedDescription("vulnerability", _ => true);
+        yield return Vulnerabilities?.CountedDescription("vulnerability");
     }
 }

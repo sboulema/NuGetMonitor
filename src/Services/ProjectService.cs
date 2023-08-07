@@ -103,10 +103,12 @@ public static class ProjectService
 
     private static string GetRelativePath(ProjectItem projectItem, string solutionPath)
     {
+#nullable disable // Path operations don't have correct nullable annotations in NetFramework.
         var projectFullPath = projectItem.Xml.ContainingProject.FullPath;
-        var projectDirectoryUrl = new Uri(Path.GetDirectoryName(projectFullPath)!, UriKind.Absolute);
-        var solutionDirectoryUrl = new Uri(Path.GetDirectoryName(solutionPath)!, UriKind.Absolute);
+        var projectDirectoryUrl = new Uri(Path.GetDirectoryName(projectFullPath), UriKind.Absolute);
+        var solutionDirectoryUrl = new Uri(Path.GetDirectoryName(solutionPath), UriKind.Absolute);
 
-        return Path.Combine(solutionDirectoryUrl.MakeRelativeUri(projectDirectoryUrl).ToString().Replace('/', '\\'), Path.GetFileName(projectFullPath)!);
+        return Path.Combine(solutionDirectoryUrl.MakeRelativeUri(projectDirectoryUrl).ToString().Replace('/', '\\'), Path.GetFileName(projectFullPath));
+#nullable enable
     }
 }

@@ -14,7 +14,10 @@ public static class MonitorService
     }
 
     private static void SolutionEvents_OnAfterCloseSolution()
-        => InfoBarService.CloseInfoBar();
+    {
+        InfoBarService.CloseInfoBars();
+        NuGetService.ClearCache();
+    }
 
     private static void SolutionEvents_OnAfterOpenSolution(Solution? solution)
         => CheckForUpdates().FireAndForget();
@@ -23,11 +26,13 @@ public static class MonitorService
     {
         try
         {
-            var packageIdentities = await ProjectService.GetPackageReferences().ConfigureAwait(true);
+            var topLevelPackages = await NuGetService.CheckPackageReferences().ConfigureAwait(true);
 
-            var packageReferences = await NuGetService.CheckPackageReferences(packageIdentities).ConfigureAwait(true);
+            InfoBarService.ShowTopLevelPackageIssues(topLevelPackages).FireAndForget();
 
-            InfoBarService.ShowInfoBar(packageReferences.ToArray()).FireAndForget();
+            var transitivePackages = await NuGetService.GetTransitivePackages(topLevelPackages).ConfigureAwait(true);
+
+            InfoBarService.ShowTransitivePackageIssues(transitivePackages).FireAndForget();
         }
         catch (Exception ex)
         {

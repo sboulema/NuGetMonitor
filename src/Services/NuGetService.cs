@@ -1,45 +1,44 @@
-﻿using System;
-using System.IO;
-using Community.VisualStudio.Toolkit;
+﻿using System.IO;
 using Microsoft.Extensions.Caching.Memory;
 using NuGet.Common;
-using NuGet.Configuration;
+using NuGet.Packaging;
 using NuGet.Packaging.Core;
 using NuGet.Protocol.Core.Types;
 using NuGet.Versioning;
 using NuGetMonitor.Models;
 using TomsToolbox.Essentials;
-using Settings = NuGet.Configuration.Settings;
 
 namespace NuGetMonitor.Services;
 
-public record Package(string Id, ICollection<NuGetVersion> Versions, SourceRepository? SourceRepository)
-{
-    public override string ToString()
-    {
-        return string.Join(", ", Versions);
-    }
-}
-
 public static class NuGetService
 {
-    private static Session _session = new();
+    private static bool _shutdownInitiated;
+
+    private static NugetSession _session = new();
 
     public static void Shutdown()
     {
+        _shutdownInitiated = true;
         _session.Dispose();
     }
 
     public static void ClearCache()
     {
-        Interlocked.Exchange(ref _session, new Session()).Dispose();
+        if (_shutdownInitiated)
+            return;
+
+        Interlocked.Exchange(ref _session, new NugetSession()).Dispose();
     }
 
-    public static async Task<IEnumerable<PackageInfo>> CheckPackageReferences(IEnumerable<PackageReferenceEntry> references)
+    public static async Task<ICollection<PackageInfo>> CheckPackageReferences()
     {
         var session = _session;
 
-        var identitiesById = references
+        var packageReferences = await ProjectService.GetPackageReferences().ConfigureAwait(true);
+
+        session.ThrowIfCancellationRequested();
+
+        var identitiesById = packageReferences
             .Select(item => item.Identity)
             .GroupBy(item => item.Id);
 
@@ -47,20 +46,113 @@ public static class NuGetService
 
         var result = await Task.WhenAll(getPackageInfoTasks).ConfigureAwait(false);
 
-        return result.ExceptNullItems();
+        session.ThrowIfCancellationRequested();
+
+        return result
+            .ExceptNullItems()
+            .ToArray();
     }
 
     public static async Task<Package?> GetPackage(string packageId)
     {
-        return await GetPackageCacheEntry(packageId, _session).GetValue().ConfigureAwait(false);
+        var session = _session;
+
+        var package = await GetPackageCacheEntry(packageId, session).GetValue().ConfigureAwait(false);
+
+        session.ThrowIfCancellationRequested();
+
+        return package;
     }
 
     public static async Task<PackageInfo?> GetPackageInfo(PackageIdentity packageIdentity)
     {
-        return await GetPackageInfoCacheEntry(packageIdentity, _session).GetValue().ConfigureAwait(false);
+        var session = _session;
+
+        var packageInfo = await GetPackageInfoCacheEntry(packageIdentity, session).GetValue().ConfigureAwait(false);
+
+        session.ThrowIfCancellationRequested();
+
+        return packageInfo;
     }
 
-    private static async Task<PackageInfo?> GetPackageInfo(IEnumerable<PackageIdentity> packageIdentities, Session session)
+    public static async Task<ICollection<PackageInfo>> GetTransitivePackages(ICollection<PackageInfo> topLevelPackages)
+    {
+        var inputQueue = new HashSet<PackageInfo>(topLevelPackages);
+
+        var processedItems = new Dictionary<string, PackageInfo>();
+
+        bool ShouldSkip(PackageIdentity identity)
+        {
+            if (!processedItems.TryGetValue(identity.Id, out var existing))
+                return false;
+
+            return existing.PackageIdentity.Version >= identity.Version;
+        }
+
+        while (inputQueue.FirstOrDefault() is { } currentItem)
+        {
+            inputQueue.Remove(currentItem);
+
+            if (ShouldSkip(currentItem.PackageIdentity))
+                continue;
+
+            processedItems[currentItem.PackageIdentity.Id] = currentItem;
+
+            var (_, _, sourceRepository, session) = currentItem.Package;
+
+            if (sourceRepository is null)
+                continue;
+
+            var dependencyIds = await GetDirectDependencies(currentItem.PackageIdentity, sourceRepository, session).ConfigureAwait(true);
+
+            foreach (var dependencyId in dependencyIds)
+            {
+                if (ShouldSkip(dependencyId))
+                    continue;
+
+                if (await GetPackageInfoCacheEntry(dependencyId, session).GetValue().ConfigureAwait(false) is not { } info)
+                    continue;
+
+                inputQueue.Add(info);
+            }
+
+            session.ThrowIfCancellationRequested();
+        }
+
+        var transitivePackages = processedItems.Values.Except(topLevelPackages).ToArray();
+
+        return transitivePackages;
+    }
+
+    private static async Task<IReadOnlyCollection<PackageIdentity>> GetDirectDependencies(PackageIdentity packageIdentity, SourceRepository repository, NugetSession session)
+    {
+        var resource = await repository.GetResourceAsync<FindPackageByIdResource>().ConfigureAwait(false);
+
+        var packageStream = new MemoryStream();
+        await resource
+            .CopyNupkgToStreamAsync(packageIdentity.Id, packageIdentity.Version, packageStream, session.SourceCacheContext, NullLogger.Instance, session.CancellationToken)
+            .ConfigureAwait(false);
+
+        if (packageStream.Length == 0)
+            return Array.Empty<PackageIdentity>();
+
+        packageStream.Position = 0;
+
+        using var package = new PackageArchiveReader(packageStream);
+
+        var dependencyGroups = await package.GetPackageDependenciesAsync(session.CancellationToken).ConfigureAwait(false);
+
+        var dependencyIds = dependencyGroups
+            .SelectMany(dependencyGroup => dependencyGroup.Packages)
+            .Select(dependency => new PackageIdentity(dependency.Id,
+                dependency.VersionRange.MaxVersion ?? dependency.VersionRange.MinVersion))
+            .Distinct()
+            .ToArray();
+
+        return dependencyIds;
+    }
+
+    private static async Task<PackageInfo?> GetPackageInfo(IEnumerable<PackageIdentity> packageIdentities, NugetSession session)
     {
         // if multiple version are provided, use the oldest reference with the smallest version
         var packageIdentity = packageIdentities.OrderBy(item => item.Version.Version).First();
@@ -68,7 +160,7 @@ public static class NuGetService
         return await GetPackageInfoCacheEntry(packageIdentity, session).GetValue().ConfigureAwait(false);
     }
 
-    private static PackageCacheEntry GetPackageCacheEntry(string packageId, Session session)
+    private static PackageCacheEntry GetPackageCacheEntry(string packageId, NugetSession session)
     {
         PackageCacheEntry Factory(ICacheEntry cacheEntry)
         {
@@ -79,11 +171,12 @@ public static class NuGetService
 
         lock (session)
         {
-            return session.Cache.GetOrCreate(packageId, Factory) ?? throw new InvalidOperationException("Failed to get package from cache");
+            return session.Cache.GetOrCreate(packageId, Factory) ??
+                   throw new InvalidOperationException("Failed to get package from cache");
         }
     }
 
-    private static PackageInfoCacheEntry GetPackageInfoCacheEntry(PackageIdentity packageIdentity, Session session)
+    private static PackageInfoCacheEntry GetPackageInfoCacheEntry(PackageIdentity packageIdentity, NugetSession session)
     {
         PackageInfoCacheEntry Factory(ICacheEntry cacheEntry)
         {
@@ -94,34 +187,20 @@ public static class NuGetService
 
         lock (session)
         {
-            return session.Cache.GetOrCreate(packageIdentity, Factory) ?? throw new InvalidOperationException("Failed to get package from cache");
+            return session.Cache.GetOrCreate(packageIdentity, Factory) ??
+                   throw new InvalidOperationException("Failed to get package from cache");
         }
     }
 
     private static bool IsOutdated(PackageIdentity packageIdentity, IEnumerable<NuGetVersion> versions)
     {
-        var latestVersion = versions.FirstOrDefault(version => version.IsPrerelease == packageIdentity.Version.IsPrerelease);
+        var latestVersion =
+            versions.FirstOrDefault(version => version.IsPrerelease == packageIdentity.Version.IsPrerelease);
 
         return latestVersion > packageIdentity.Version;
     }
 
-    private sealed class Semaphore<T> : IDisposable
-    {
-        // ReSharper disable once StaticMemberInGenericType
-        private static readonly SemaphoreSlim _semaphore = new(1, 1);
-
-        public Semaphore()
-        {
-            _ = _semaphore.WaitAsync();
-        }
-
-        public void Dispose()
-        {
-            _semaphore.Release();
-        }
-    }
-
-    private abstract class CacheEntry<T> where T: class
+    private abstract class CacheEntry<T> where T : class
     {
         private readonly TaskCompletionSource<T?> _taskCompletionSource = new();
 
@@ -152,12 +231,12 @@ public static class NuGetService
 
     private class PackageCacheEntry : CacheEntry<Package>
     {
-        public PackageCacheEntry(string packageId, Session session)
+        public PackageCacheEntry(string packageId, NugetSession session)
             : base(() => GetPackage(packageId, session))
         {
         }
 
-        private static async Task<Package?> GetPackage(string packageId, Session session)
+        private static async Task<Package?> GetPackage(string packageId, NugetSession session)
         {
             foreach (var sourceRepository in await session.GetSourceRepositories().ConfigureAwait(false))
             {
@@ -166,14 +245,15 @@ public static class NuGetService
                     .ConfigureAwait(false);
 
                 var unsortedVersions = await packageResource
-                    .GetAllVersionsAsync(packageId, session.SourceCacheContext, NullLogger.Instance, session.CancellationToken)
+                    .GetAllVersionsAsync(packageId, session.SourceCacheContext, NullLogger.Instance,
+                        session.CancellationToken)
                     .ConfigureAwait(false);
 
                 var versions = unsortedVersions?.OrderByDescending(item => item).ToArray();
 
                 if (versions?.Length > 0)
                 {
-                    return new Package(packageId, versions, sourceRepository);
+                    return new Package(packageId, versions, sourceRepository, session);
                 }
             }
 
@@ -183,83 +263,38 @@ public static class NuGetService
 
     private class PackageInfoCacheEntry : CacheEntry<PackageInfo>
     {
-        public PackageInfoCacheEntry(PackageIdentity packageIdentity, Session session)
+        public PackageInfoCacheEntry(PackageIdentity packageIdentity, NugetSession session)
             : base(() => GetPackageInfo(packageIdentity, session))
         {
         }
 
-        private static async Task<PackageInfo?> GetPackageInfo(PackageIdentity packageIdentity, Session session)
+        private static async Task<PackageInfo?> GetPackageInfo(PackageIdentity packageIdentity, NugetSession session)
         {
             var package = await GetPackageCacheEntry(packageIdentity.Id, session).GetValue().ConfigureAwait(false);
-
-            var sourceRepository = package?.SourceRepository;
-            if (sourceRepository is null)
+            if (package is null)
                 return null;
+
+            var sourceRepository = package.SourceRepository;
 
             var packageMetadataResource = await sourceRepository
                 .GetResourceAsync<PackageMetadataResource>(session.CancellationToken)
                 .ConfigureAwait(false);
 
             var metadata = await packageMetadataResource
-                .GetMetadataAsync(packageIdentity, session.SourceCacheContext, NullLogger.Instance, session.CancellationToken)
+                .GetMetadataAsync(packageIdentity, session.SourceCacheContext, NullLogger.Instance,
+                    session.CancellationToken)
                 .ConfigureAwait(false);
 
             if (metadata is null)
                 return null;
 
-            var versions = package?.Versions ?? Array.Empty<NuGetVersion>();
+            var versions = package.Versions;
 
-            return new PackageInfo(packageIdentity)
+            return new PackageInfo(packageIdentity, package, metadata.Vulnerabilities?.ToArray())
             {
-                Vulnerabilities = metadata.Vulnerabilities?.ToArray(),
                 IsDeprecated = await metadata.GetDeprecationMetadataAsync().ConfigureAwait(false) != null,
                 IsOutdated = IsOutdated(packageIdentity, versions)
             };
-        }
-    }
-
-    private class Session : IDisposable
-    {
-        private readonly CancellationTokenSource _cancellationTokenSource = new();
-        private ICollection<SourceRepository>? _sourceRepositories;
-
-        public readonly MemoryCache Cache = new(new MemoryCacheOptions { });
-
-        public readonly SourceCacheContext SourceCacheContext = new();
-
-        public CancellationToken CancellationToken => _cancellationTokenSource.Token;
-
-        public async Task<ICollection<SourceRepository>> GetSourceRepositories()
-        {
-            static async Task<ICollection<SourceRepository>> Get()
-            {
-                var solution = await VS.Solutions.GetCurrentSolutionAsync().ConfigureAwait(false);
-                var solutionDirectory = Path.GetDirectoryName(solution?.FullPath);
-
-                var packageSourceProvider = new PackageSourceProvider(Settings.LoadDefaultSettings(solutionDirectory));
-                var sourceRepositoryProvider = new SourceRepositoryProvider(packageSourceProvider, Repository.Provider.GetCoreV3());
-                var sourceRepositories = sourceRepositoryProvider.GetRepositories();
-
-                return sourceRepositories.ToArray();
-            }
-
-            using (new Semaphore<Session>())
-            {
-                return _sourceRepositories ??= await Get().ConfigureAwait(false);
-            }
-        }
-
-        public void Cancel()
-        {
-            _cancellationTokenSource.Cancel();
-        }
-
-        public void Dispose()
-        {
-            _cancellationTokenSource.Cancel();
-            _cancellationTokenSource.Dispose();
-            SourceCacheContext.Dispose();
-            Cache.Dispose();
         }
     }
 }
