@@ -16,10 +16,10 @@ public static class ProjectService
 
     static ProjectService()
     {
-        VS.Events.SolutionEvents.OnAfterCloseSolution += SolutionEvents_OnAfterCloseSolution;
+        VS.Events.SolutionEvents.OnAfterCloseSolution += ClearCache;
     }
 
-    private static void SolutionEvents_OnAfterCloseSolution()
+    public static void ClearCache()
     {
         Interlocked.Exchange(ref _projectCollection, new ProjectCollection()).Dispose();
     }

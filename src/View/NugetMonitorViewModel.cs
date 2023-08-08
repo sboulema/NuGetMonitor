@@ -30,8 +30,6 @@ internal partial class NugetMonitorViewModel : INotifyPropertyChanged
 
     public ICommand UpdateSelectedCommand => new DelegateCommand(() => SelectedPackages.Any(item => item.IsUpdateAvailable), UpdateSelected);
 
-    public ICommand SoftRefreshCommand => new DelegateCommand(SoftRefresh);
-
     public ICommand HardRefreshCommand => new DelegateCommand(HardRefresh);
     
     public static ICommand ShowNuGetPackageManagerCommand => new DelegateCommand(ShowNuGetPackageManager);
@@ -82,12 +80,8 @@ internal partial class NugetMonitorViewModel : INotifyPropertyChanged
 
     private void HardRefresh()
     {
+        ProjectService.ClearCache();
         NuGetService.ClearCache();
-        Load();
-    }
-
-    private void SoftRefresh()
-    {
         Load();
     }
 
