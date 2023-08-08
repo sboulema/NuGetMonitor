@@ -97,6 +97,7 @@
                             <MultiDataTrigger.Conditions>
                               <Condition Binding="{Binding IsSelected, RelativeSource={RelativeSource FindAncestor, AncestorType=DataGridRow}}" Value="True" />
                               <Condition Binding="{Binding IsKeyboardFocusWithin, RelativeSource={RelativeSource FindAncestor, AncestorType=DataGridRow}}" Value="True" />
+                              <Condition Binding="{Binding IsDropDownOpen, RelativeSource={RelativeSource Self}}" Value="False" />
                             </MultiDataTrigger.Conditions>
                             <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.HighlightTextBrushKey}}" />
                           </MultiDataTrigger>
