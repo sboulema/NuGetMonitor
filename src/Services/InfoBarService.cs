@@ -1,4 +1,6 @@
-﻿using Community.VisualStudio.Toolkit;
+﻿using System.Text;
+using System.Windows;
+using Community.VisualStudio.Toolkit;
 using Microsoft.VisualStudio.Imaging;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Shell;
@@ -37,7 +39,7 @@ public static class InfoBarService
     {
         var vulnerablePackages = transitivePackages.Where(item => item.IsVulnerable).ToArray();
 
-        if (vulnerablePackages.Length <= 0) 
+        if (vulnerablePackages.Length <= 0)
             return;
 
         var packageInfo = string.Join("\r\n- ", vulnerablePackages.Select(package => package.PackageIdentity));
@@ -45,7 +47,8 @@ public static class InfoBarService
 
         var textSpans = new[]
         {
-            new InfoBarTextSpan(text)
+            new InfoBarTextSpan(text),
+            new InfoBarHyperlink("Copy details", vulnerablePackages)
             // TODO: maybe show the "Manage" link, when the UI can show some details about this?
             // or show the individual vulnerability hyperlinks to open the link in a browser?
         };
@@ -78,8 +81,56 @@ public static class InfoBarService
         {
             NuGetMonitorCommand.Instance?.ShowToolWindow();
         }
+        else if (e.ActionItem.ActionContext is ICollection<PackageInfo> vulnerable)
+        {
+            var text = new StringBuilder();
+
+            foreach (var package in vulnerable)
+            {
+                PrintDependencyTree(text, package, 0);
+            }
+
+            Clipboard.SetText(text.ToString());
+
+            VS.MessageBox.Show("Dependency tree copied to clipboard");
+        }
 
         (sender as InfoBar)?.Close();
+    }
+
+    private static void PrintDependencyTree(StringBuilder text, PackageInfo package, int nesting)
+    {
+        var indent = new string(' ', nesting * 4);
+
+        text.Append(indent);
+        text.Append(package.PackageIdentity);
+
+        if (package.IsDeprecated)
+            text.Append(" - Deprecated");
+
+        if (package.IsOutdated)
+            text.Append(" - Outdated");
+
+        if (package.Vulnerabilities?.Count > 0)
+        {
+            text.Append(" - Vulnerable:");
+            foreach (var item in package.Vulnerabilities)
+            {
+                text.Append("(Severity ")
+                    .Append(item.Severity)
+                    .Append(" => ")
+                    .Append(item.AdvisoryUrl)
+                    .Append(")");
+            }
+        }
+
+        text.AppendLine();
+
+
+        foreach (var info in package.DependsOn)
+        {
+            PrintDependencyTree(text, info, nesting + 1);
+        }
     }
 
     private static IEnumerable<string?> GetInfoTexts(ICollection<PackageInfo> topLevelPackages)

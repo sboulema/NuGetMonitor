@@ -79,6 +79,8 @@ public static class NuGetService
     {
         var inputQueue = new HashSet<PackageInfo>(topLevelPackages);
 
+        var dependencyMap = new Dictionary<PackageIdentity, HashSet<PackageIdentity>>();
+
         var processedItems = new Dictionary<string, PackageInfo>();
 
         bool ShouldSkip(PackageIdentity identity)
@@ -93,20 +95,23 @@ public static class NuGetService
         {
             inputQueue.Remove(currentItem);
 
-            if (ShouldSkip(currentItem.PackageIdentity))
+            var packageIdentity = currentItem.PackageIdentity;
+
+            if (ShouldSkip(packageIdentity))
                 continue;
 
-            processedItems[currentItem.PackageIdentity.Id] = currentItem;
+            processedItems[packageIdentity.Id] = currentItem;
 
             var (_, _, sourceRepository, session) = currentItem.Package;
 
-            if (sourceRepository is null)
-                continue;
+            var dependencyIds = await GetDirectDependencies(packageIdentity, sourceRepository, session).ConfigureAwait(true);
 
-            var dependencyIds = await GetDirectDependencies(currentItem.PackageIdentity, sourceRepository, session).ConfigureAwait(true);
+            var packageDependencies = dependencyMap.ForceValue(packageIdentity, _ => new HashSet<PackageIdentity>());
 
             foreach (var dependencyId in dependencyIds)
             {
+                packageDependencies.Add(dependencyId);
+
                 if (ShouldSkip(dependencyId))
                     continue;
 
@@ -119,7 +124,26 @@ public static class NuGetService
             session.ThrowIfCancellationRequested();
         }
 
-        var transitivePackages = processedItems.Values.Except(topLevelPackages).ToArray();
+        var packages = processedItems.Values;
+
+        foreach (var package in packages)
+        {
+            var dependencyTasks = dependencyMap[package.PackageIdentity].Select(item => GetPackageInfoCacheEntry(item, package.Package.Session).GetValue());
+
+            var dependencies = await Task.WhenAll(dependencyTasks).ConfigureAwait(false);
+
+            package.Dependencies = dependencies.ExceptNullItems().ToArray();
+        }
+
+        foreach (var item in packages)
+        {
+            foreach (var dependency in item.Dependencies)
+            {
+                dependency.DependsOn.Add(item);
+            }
+        }
+
+        var transitivePackages = packages.Except(topLevelPackages).ToArray();
 
         return transitivePackages;
     }
