@@ -116,11 +116,7 @@ public static class InfoBarService
             text.Append(" - Vulnerable:");
             foreach (var item in package.Vulnerabilities)
             {
-                text.Append("(Severity ")
-                    .Append(item.Severity)
-                    .Append(" => ")
-                    .Append(item.AdvisoryUrl)
-                    .Append(")");
+                text.Append($" [Severity {item.Severity}, {item.AdvisoryUrl}]");
             }
         }
 
@@ -156,11 +152,11 @@ public static class InfoBarService
             case 1:
                 return $"1 {singular}";
             default:
-            {
-                var plural = (singular.EndsWith("y", StringComparison.CurrentCulture)) ? singular.Substring(0, singular.Length - 1) + "ies" : singular + "s";
+                {
+                    var plural = (singular.EndsWith("y", StringComparison.CurrentCulture)) ? singular.Substring(0, singular.Length - 1) + "ies" : singular + "s";
 
-                return $"{count} {plural}";
-            }
+                    return $"{count} {plural}";
+                }
         }
     }
 }
