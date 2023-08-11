@@ -305,8 +305,7 @@ public static class NuGetService
                 .ConfigureAwait(false);
 
             var metadata = await packageMetadataResource
-                .GetMetadataAsync(packageIdentity, session.SourceCacheContext, NullLogger.Instance,
-                    session.CancellationToken)
+                .GetMetadataAsync(packageIdentity, session.SourceCacheContext, NullLogger.Instance, session.CancellationToken)
                 .ConfigureAwait(false);
 
             if (metadata is null)

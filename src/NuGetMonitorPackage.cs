@@ -23,7 +23,7 @@ public sealed class NuGetMonitorPackage : ToolkitPackage
 
         MonitorService.RegisterEventHandler();
 
-        MonitorService.CheckForUpdates().FireAndForget();
+        MonitorService.CheckForUpdates();
 
         await NuGetMonitorCommand.InitializeAsync(this).ConfigureAwait(false);
     }

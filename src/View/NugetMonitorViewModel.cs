@@ -80,8 +80,8 @@ internal partial class NugetMonitorViewModel : INotifyPropertyChanged
 
     private void HardRefresh()
     {
-        ProjectService.ClearCache();
-        NuGetService.ClearCache();
+        MonitorService.CheckForUpdates();
+
         Load();
     }
 

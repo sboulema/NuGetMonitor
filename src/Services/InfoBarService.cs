@@ -35,12 +35,17 @@ public static class InfoBarService
         ShowInfoBar(textSpans).FireAndForget();
     }
 
-    public static void ShowTransitivePackageIssues(IEnumerable<PackageInfo> transitivePackages)
+    public static void ShowTransitivePackageIssues(IEnumerable<PackageInfo> transitivePackages, ICollection<PackageInfo> topLevelPackages)
     {
         var vulnerablePackages = transitivePackages.Where(item => item.IsVulnerable).ToArray();
 
         if (vulnerablePackages.Length <= 0)
+        {
+            if (topLevelPackages.Count > 0)
+                ShowInfoBar("No vulnerabilities in transient packages found");
+
             return;
+        }
 
         var packageInfo = string.Join("\r\n- ", vulnerablePackages.Select(package => package.PackageIdentity));
         var text = $"{CountedDescription(vulnerablePackages, "vulnerability")} in transitive dependencies:\r\n- {packageInfo}\r\n";
