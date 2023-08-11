@@ -68,8 +68,6 @@ public static class InfoBarService
 
     private static async Task ShowInfoBar(IEnumerable<InfoBarTextSpan> textSpans, TimeSpan? timeOut = default)
     {
-        ThreadHelper.ThrowIfNotOnUIThread();
-
         var model = new InfoBarModel(textSpans, KnownMonikers.NuGet, isCloseButtonVisible: true);
 
         var infoBar = await VS.InfoBar.CreateAsync(ToolWindowGuids80.SolutionExplorer, model).ConfigureAwait(true) ?? throw new InvalidOperationException("Failed to create the info bar");

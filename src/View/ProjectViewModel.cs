@@ -3,6 +3,7 @@ using System.Windows.Input;
 using Community.VisualStudio.Toolkit;
 using Microsoft.Build.Evaluation;
 using Microsoft.IO;
+using Microsoft.VisualStudio.Shell;
 using TomsToolbox.Wpf;
 
 namespace NuGetMonitor.View
@@ -22,7 +23,7 @@ namespace NuGetMonitor.View
 
         private void OpenProject()
         {
-            VS.Documents.OpenAsync(_projectItem.Project.FullPath);
+            VS.Documents.OpenAsync(_projectItem.Project.FullPath).FireAndForget();
         }
     }
 }
