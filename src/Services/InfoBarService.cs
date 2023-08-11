@@ -140,7 +140,7 @@ public static class InfoBarService
             text.Append(" - Vulnerable:");
             foreach (var item in package.Vulnerabilities)
             {
-                text.Append($" [Severity {item.Severity}, {item.AdvisoryUrl}]");
+                text.Append($" [ Severity: {item.Severity}, {item.AdvisoryUrl} ]");
             }
         }
 
