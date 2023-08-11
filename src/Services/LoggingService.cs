@@ -1,5 +1,6 @@
 ﻿using Community.VisualStudio.Toolkit;
 using Microsoft.VisualStudio;
+using Microsoft.VisualStudio.Shell;
 
 namespace NuGetMonitor.Services;
 
@@ -10,6 +11,8 @@ internal static class LoggingService
     public static async Task Log(string message)
     {
         var outputWindow = await VS.Services.GetOutputWindowAsync().ConfigureAwait(false);
+
+        await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
         var errorCode = outputWindow.GetPane(ref _outputPaneGuid, out var pane);
 

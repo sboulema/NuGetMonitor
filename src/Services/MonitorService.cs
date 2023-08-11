@@ -63,7 +63,7 @@ public static class MonitorService
         }
         catch (Exception ex)
         {
-            await LoggingService.Log($"Check for updates failed: {ex}");
+            await LoggingService.Log($"Check for updates failed: {ex}").ConfigureAwait(false);
         }
     }
 }
