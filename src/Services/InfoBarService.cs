@@ -19,7 +19,7 @@ public static class InfoBarService
         Manage
     }
 
-    public static async Task ShowTopLevelPackageIssues(ICollection<PackageInfo> topLevelPackages)
+    public static void ShowTopLevelPackageIssues(ICollection<PackageInfo> topLevelPackages)
     {
         var infoText = string.Join(", ", GetInfoTexts(topLevelPackages).ExceptNullItems());
         if (string.IsNullOrEmpty(infoText))
@@ -32,10 +32,10 @@ public static class InfoBarService
             new InfoBarTextSpan(" packages.")
         };
 
-        await ShowInfoBar(textSpans).ConfigureAwait(false);
+        ShowInfoBar(textSpans).FireAndForget();
     }
 
-    public static async Task ShowTransitivePackageIssues(IEnumerable<PackageInfo> transitivePackages)
+    public static void ShowTransitivePackageIssues(IEnumerable<PackageInfo> transitivePackages)
     {
         var vulnerablePackages = transitivePackages.Where(item => item.IsVulnerable).ToArray();
 
@@ -53,18 +53,33 @@ public static class InfoBarService
             // or show the individual vulnerability hyperlinks to open the link in a browser?
         };
 
-        await ShowInfoBar(textSpans).ConfigureAwait(false);
+        ShowInfoBar(textSpans).FireAndForget();
     }
 
-    private static async Task ShowInfoBar(InfoBarTextSpan[] textSpans)
+    private static void ShowInfoBar(string text, TimeSpan? timeOut = default)
     {
+        ShowInfoBar(new[] { new InfoBarTextSpan(text) }, timeOut).FireAndForget();
+    }
+
+    private static async Task ShowInfoBar(IEnumerable<InfoBarTextSpan> textSpans, TimeSpan? timeOut = default)
+    {
+        ThreadHelper.ThrowIfNotOnUIThread();
+
         var model = new InfoBarModel(textSpans, KnownMonikers.NuGet, isCloseButtonVisible: true);
 
         var infoBar = await VS.InfoBar.CreateAsync(ToolWindowGuids80.SolutionExplorer, model).ConfigureAwait(true) ?? throw new InvalidOperationException("Failed to create the info bar");
         infoBar.ActionItemClicked += InfoBar_ActionItemClicked;
-        infoBar.TryShowInfoBarUIAsync().FireAndForget();
 
         _infoBars.Add(infoBar);
+
+        await infoBar.TryShowInfoBarUIAsync().ConfigureAwait(true);
+
+        if (timeOut.HasValue)
+        {
+            await Task.Delay(timeOut.Value).ConfigureAwait(true);
+            infoBar.Close();
+            _infoBars.Remove(infoBar);
+        }
     }
 
     public static void CloseInfoBars()
@@ -77,25 +92,31 @@ public static class InfoBarService
     {
         ThreadHelper.ThrowIfNotOnUIThread();
 
-        if (e.ActionItem.ActionContext is Actions.Manage)
+        switch (e.ActionItem.ActionContext)
         {
-            NuGetMonitorCommand.Instance?.ShowToolWindow();
-        }
-        else if (e.ActionItem.ActionContext is ICollection<PackageInfo> vulnerable)
-        {
-            var text = new StringBuilder();
-
-            foreach (var package in vulnerable)
-            {
-                PrintDependencyTree(text, package, 0);
-            }
-
-            Clipboard.SetText(text.ToString());
-
-            VS.MessageBox.Show("Dependency tree copied to clipboard");
+            case Actions.Manage:
+                NuGetMonitorCommand.Instance?.ShowToolWindow();
+                break;
+            case ICollection<PackageInfo> packages:
+                PrintDependencyTree(packages);
+                break;
         }
 
         (sender as InfoBar)?.Close();
+    }
+
+    private static void PrintDependencyTree(IEnumerable<PackageInfo> packages)
+    {
+        var text = new StringBuilder();
+
+        foreach (var package in packages)
+        {
+            PrintDependencyTree(text, package, 0);
+        }
+
+        Clipboard.SetText(text.ToString());
+
+        ShowInfoBar("Dependency tree copied to clipboard", TimeSpan.FromSeconds(10));
     }
 
     private static void PrintDependencyTree(StringBuilder text, PackageInfo package, int nesting)

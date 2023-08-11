@@ -28,11 +28,11 @@ public static class MonitorService
         {
             var topLevelPackages = await NuGetService.CheckPackageReferences().ConfigureAwait(true);
 
-            InfoBarService.ShowTopLevelPackageIssues(topLevelPackages).FireAndForget();
+            InfoBarService.ShowTopLevelPackageIssues(topLevelPackages);
 
             var transitivePackages = await NuGetService.GetTransitivePackages(topLevelPackages).ConfigureAwait(true);
 
-            InfoBarService.ShowTransitivePackageIssues(transitivePackages).FireAndForget();
+            InfoBarService.ShowTransitivePackageIssues(transitivePackages);
         }
         catch (Exception ex)
         {
