@@ -38,17 +38,32 @@ public static class MonitorService
         {
             Reset();
 
+            var solution = await VS.Solutions.GetCurrentSolutionAsync().ConfigureAwait(true);
+
+            if (solution is null)
+                return;
+
+            await LoggingService.Log($"Solution: {solution.Name}").ConfigureAwait(true);
+
+            await LoggingService.Log("Check top level packages").ConfigureAwait(true);
+
             var topLevelPackages = await NuGetService.CheckPackageReferences().ConfigureAwait(true);
+
+            await LoggingService.Log($"{topLevelPackages.Count} packages found").ConfigureAwait(true);
 
             InfoBarService.ShowTopLevelPackageIssues(topLevelPackages);
 
+            await LoggingService.Log("Check transitive packages").ConfigureAwait(true);
+
             var transitivePackages = await NuGetService.GetTransitivePackages(topLevelPackages).ConfigureAwait(true);
+
+            await LoggingService.Log($"{transitivePackages.Count} transitive packages found").ConfigureAwait(true);
 
             InfoBarService.ShowTransitivePackageIssues(transitivePackages, topLevelPackages);
         }
         catch (Exception ex)
         {
-            Debug.WriteLine(ex.Message);
+            await LoggingService.Log($"Check for updates failed: {ex}");
         }
     }
 }
