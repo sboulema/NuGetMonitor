@@ -34,8 +34,6 @@ namespace NuGetMonitor.View
 
         public bool IsUpdateAvailable => SelectedVersion != Identity.Version;
 
-        public bool IsUpToDate => !IsUpdateAvailable;
-
         public bool IsLoading => Package == null;
 
         public ICommand Update => new DelegateCommand(() => { NugetMonitorViewModel.Update(this); });

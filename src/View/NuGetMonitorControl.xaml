@@ -9,7 +9,8 @@
              xmlns:toolkit="clr-namespace:Community.VisualStudio.Toolkit;assembly=Community.VisualStudio.Toolkit"
              xmlns:imaging="clr-namespace:Microsoft.VisualStudio.Imaging;assembly=Microsoft.VisualStudio.Imaging"
              xmlns:imageCatalog="clr-namespace:Microsoft.VisualStudio.Imaging;assembly=Microsoft.VisualStudio.ImageCatalog"
-             toolkit:Themes.UseVsTheme="True"             
+             xmlns:dgx="urn:tom-englert.de/DataGridExtensions"
+             toolkit:Themes.UseVsTheme="True"
              mc:Ignorable="d" d:DesignHeight="450" d:DesignWidth="800"
              DataContext="{x:Static view:NugetMonitorViewModel.Instance}">
   <UserControl.Resources>
@@ -20,12 +21,12 @@
       <ToolBar DockPanel.Dock="Top" Style="{DynamicResource {x:Static styles:ResourceKeys.ToolBarStyle}}">
         <Button Command="{Binding UpdateSelectedCommand}"
                 ToolTip="Update Selected Items">
-          <Grid Width="16" Height="16" 
-                Background="Transparent" 
-                HorizontalAlignment="Center" 
+          <Grid Width="16" Height="16"
+                Background="Transparent"
+                HorizontalAlignment="Center"
                 VerticalAlignment="Center">
             <Ellipse Width="16" Height="16" Stroke="{Binding Foreground, RelativeSource={RelativeSource FindAncestor, AncestorType=Button}}" StrokeThickness="1" />
-            <Path Data="M8,4 L8,13 M5,8 L8,4 L11,8" Stroke="{Binding Foreground, RelativeSource={RelativeSource FindAncestor, AncestorType=Button}}" StrokeThickness="1"/>
+            <Path Data="M8,4 L8,13 M5,8 L8,4 L11,8" Stroke="{Binding Foreground, RelativeSource={RelativeSource FindAncestor, AncestorType=Button}}" StrokeThickness="1" />
           </Grid>
           <Button.Style>
             <Style TargetType="Button" BasedOn="{StaticResource {x:Static ToolBar.ButtonStyleKey}}">
@@ -44,12 +45,13 @@
           <imaging:CrispImage Width="16" Height="16" Moniker="{x:Static imageCatalog:KnownMonikers.NuGet}" />
         </Button>
       </ToolBar>
-      <DataGrid x:Name="DataGrid" 
+      <DataGrid x:Name="DataGrid"
                 ItemsSource="{Binding Packages}"
                 AutoGenerateColumns="False"
                 IsReadOnly="True"
                 Style="{DynamicResource {x:Static styles:ResourceKeys.DataGridStyle}}"
                 VerticalContentAlignment="Center"
+                dgx:DataGridFilter.IsAutoFilterEnabled="True"
                 toms:MultiSelectorExtensions.SelectionBinding="{Binding SelectedPackages}">
         <DataGrid.CellStyle>
           <Style TargetType="DataGridCell" BasedOn="{StaticResource {x:Static styles:ResourceKeys.DataGridCellStyle}}">
@@ -71,15 +73,22 @@
           </Style>
         </DataGrid.RowStyle>
         <DataGrid.Columns>
-          <DataGridTextColumn Binding="{Binding Identity.Id}" Header="Package" MinWidth="300" />
-          <DataGridTextColumn Binding="{Binding Identity.Version}" Header="Installed Version" MinWidth="120">
+          <DataGridTextColumn Binding="{Binding Identity.Id}"
+                              Header="Package"
+                              MinWidth="300" />
+          <DataGridTextColumn Binding="{Binding Identity.Version}"
+                              Header="Installed Version"
+                              MinWidth="120"
+                              dgx:DataGridFilterColumn.IsFilterVisible="False">
             <DataGridTextColumn.ElementStyle>
               <Style TargetType="FrameworkElement">
                 <Setter Property="HorizontalAlignment" Value="Right" />
               </Style>
             </DataGridTextColumn.ElementStyle>
           </DataGridTextColumn>
-          <DataGridTemplateColumn Header="Available Versions" MinWidth="120">
+          <DataGridTemplateColumn Header="Available Versions"
+                                  MinWidth="120"
+                                  dgx:DataGridFilterColumn.IsFilterVisible="False">
             <DataGridTemplateColumn.CellTemplate>
               <DataTemplate>
                 <Grid>
@@ -105,7 +114,7 @@
                       </Style>
                     </ComboBox.Style>
                   </ComboBox>
-                  <TextBlock x:Name="LoadingItemText" Text="Loading..." VerticalAlignment="Center" HorizontalAlignment="Center" Visibility="Collapsed"/>
+                  <TextBlock x:Name="LoadingItemText" Text="Loading..." VerticalAlignment="Center" HorizontalAlignment="Center" Visibility="Collapsed" />
                 </Grid>
                 <DataTemplate.Triggers>
                   <DataTrigger Binding="{Binding IsLoading}" Value="true">
@@ -115,7 +124,9 @@
               </DataTemplate>
             </DataGridTemplateColumn.CellTemplate>
           </DataGridTemplateColumn>
-          <DataGridTemplateColumn SortMemberPath="IsUpToDate" Width="36">
+          <DataGridTemplateColumn SortMemberPath="IsUpdateAvailable"
+                                  Width="36"
+                                  dgx:DataGridFilterColumn.Template="{StaticResource {x:Static dgx:DataGridFilter.CheckBoxColumnFilterTemplateKey}}">
             <DataGridTemplateColumn.CellTemplate>
               <DataTemplate>
                 <Button ToolTip="Update this package"
@@ -126,7 +137,7 @@
                     <ControlTemplate TargetType="{x:Type Button}">
                       <Grid Width="16" Height="16" Background="Transparent" HorizontalAlignment="Center" VerticalAlignment="Center">
                         <Ellipse x:Name="Ellipse" Width="16" Height="16" Stroke="{TemplateBinding Foreground}" StrokeThickness="1" />
-                        <Path Data="M8,4 L8,13 M5,8 L8,4 L11,8" Stroke="{TemplateBinding Foreground}" StrokeThickness="1"/>
+                        <Path Data="M8,4 L8,13 M5,8 L8,4 L11,8" Stroke="{TemplateBinding Foreground}" StrokeThickness="1" />
                       </Grid>
                       <ControlTemplate.Triggers>
                         <Trigger Property="IsEnabled" Value="False">
@@ -152,8 +163,12 @@
               </DataTemplate>
             </DataGridTemplateColumn.CellTemplate>
           </DataGridTemplateColumn>
-          <DataGridTextColumn Header="Issues" Width="120" Binding="{Binding PackageInfo.Issues, FallbackValue=''}" />
-          <DataGridTemplateColumn Header="Projects">
+          <DataGridTextColumn Header="Issues"
+                              Width="120"
+                              Binding="{Binding PackageInfo.Issues, FallbackValue=''}"
+                              dgx:DataGridFilterColumn.IsFilterVisible="False" />
+          <DataGridTemplateColumn Header="Projects"
+                                  dgx:DataGridFilterColumn.IsFilterVisible="False">
             <DataGridTemplateColumn.CellTemplate>
               <DataTemplate>
                 <ItemsControl ItemsSource="{Binding Projects}">
@@ -165,9 +180,9 @@
                   <ItemsControl.ItemTemplate>
                     <DataTemplate>
                       <TextBlock Margin="2,0">
-                          <Hyperlink Command="{Binding OpenProjectCommand}">
-                            <Run Text="{Binding Name, Mode=OneWay}"/>
-                          </Hyperlink>
+                        <Hyperlink Command="{Binding OpenProjectCommand}">
+                          <Run Text="{Binding Name, Mode=OneWay}" />
+                        </Hyperlink>
                       </TextBlock>
                     </DataTemplate>
                   </ItemsControl.ItemTemplate>
