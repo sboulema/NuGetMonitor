@@ -152,7 +152,29 @@
               </DataTemplate>
             </DataGridTemplateColumn.CellTemplate>
           </DataGridTemplateColumn>
-          <DataGridTextColumn Header="Issues" Width="*" Binding="{Binding PackageInfo.Issues, FallbackValue=''}" />
+          <DataGridTextColumn Header="Issues" Width="120" Binding="{Binding PackageInfo.Issues, FallbackValue=''}" />
+          <DataGridTemplateColumn Header="Projects">
+            <DataGridTemplateColumn.CellTemplate>
+              <DataTemplate>
+                <ItemsControl ItemsSource="{Binding Projects}">
+                  <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                      <StackPanel Orientation="Horizontal" />
+                    </ItemsPanelTemplate>
+                  </ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                      <TextBlock Margin="2,0">
+                          <Hyperlink Command="{Binding OpenProjectCommand}">
+                            <Run Text="{Binding Name, Mode=OneWay}"/>
+                          </Hyperlink>
+                      </TextBlock>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </DataTemplate>
+            </DataGridTemplateColumn.CellTemplate>
+          </DataGridTemplateColumn>
         </DataGrid.Columns>
       </DataGrid>
 

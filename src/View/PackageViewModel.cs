@@ -16,9 +16,12 @@ namespace NuGetMonitor.View
             Items = items;
             Identity = items.Key;
             ProjectPaths = string.Join(", ", items.Select(item => item.RelativePath));
+            Projects = items.Select(item => new ProjectViewModel(item.ProjectItem)).ToArray();
         }
 
         public IGrouping<PackageIdentity, PackageReferenceEntry> Items { get; }
+
+        public ICollection<ProjectViewModel> Projects { get; }
 
         [OnChangedMethod(nameof(OnIdentityChanged))]
         public PackageIdentity Identity { get; private set; }
