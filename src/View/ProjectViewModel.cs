@@ -23,7 +23,11 @@ namespace NuGetMonitor.View
 
         private void OpenProject()
         {
-            VS.Documents.OpenAsync(_projectItem.Project.FullPath).FireAndForget();
+            var document = Keyboard.Modifiers == ModifierKeys.Control
+                ? _projectItem.Project.Xml.ContainingProject.FullPath
+                : _projectItem.Project.FullPath;
+
+            VS.Documents.OpenAsync(document).FireAndForget();
         }
     }
 }
