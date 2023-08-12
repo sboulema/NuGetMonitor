@@ -9,7 +9,7 @@ for the installed NuGet packages for the current solution.
 - Checks for updates, deprecations and vulnerabilities when a solution is opened
 - Shows an info bar with the number of available updates, deprecations and vulnerabilities
 - Shows an info bar with vulnerabilites found in transient projects
-- Provides a lean package management view to give an instant overview and fast package update 
+- Comes with a lean package management tool window to give an instant overview and fast package update 
 - Works with .NET Framework projects and with .NET projects using `PackageReference` items
 
 
@@ -23,7 +23,7 @@ for the installed NuGet packages for the current solution.
 
 [Open VSIX Gallery](https://www.vsixgallery.com/extension/NuGetMonitor.2a6fbffe-f3fd-4bf8-98cc-5ae2c833a1c7)
 
-## Uasage
+## Usage
 
 ### After a solution is loaded, available updates and possible issues are shown in the Solution Explorer
 
@@ -31,7 +31,7 @@ for the installed NuGet packages for the current solution.
 
 Dependent on the size of the solution it may take some time until the info bars appear. 
 
-### The Package Manager
+### Package Manager
 
 The package manager can be opened via the entry in the `Tools` menu.
 
@@ -39,7 +39,7 @@ The package manager can be opened via the entry in the `Tools` menu.
 
 The package manager shows all installed packages of the current solution. Updating a single package is just one click, multiple packages can be updated via the tool bar button after selecting the packages.
 
-Compared to the original NuGet Package Manager updating packages is very fast, because the package version is instantly updated without validation against other packages - versin conflicts may show up only at the next build and have to be resolved manually.
+Compared to the original NuGet Package Manager updating packages is very fast, because the package version is instantly updated without validation against other packages - version conflicts may show up only at the next build and have to be resolved manually.
 
 Shared package refernces, e.g. in the `Directory.Build.props` file, are handeld gracefully, and will not be replaced by `Update` entries in every project.
 
