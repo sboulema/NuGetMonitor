@@ -20,7 +20,7 @@ internal partial class NugetMonitorViewModel : INotifyPropertyChanged
         Load();
     }
 
-    public ObservableCollection<PackageViewModel> Packages { get; } = new();
+    public ICollection<PackageViewModel>? Packages { get; private set; }
 
     public ObservableCollection<PackageViewModel> SelectedPackages { get; } = new();
 
@@ -28,7 +28,7 @@ internal partial class NugetMonitorViewModel : INotifyPropertyChanged
 
     public ICommand UpdateSelectedCommand => new DelegateCommand(() => SelectedPackages.Any(item => item.IsUpdateAvailable), UpdateSelected);
 
-    public ICommand HardRefreshCommand => new DelegateCommand(HardRefresh);
+    public ICommand RefreshCommand => new DelegateCommand(Refresh);
     
     public static ICommand ShowNuGetPackageManagerCommand => new DelegateCommand(ShowNuGetPackageManager);
 
@@ -39,7 +39,7 @@ internal partial class NugetMonitorViewModel : INotifyPropertyChanged
 
     private void SolutionEvents_OnAfterCloseSolution()
     {
-        Packages.Clear();
+        Packages = null;
     }
 
     private async void Load()
@@ -48,26 +48,26 @@ internal partial class NugetMonitorViewModel : INotifyPropertyChanged
         {
             IsLoading = true;
 
-            Packages.Clear();
+            Packages = null;
 
             var packageReferences = await ProjectService.GetPackageReferences().ConfigureAwait(true);
 
-            var items = packageReferences
+            var packages = packageReferences
                 .GroupBy(item => item.Identity)
                 .Select(group => new PackageViewModel(group))
                 .ToArray();
 
-            Packages.AddRange(items);
+            Packages = packages;
 
-            var loadVersionTasks = Packages.Select(item => item.Load());
+            var loadVersionTasks = packages.Select(item => item.Load());
 
             await Task.WhenAll(loadVersionTasks).ConfigureAwait(false);
 
             IsLoading = false;
         }
-        catch
+        catch (Exception ex)
         {
-            // 
+            LoggingService.Log($"Loading package data failed: {ex}").FireAndForget();
         }
     }
 
@@ -76,7 +76,7 @@ internal partial class NugetMonitorViewModel : INotifyPropertyChanged
         VS.Commands.ExecuteAsync("Tools.ManageNuGetPackagesForSolution").FireAndForget();
     }
 
-    private void HardRefresh()
+    private void Refresh()
     {
         MonitorService.CheckForUpdates();
 

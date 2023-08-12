@@ -1,6 +1,7 @@
 ﻿using System.IO;
 using Community.VisualStudio.Toolkit;
 using Microsoft.Build.Evaluation;
+using Microsoft.VisualStudio.Shell;
 using NuGet.Packaging.Core;
 using NuGet.Versioning;
 using NuGetMonitor.Models;
@@ -10,8 +11,6 @@ namespace NuGetMonitor.Services;
 
 public static class ProjectService
 {
-    private static readonly DelegateEqualityComparer<PackageReferenceEntry> _packageReferenceIdentityComparer = new(item => $"{item?.Identity}|{item?.RelativePath}");
-
     private static ProjectCollection _projectCollection = new();
 
     static ProjectService()
@@ -26,11 +25,6 @@ public static class ProjectService
 
     public static async Task<IReadOnlyCollection<PackageReferenceEntry>> GetPackageReferences()
     {
-        var solutionPath = (await VS.Solutions.GetCurrentSolutionAsync().ConfigureAwait(true))?.FullPath;
-
-        if (solutionPath.IsNullOrEmpty())
-            return Array.Empty<PackageReferenceEntry>();
-
         var projectCollection = _projectCollection;
 
         var projects = await VS.Solutions.GetAllProjectsAsync().ConfigureAwait(false);
@@ -41,23 +35,22 @@ public static class ProjectService
 
         return await Task.Run(() =>
         {
-            var references = projectPaths.Select(path => GetPackageReferences(projectCollection, path, solutionPath));
+            var references = projectPaths.Select(path => GetPackageReferences(projectCollection, path));
 
             return references
                 .SelectMany(items => items)
-                .Distinct(_packageReferenceIdentityComparer)
                 .OrderBy(item => item.Identity)
-                .ThenBy(item => item.RelativePath)
+                .ThenBy(item => Path.GetFileName(item.ProjectItem.Xml.ContainingProject.FullPath))
                 .ToArray();
         }).ConfigureAwait(false);
     }
 
-    internal static IEnumerable<PackageReferenceEntry> GetPackageReferences(ProjectCollection projectCollection, string projectPath, string solutionPath)
+    internal static IEnumerable<PackageReferenceEntry> GetPackageReferences(ProjectCollection projectCollection, string projectPath)
     {
         var items = GetPackageReferenceItems(projectCollection, projectPath);
 
         var packageReferences = items
-            .Select(item => CreateEntry(item, solutionPath))
+            .Select(CreateEntry)
             .ExceptNullItems();
 
         return packageReferences;
@@ -73,8 +66,9 @@ public static class ProjectService
                 return project.AllEvaluatedItems.Where(IsEditablePackageReference);
             }
         }
-        catch
+        catch (Exception ex)
         {
+            LoggingService.Log($"Get package reference item failed: {ex}").FireAndForget();
             return Enumerable.Empty<ProjectItem>();
         }
     }
@@ -90,25 +84,13 @@ public static class ProjectService
                && metadataEntries.All(metadata => !string.Equals(metadata.Key, "Condition", StringComparison.OrdinalIgnoreCase) || string.IsNullOrWhiteSpace(metadata.Value));
     }
 
-    private static PackageReferenceEntry? CreateEntry(ProjectItem projectItem, string solutionPath)
+    private static PackageReferenceEntry? CreateEntry(ProjectItem projectItem)
     {
-        // projectItem.Xml.ContainingProject.f
         var id = projectItem.EvaluatedInclude;
         var versionValue = projectItem.GetMetadata("Version")?.EvaluatedValue;
 
         return NuGetVersion.TryParse(versionValue, out var version)
-            ? new PackageReferenceEntry(new PackageIdentity(id, version), projectItem, GetRelativePath(projectItem, solutionPath))
+            ? new PackageReferenceEntry(new PackageIdentity(id, version), projectItem)
             : null;
-    }
-
-    private static string GetRelativePath(ProjectItem projectItem, string solutionPath)
-    {
-#nullable disable // Path operations don't have correct nullable annotations in NetFramework.
-        var projectFullPath = projectItem.Xml.ContainingProject.FullPath;
-        var projectDirectoryUrl = new Uri(Path.GetDirectoryName(projectFullPath), UriKind.Absolute);
-        var solutionDirectoryUrl = new Uri(Path.GetDirectoryName(solutionPath), UriKind.Absolute);
-
-        return Path.Combine(solutionDirectoryUrl.MakeRelativeUri(projectDirectoryUrl).ToString().Replace('/', '\\'), Path.GetFileName(projectFullPath));
-#nullable enable
     }
 }

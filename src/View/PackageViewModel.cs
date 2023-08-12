@@ -15,7 +15,6 @@ namespace NuGetMonitor.View
         {
             Items = items;
             Identity = items.Key;
-            ProjectPaths = string.Join(", ", items.Select(item => item.RelativePath));
             Projects = items.Select(item => new ProjectViewModel(item.ProjectItem)).ToArray();
         }
 
@@ -25,8 +24,6 @@ namespace NuGetMonitor.View
 
         [OnChangedMethod(nameof(OnIdentityChanged))]
         public PackageIdentity Identity { get; private set; }
-
-        public string ProjectPaths { get; }
 
         public Package? Package { get; private set; }
 
