@@ -11,8 +11,10 @@
              xmlns:imageCatalog="clr-namespace:Microsoft.VisualStudio.Imaging;assembly=Microsoft.VisualStudio.ImageCatalog"
              xmlns:dgx="urn:tom-englert.de/DataGridExtensions"
              toolkit:Themes.UseVsTheme="True"
-             mc:Ignorable="d" d:DesignHeight="450" d:DesignWidth="800"
-             DataContext="{x:Static view:NugetMonitorViewModel.Instance}">
+             mc:Ignorable="d" d:DesignHeight="450" d:DesignWidth="800">
+  <UserControl.DataContext>
+    <view:NugetMonitorViewModel />
+  </UserControl.DataContext>
   <UserControl.Resources>
     <ResourceDictionary Source="/NuGetMonitor;component/Resources/VSColorScheme.xaml" />
   </UserControl.Resources>

@@ -13,9 +13,7 @@ namespace NuGetMonitor.View;
 
 internal partial class NugetMonitorViewModel : INotifyPropertyChanged
 {
-    public static readonly NugetMonitorViewModel Instance = new();
-
-    private NugetMonitorViewModel()
+    public NugetMonitorViewModel()
     {
         VS.Events.SolutionEvents.OnAfterOpenSolution += SolutionEvents_OnAfterOpenSolution;
         VS.Events.SolutionEvents.OnAfterCloseSolution += SolutionEvents_OnAfterCloseSolution;
