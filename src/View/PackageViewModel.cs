@@ -15,7 +15,7 @@ namespace NuGetMonitor.View
         {
             Items = items;
             Identity = items.Key;
-            Projects = items.Select(item => new ProjectViewModel(item.ProjectItem)).ToArray();
+            Projects = items.GroupBy(item => item.ProjectItem.Xml.ContainingProject).Select(item => new ProjectViewModel(item.Key)).ToArray();
         }
 
         public IGrouping<PackageIdentity, PackageReferenceEntry> Items { get; }

@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel;
 using System.Windows.Input;
 using Community.VisualStudio.Toolkit;
-using Microsoft.Build.Evaluation;
+using Microsoft.Build.Construction;
 using Microsoft.IO;
 using Microsoft.VisualStudio.Shell;
 using TomsToolbox.Wpf;
@@ -10,24 +10,20 @@ namespace NuGetMonitor.View
 {
     internal partial class ProjectViewModel : INotifyPropertyChanged
     {
-        private readonly ProjectItem _projectItem;
+        private readonly ProjectRootElement _project;
 
-        public ProjectViewModel(ProjectItem projectItem)
+        public ProjectViewModel(ProjectRootElement project)
         {
-            _projectItem = projectItem;
+            _project = project;
         }
 
-        public string Name => Path.GetFileName(_projectItem.Project.FullPath);
+        public string Name => Path.GetFileName(_project.FullPath);
 
         public ICommand OpenProjectCommand => new DelegateCommand(OpenProject);
 
         private void OpenProject()
         {
-            var document = Keyboard.Modifiers == ModifierKeys.Control
-                ? _projectItem.Xml.ContainingProject.FullPath
-                : _projectItem.Project.FullPath;
-
-            VS.Documents.OpenAsync(document).FireAndForget();
+            VS.Documents.OpenAsync(_project.FullPath).FireAndForget();
         }
     }
 }

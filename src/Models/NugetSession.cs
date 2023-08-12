@@ -35,7 +35,7 @@ namespace NuGetMonitor.Models
             Cache.Dispose();
         }
 
-        async void Load()
+        private async void Load()
         {
             var solution = await VS.Solutions.GetCurrentSolutionAsync().ConfigureAwait(false);
             var solutionDirectory = Path.GetDirectoryName(solution?.FullPath);
