@@ -1,7 +1,9 @@
 ﻿using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Windows.Controls;
 using System.Windows.Input;
 using Community.VisualStudio.Toolkit;
+using DataGridExtensions;
 using Microsoft.Build.Construction;
 using Microsoft.Build.Evaluation;
 using Microsoft.VisualStudio.Shell;
@@ -27,7 +29,7 @@ internal partial class NugetMonitorViewModel : INotifyPropertyChanged
 
     public ICommand UpdateSelectedCommand => new DelegateCommand(() => SelectedPackages.Any(item => item.IsUpdateAvailable), UpdateSelected);
 
-    public ICommand RefreshCommand => new DelegateCommand(Refresh);
+    public ICommand RefreshCommand => new DelegateCommand<DataGrid>(Refresh);
     
     public static ICommand ShowNuGetPackageManagerCommand => new DelegateCommand(ShowNuGetPackageManager);
 
@@ -80,8 +82,10 @@ internal partial class NugetMonitorViewModel : INotifyPropertyChanged
         VS.Commands.ExecuteAsync("Tools.ManageNuGetPackagesForSolution").FireAndForget();
     }
 
-    private void Refresh()
+    private void Refresh(DataGrid dataGrid)
     {
+        dataGrid.GetFilter().Clear();
+
         MonitorService.CheckForUpdates();
 
         Load();

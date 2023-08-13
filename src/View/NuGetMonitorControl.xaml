@@ -40,7 +40,7 @@
             </Style>
           </Button.Style>
         </Button>
-        <Button Command="{Binding RefreshCommand}" ToolTip="Refresh">
+        <Button Command="{Binding RefreshCommand}" CommandParameter="{Binding ElementName=DataGrid}" ToolTip="Refresh">
           <imaging:CrispImage Width="16" Height="16" Moniker="{x:Static imageCatalog:KnownMonikers.Refresh}" />
         </Button>
         <Button Command="{Binding ShowNuGetPackageManagerCommand}" ToolTip="Launch NuGet Package Manager">
