@@ -58,15 +58,20 @@ internal partial class NugetMonitorViewModel : INotifyPropertyChanged
 
             Packages = packages;
 
+            IsLoading = false;
+
             var loadVersionTasks = packages.Select(item => item.Load());
 
             await Task.WhenAll(loadVersionTasks).ConfigureAwait(false);
 
-            IsLoading = false;
         }
         catch (Exception ex)
         {
             LoggingService.Log($"Loading package data failed: {ex}").FireAndForget();
+        }
+        finally
+        {
+            IsLoading = false;
         }
     }
 

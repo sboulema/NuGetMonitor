@@ -29,11 +29,11 @@ namespace NuGetMonitor.View
 
         public NuGetVersion? SelectedVersion { get; set; }
 
-        public bool IsUpdateAvailable => SelectedVersion != Identity.Version;
+        public bool IsUpdateAvailable => SelectedVersion is not null && SelectedVersion != Identity.Version;
 
         public bool IsLoading => Package == null;
 
-        public ICommand Update => new DelegateCommand(() => { NugetMonitorViewModel.Update(this); });
+        public ICommand UpdateCommand => new DelegateCommand(() => IsUpdateAvailable, () => { NugetMonitorViewModel.Update(this); });
 
         public PackageInfo? PackageInfo { get; private set; }
 
