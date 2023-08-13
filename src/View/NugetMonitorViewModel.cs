@@ -6,7 +6,6 @@ using Microsoft.Build.Construction;
 using Microsoft.Build.Evaluation;
 using Microsoft.VisualStudio.Shell;
 using NuGetMonitor.Services;
-using TomsToolbox.Essentials;
 using TomsToolbox.Wpf;
 
 namespace NuGetMonitor.View;

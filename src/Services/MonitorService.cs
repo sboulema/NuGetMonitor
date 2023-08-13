@@ -1,6 +1,6 @@
-﻿using System.Diagnostics;
-using Community.VisualStudio.Toolkit;
+﻿using Community.VisualStudio.Toolkit;
 using Microsoft.VisualStudio.Shell;
+using NuGetMonitor.Models;
 
 namespace NuGetMonitor.Services;
 
@@ -47,7 +47,9 @@ public static class MonitorService
 
             await LoggingService.Log("Check top level packages").ConfigureAwait(true);
 
-            var topLevelPackages = await NuGetService.CheckPackageReferences().ConfigureAwait(true);
+            var packageReferences = await ProjectService.GetPackageReferences().ConfigureAwait(true);
+
+            var topLevelPackages = await NuGetService.CheckPackageReferences(packageReferences).ConfigureAwait(true);
 
             await LoggingService.Log($"{topLevelPackages.Count} packages found").ConfigureAwait(true);
 
@@ -55,7 +57,7 @@ public static class MonitorService
 
             await LoggingService.Log("Check transitive packages").ConfigureAwait(true);
 
-            var transitivePackages = await NuGetService.GetTransitivePackages(topLevelPackages).ConfigureAwait(true);
+            var transitivePackages = await NuGetService.GetTransitivePackages(packageReferences, topLevelPackages).ConfigureAwait(true);
 
             await LoggingService.Log($"{transitivePackages.Count} transitive packages found").ConfigureAwait(true);
 

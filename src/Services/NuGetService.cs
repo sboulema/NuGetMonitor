@@ -1,6 +1,8 @@
 ﻿using System.IO;
+using Microsoft.Build.Evaluation;
 using Microsoft.Extensions.Caching.Memory;
 using NuGet.Common;
+using NuGet.Frameworks;
 using NuGet.Packaging;
 using NuGet.Packaging.Core;
 using NuGet.Protocol.Core.Types;
@@ -30,11 +32,9 @@ public static class NuGetService
         Interlocked.Exchange(ref _session, new NugetSession()).Dispose();
     }
 
-    public static async Task<ICollection<PackageInfo>> CheckPackageReferences()
+    public static async Task<ICollection<PackageInfo>> CheckPackageReferences(IReadOnlyCollection<PackageReferenceEntry>? packageReferences)
     {
         var session = _session;
-
-        var packageReferences = await ProjectService.GetPackageReferences().ConfigureAwait(true);
 
         session.ThrowIfCancellationRequested();
 
@@ -75,13 +75,20 @@ public static class NuGetService
         return packageInfo;
     }
 
-    public static async Task<ICollection<PackageInfo>> GetTransitivePackages(ICollection<PackageInfo> topLevelPackages)
+    public static async Task<ICollection<PackageInfo>> GetTransitivePackages(IReadOnlyCollection<PackageReferenceEntry> packageReferences, ICollection<PackageInfo> topLevelPackages)
     {
         var inputQueue = new HashSet<PackageInfo>(topLevelPackages);
 
         var dependencyMap = new Dictionary<PackageIdentity, HashSet<PackageIdentity>>();
 
         var processedItems = new Dictionary<string, PackageInfo>();
+
+        var projects = packageReferences
+            .Select(reference => reference.ProjectItem.Project)
+            .Distinct();
+
+        // Limit scan to the superset of all target frameworks, to avoid too many false positives.
+        var targetFrameworks = GetTargetFrameworks(projects);
 
         bool ShouldSkip(PackageIdentity identity)
         {
@@ -104,7 +111,7 @@ public static class NuGetService
 
             var (_, _, sourceRepository, session) = currentItem.Package;
 
-            var dependencyIds = await GetDirectDependencies(packageIdentity, sourceRepository, session).ConfigureAwait(true);
+            var dependencyIds = await GetDirectDependencies(packageIdentity, targetFrameworks, sourceRepository, session).ConfigureAwait(true);
 
             var packageDependencies = dependencyMap.ForceValue(packageIdentity, _ => new HashSet<PackageIdentity>());
 
@@ -148,7 +155,24 @@ public static class NuGetService
         return transitivePackages;
     }
 
-    private static async Task<IReadOnlyCollection<PackageIdentity>> GetDirectDependencies(PackageIdentity packageIdentity, SourceRepository repository, NugetSession session)
+    private static ICollection<NuGetFramework> GetTargetFrameworks(IEnumerable<Project> projects)
+    {
+        var frameworkNames = projects.Select(project => project.GetProperty("TargetFrameworks") ?? project.GetProperty("TargetFramework"))
+            .Select(item => item?.EvaluatedValue)
+            .ExceptNullItems()
+            .SelectMany(item => item.Split(';').Select(value => value.Trim()))
+            .Distinct(StringComparer.OrdinalIgnoreCase);
+
+        var frameworks = frameworkNames
+            .Select(NuGetFramework.Parse)
+            .ToArray();
+
+        return frameworks;
+    }
+
+    private record FrameworkSpecific(NuGetFramework TargetFramework) : IFrameworkSpecific;
+
+    private static async Task<IReadOnlyCollection<PackageIdentity>> GetDirectDependencies(PackageIdentity packageIdentity, IEnumerable<NuGetFramework> targetFrameworks, SourceRepository repository, NugetSession session)
     {
         var resource = await repository.GetResourceAsync<FindPackageByIdResource>().ConfigureAwait(false);
 
@@ -164,9 +188,17 @@ public static class NuGetService
 
         using var package = new PackageArchiveReader(packageStream);
 
-        var dependencyGroups = await package.GetPackageDependenciesAsync(session.CancellationToken).ConfigureAwait(false);
+        var dependencyGroups = package.GetPackageDependencies().ToArray();
+
+        var frameworksInPackage = dependencyGroups.Select(group => new FrameworkSpecific(group.TargetFramework));
+
+        var usedFrameworks = targetFrameworks
+            .Select(framework => NuGetFrameworkUtility.GetNearest(frameworksInPackage, framework)?.TargetFramework)
+            .ExceptNullItems()
+            .ToHashSet();
 
         var dependencyIds = dependencyGroups
+            .Where(group => usedFrameworks.Contains(group.TargetFramework))
             .SelectMany(dependencyGroup => dependencyGroup.Packages)
             .Select(dependency => new PackageIdentity(dependency.Id,
                 dependency.VersionRange.MaxVersion ?? dependency.VersionRange.MinVersion))
