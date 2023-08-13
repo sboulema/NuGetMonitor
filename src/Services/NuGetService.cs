@@ -174,6 +174,10 @@ public static class NuGetService
 
     private static async Task<IReadOnlyCollection<PackageIdentity>> GetDirectDependencies(PackageIdentity packageIdentity, IEnumerable<NuGetFramework> targetFrameworks, SourceRepository repository, NugetSession session)
     {
+        // Don't scan packages with pseudo-references, they don't get physically included, but cause vulnerability warnings.
+        if (string.Equals(packageIdentity.Id, "NETStandard.Library", StringComparison.OrdinalIgnoreCase))
+            return Array.Empty<PackageIdentity>();
+
         var resource = await repository.GetResourceAsync<FindPackageByIdResource>().ConfigureAwait(false);
 
         var packageStream = new MemoryStream();
