@@ -62,7 +62,7 @@ internal static class MonitorService
 
             InfoBarService.ShowTransitivePackageIssues(transitivePackages, topLevelPackages);
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not (OperationCanceledException or ObjectDisposedException))
         {
             await LoggingService.LogAsync($"Check for updates failed: {ex}");
         }
