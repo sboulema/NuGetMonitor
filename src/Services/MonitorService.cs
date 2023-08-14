@@ -52,6 +52,9 @@ internal static class MonitorService
 
             await LoggingService.LogAsync($"{topLevelPackages.Count} packages found").ConfigureAwait(true);
 
+            if (topLevelPackages.Count == 0)
+                return;
+
             InfoBarService.ShowTopLevelPackageIssues(topLevelPackages);
 
             await LoggingService.LogAsync("Check transitive packages").ConfigureAwait(true);
@@ -60,7 +63,7 @@ internal static class MonitorService
 
             await LoggingService.LogAsync($"{transitivePackages.Count} transitive packages found").ConfigureAwait(true);
 
-            InfoBarService.ShowTransitivePackageIssues(transitivePackages, topLevelPackages);
+            InfoBarService.ShowTransitivePackageIssues(transitivePackages);
         }
         catch (Exception ex) when (ex is not (OperationCanceledException or ObjectDisposedException))
         {

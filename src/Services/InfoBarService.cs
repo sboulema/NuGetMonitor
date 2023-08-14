@@ -7,6 +7,7 @@ using Microsoft.VisualStudio.Shell;
 using NuGetMonitor.Models;
 using NuGetMonitor.View;
 using TomsToolbox.Essentials;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace NuGetMonitor.Services;
 
@@ -21,13 +22,18 @@ internal static class InfoBarService
 
     public static void ShowTopLevelPackageIssues(ICollection<PackageInfo> topLevelPackages)
     {
-        var infoText = string.Join(", ", GetInfoTexts(topLevelPackages).ExceptNullItems());
-        if (string.IsNullOrEmpty(infoText))
+        var message = string.Join(", ", GetInfoTexts(topLevelPackages).ExceptNullItems());
+        if (string.IsNullOrEmpty(message))
+        {
+            LoggingService.Log("No issues found");
             return;
+        }
+
+        LoggingService.Log(message);
 
         var textSpans = new[]
         {
-            new InfoBarTextSpan($"{infoText}. "),
+            new InfoBarTextSpan($"{message}. "),
             new InfoBarHyperlink("Manage", Actions.Manage),
             new InfoBarTextSpan(" packages.")
         };
@@ -35,24 +41,24 @@ internal static class InfoBarService
         ShowInfoBar(textSpans).FireAndForget();
     }
 
-    public static void ShowTransitivePackageIssues(IEnumerable<PackageInfo> transitivePackages, ICollection<PackageInfo> topLevelPackages)
+    public static void ShowTransitivePackageIssues(IEnumerable<PackageInfo> transitivePackages)
     {
         var vulnerablePackages = transitivePackages.Where(item => item.IsVulnerable).ToArray();
 
         if (vulnerablePackages.Length <= 0)
         {
-            if (topLevelPackages.Count > 0)
-                ShowInfoBar("No vulnerabilities in transient packages found");
-
+            LoggingService.Log("No issues found");
             return;
         }
 
         var packageInfo = string.Join("\r\n- ", vulnerablePackages.Select(package => package.PackageIdentity));
-        var text = $"{CountedDescription(vulnerablePackages, "vulnerability")} in transitive dependencies:\r\n- {packageInfo}\r\n";
+        var message = $"{CountedDescription(vulnerablePackages, "vulnerability")} in transitive dependencies:\r\n- {packageInfo}\r\n";
+
+        LoggingService.Log(message);
 
         var textSpans = new[]
         {
-            new InfoBarTextSpan(text),
+            new InfoBarTextSpan(message),
             new InfoBarHyperlink("Copy details", vulnerablePackages)
             // TODO: maybe show the "Manage" link, when the UI can show some details about this?
             // or show the individual vulnerability hyperlinks to open the link in a browser?
