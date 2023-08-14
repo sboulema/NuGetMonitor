@@ -1,9 +1,32 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project>
   <PropertyGroup>
-    <Version Condition="'$(Version)' == ''">0.0.0.1</Version>
+    <Version Condition="'$(Version)' == ''">99.0.0.0</Version>
   </PropertyGroup>
+
+  <PropertyGroup Label="Info">
+    <Company></Company>
+    <Product>NuGet Monitor</Product>
+    <Copyright>Copyright © Samir Boulema and contributors</Copyright>
+    <Title>$(MSBuildProjectName)</Title>
+    <Authors>Samir Boulema, Tom Englert</Authors>
+  </PropertyGroup>
+
+  <PropertyGroup Label="General Settings">
+    <LangVersion>11.0</LangVersion>
+    <DebugType>embedded</DebugType>
+    <DebugSymbols>true</DebugSymbols>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <Nullable>enable</Nullable>
+    <WarningsAsErrors>nullable</WarningsAsErrors>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AnalysisLevel>latest-All</AnalysisLevel>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="Nullable.Extended.Analyzer" Version="1.10.4539" PrivateAssets="All" />
   </ItemGroup>
+
 </Project>

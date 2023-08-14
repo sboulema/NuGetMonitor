@@ -12,9 +12,10 @@ using TomsToolbox.Wpf;
 
 namespace NuGetMonitor.View;
 
-internal partial class NugetMonitorViewModel : INotifyPropertyChanged
+#pragma warning disable CA1812 // Avoid uninstantiated internal classes => used in xaml!
+internal sealed partial class NuGetMonitorViewModel : INotifyPropertyChanged
 {
-    public NugetMonitorViewModel()
+    public NuGetMonitorViewModel()
     {
         VS.Events.SolutionEvents.OnAfterOpenSolution += SolutionEvents_OnAfterOpenSolution;
         VS.Events.SolutionEvents.OnAfterCloseSolution += SolutionEvents_OnAfterCloseSolution;
@@ -69,7 +70,7 @@ internal partial class NugetMonitorViewModel : INotifyPropertyChanged
         }
         catch (Exception ex)
         {
-            LoggingService.Log($"Loading package data failed: {ex}").FireAndForget();
+            await LoggingService.LogAsync($"Loading package data failed: {ex}").ConfigureAwait(false);
         }
         finally
         {

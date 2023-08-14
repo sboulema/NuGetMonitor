@@ -12,11 +12,11 @@ using TomsToolbox.Essentials;
 
 namespace NuGetMonitor.Services;
 
-public static class NuGetService
+internal static class NuGetService
 {
     private static bool _shutdownInitiated;
 
-    private static NugetSession _session = new();
+    private static NuGetSession _session = new();
 
     public static void Shutdown()
     {
@@ -29,7 +29,7 @@ public static class NuGetService
         if (_shutdownInitiated)
             return;
 
-        Interlocked.Exchange(ref _session, new NugetSession()).Dispose();
+        Interlocked.Exchange(ref _session, new NuGetSession()).Dispose();
     }
 
     public static async Task<ICollection<PackageInfo>> CheckPackageReferences(IReadOnlyCollection<PackageReferenceEntry>? packageReferences)
@@ -155,7 +155,7 @@ public static class NuGetService
         return transitivePackages;
     }
 
-    private static ICollection<NuGetFramework> GetTargetFrameworks(IEnumerable<Project> projects)
+    private static NuGetFramework[] GetTargetFrameworks(IEnumerable<Project> projects)
     {
         var frameworkNames = projects.Select(project => project.GetProperty("TargetFrameworks") ?? project.GetProperty("TargetFramework"))
             .Select(item => item?.EvaluatedValue)
@@ -170,9 +170,9 @@ public static class NuGetService
         return frameworks;
     }
 
-    private record FrameworkSpecific(NuGetFramework TargetFramework) : IFrameworkSpecific;
+    private sealed record FrameworkSpecific(NuGetFramework TargetFramework) : IFrameworkSpecific;
 
-    private static async Task<IReadOnlyCollection<PackageIdentity>> GetDirectDependencies(PackageIdentity packageIdentity, IEnumerable<NuGetFramework> targetFrameworks, SourceRepository repository, NugetSession session)
+    private static async Task<IReadOnlyCollection<PackageIdentity>> GetDirectDependencies(PackageIdentity packageIdentity, IEnumerable<NuGetFramework> targetFrameworks, SourceRepository repository, NuGetSession session)
     {
         // Don't scan packages with pseudo-references, they don't get physically included, but cause vulnerability warnings.
         if (string.Equals(packageIdentity.Id, "NETStandard.Library", StringComparison.OrdinalIgnoreCase))
@@ -212,7 +212,7 @@ public static class NuGetService
         return dependencyIds;
     }
 
-    private static async Task<PackageInfo?> GetPackageInfo(IEnumerable<PackageIdentity> packageIdentities, NugetSession session)
+    private static async Task<PackageInfo?> GetPackageInfo(IEnumerable<PackageIdentity> packageIdentities, NuGetSession session)
     {
         // if multiple version are provided, use the oldest reference with the smallest version
         var packageIdentity = packageIdentities.OrderBy(item => item.Version.Version).First();
@@ -220,7 +220,7 @@ public static class NuGetService
         return await GetPackageInfoCacheEntry(packageIdentity, session).GetValue().ConfigureAwait(false);
     }
 
-    private static PackageCacheEntry GetPackageCacheEntry(string packageId, NugetSession session)
+    private static PackageCacheEntry GetPackageCacheEntry(string packageId, NuGetSession session)
     {
         PackageCacheEntry Factory(ICacheEntry cacheEntry)
         {
@@ -236,7 +236,7 @@ public static class NuGetService
         }
     }
 
-    private static PackageInfoCacheEntry GetPackageInfoCacheEntry(PackageIdentity packageIdentity, NugetSession session)
+    private static PackageInfoCacheEntry GetPackageInfoCacheEntry(PackageIdentity packageIdentity, NuGetSession session)
     {
         PackageInfoCacheEntry Factory(ICacheEntry cacheEntry)
         {
@@ -289,14 +289,14 @@ public static class NuGetService
         }
     }
 
-    private class PackageCacheEntry : CacheEntry<Package>
+    private sealed class PackageCacheEntry : CacheEntry<Package>
     {
-        public PackageCacheEntry(string packageId, NugetSession session)
+        public PackageCacheEntry(string packageId, NuGetSession session)
             : base(() => GetPackage(packageId, session))
         {
         }
 
-        private static async Task<Package?> GetPackage(string packageId, NugetSession session)
+        private static async Task<Package?> GetPackage(string packageId, NuGetSession session)
         {
             foreach (var sourceRepository in await session.GetSourceRepositories().ConfigureAwait(false))
             {
@@ -321,14 +321,14 @@ public static class NuGetService
         }
     }
 
-    private class PackageInfoCacheEntry : CacheEntry<PackageInfo>
+    private sealed class PackageInfoCacheEntry : CacheEntry<PackageInfo>
     {
-        public PackageInfoCacheEntry(PackageIdentity packageIdentity, NugetSession session)
+        public PackageInfoCacheEntry(PackageIdentity packageIdentity, NuGetSession session)
             : base(() => GetPackageInfo(packageIdentity, session))
         {
         }
 
-        private static async Task<PackageInfo?> GetPackageInfo(PackageIdentity packageIdentity, NugetSession session)
+        private static async Task<PackageInfo?> GetPackageInfo(PackageIdentity packageIdentity, NuGetSession session)
         {
             var package = await GetPackageCacheEntry(packageIdentity.Id, session).GetValue().ConfigureAwait(false);
             if (package is null)

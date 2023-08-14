@@ -8,7 +8,7 @@ using TomsToolbox.Wpf;
 
 namespace NuGetMonitor.View
 {
-    internal partial class ProjectViewModel : INotifyPropertyChanged
+    internal sealed partial class ProjectViewModel : INotifyPropertyChanged
     {
         private readonly ProjectRootElement _project;
 

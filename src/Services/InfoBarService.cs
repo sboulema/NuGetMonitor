@@ -10,7 +10,7 @@ using TomsToolbox.Essentials;
 
 namespace NuGetMonitor.Services;
 
-public static class InfoBarService
+internal static class InfoBarService
 {
     private static readonly List<InfoBar> _infoBars = new();
 

@@ -6,9 +6,9 @@ namespace NuGetMonitor.View;
 
 internal sealed class NuGetMonitorCommand
 {
-    public const int CommandId = 0x0100;
+    private const int _commandId = 0x0100;
 
-    public static readonly Guid CommandSet = new("df4cd5dd-21c1-4666-8b25-bffe33b47ac1");
+    private static readonly Guid _commandSet = new("df4cd5dd-21c1-4666-8b25-bffe33b47ac1");
 
     private readonly AsyncPackage _package;
 
@@ -17,7 +17,7 @@ internal sealed class NuGetMonitorCommand
         _package = package ?? throw new ArgumentNullException(nameof(package));
         commandService = commandService ?? throw new ArgumentNullException(nameof(commandService));
 
-        var menuCommandId = new CommandID(CommandSet, CommandId);
+        var menuCommandId = new CommandID(_commandSet, _commandId);
         var menuItem = new MenuCommand(Execute, menuCommandId);
         commandService.AddCommand(menuItem);
     }

@@ -7,12 +7,6 @@
     <StartAction>Program</StartAction>
     <StartProgram Condition="'$(DevEnvDir)' != ''">$(DevEnvDir)devenv.exe</StartProgram>
     <StartArguments>/rootsuffix Exp</StartArguments>
-    <LangVersion>11.0</LangVersion>
-    <Nullable>enable</Nullable>
-    <WarningsAsErrors>nullable</WarningsAsErrors>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
-    <AnalysisLevel>latest-All</AnalysisLevel>
   </PropertyGroup>
   <ItemGroup>
     <None Update="source.extension.vsixmanifest">

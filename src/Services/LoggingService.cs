@@ -8,7 +8,12 @@ internal static class LoggingService
 {
     private static Guid _outputPaneGuid = new("{5B951352-356E-45A9-8F73-80DF1C57FED4}");
 
-    public static async Task Log(string message)
+    public static void Log(string message)
+    {
+        LogAsync(message).FireAndForget();
+    }
+
+    public static async Task LogAsync(string message)
     {
         var outputWindow = await VS.Services.GetOutputWindowAsync().ConfigureAwait(false);
 

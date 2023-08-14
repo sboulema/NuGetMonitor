@@ -9,7 +9,7 @@ using TomsToolbox.Wpf;
 
 namespace NuGetMonitor.View
 {
-    internal partial class PackageViewModel : INotifyPropertyChanged
+    internal sealed partial class PackageViewModel : INotifyPropertyChanged
     {
         public PackageViewModel(IGrouping<PackageIdentity, PackageReferenceEntry> items)
         {
@@ -33,7 +33,7 @@ namespace NuGetMonitor.View
 
         public bool IsLoading => Package == null;
 
-        public ICommand UpdateCommand => new DelegateCommand(() => IsUpdateAvailable, () => { NugetMonitorViewModel.Update(this); });
+        public ICommand UpdateCommand => new DelegateCommand(() => IsUpdateAvailable, () => { NuGetMonitorViewModel.Update(this); });
 
         public PackageInfo? PackageInfo { get; private set; }
 

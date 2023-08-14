@@ -3,7 +3,7 @@ using NuGet.Versioning;
 
 namespace NuGetMonitor.Models
 {
-    public record Package(string Id, ICollection<NuGetVersion> Versions, SourceRepository SourceRepository, NugetSession Session)
+    internal sealed record Package(string Id, ICollection<NuGetVersion> Versions, SourceRepository SourceRepository, NuGetSession Session)
     {
         public override string ToString()
         {

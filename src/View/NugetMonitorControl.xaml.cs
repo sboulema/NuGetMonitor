@@ -3,7 +3,7 @@
 /// <summary>
 /// Interaction logic for NugetMonitorControl.xaml
 /// </summary>
-public partial class NuGetMonitorControl
+public sealed partial class NuGetMonitorControl
 {
     public NuGetMonitorControl()
     {

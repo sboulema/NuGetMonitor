@@ -5,7 +5,7 @@ using TomsToolbox.Essentials;
 
 namespace NuGetMonitor.Models;
 
-public class PackageInfo : IEquatable<PackageInfo>
+internal sealed class PackageInfo : IEquatable<PackageInfo>
 {
     public PackageInfo(PackageIdentity packageIdentity, Package package, ICollection<PackageVulnerabilityMetadata>? vulnerabilities)
     {

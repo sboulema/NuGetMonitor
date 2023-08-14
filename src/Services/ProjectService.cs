@@ -1,7 +1,6 @@
 ﻿using System.IO;
 using Community.VisualStudio.Toolkit;
 using Microsoft.Build.Evaluation;
-using Microsoft.VisualStudio.Shell;
 using NuGet.Packaging.Core;
 using NuGet.Versioning;
 using NuGetMonitor.Models;
@@ -9,7 +8,7 @@ using TomsToolbox.Essentials;
 
 namespace NuGetMonitor.Services;
 
-public static class ProjectService
+internal static class ProjectService
 {
     private static ProjectCollection _projectCollection = new();
 
@@ -45,7 +44,7 @@ public static class ProjectService
         }).ConfigureAwait(false);
     }
 
-    internal static IEnumerable<PackageReferenceEntry> GetPackageReferences(ProjectCollection projectCollection, string projectPath)
+    private static IEnumerable<PackageReferenceEntry> GetPackageReferences(ProjectCollection projectCollection, string projectPath)
     {
         var items = GetPackageReferenceItems(projectCollection, projectPath);
 
@@ -56,24 +55,26 @@ public static class ProjectService
         return packageReferences;
     }
 
-    internal static IEnumerable<ProjectItem> GetPackageReferenceItems(ProjectCollection projectCollection, string projectPath)
+    private static IEnumerable<ProjectItem> GetPackageReferenceItems(ProjectCollection projectCollection, string projectPath)
     {
         try
         {
             lock (projectCollection)
             {
                 var project = projectCollection.LoadProject(projectPath);
+
                 return project.AllEvaluatedItems.Where(IsEditablePackageReference);
             }
         }
         catch (Exception ex)
         {
-            LoggingService.Log($"Get package reference item failed: {ex}").FireAndForget();
+            LoggingService.Log($"Get package reference item failed: {ex}");
+
             return Enumerable.Empty<ProjectItem>();
         }
     }
 
-    public static bool IsEditablePackageReference(ProjectItem element)
+    private static bool IsEditablePackageReference(ProjectItem element)
     {
         return IsEditablePackageReference(element.ItemType, element.Metadata.Select(value => new KeyValuePair<string, string?>(value.Name, value.EvaluatedValue)));
     }

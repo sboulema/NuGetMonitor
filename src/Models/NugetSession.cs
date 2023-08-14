@@ -7,12 +7,12 @@ using Settings = NuGet.Configuration.Settings;
 
 namespace NuGetMonitor.Models
 {
-    public sealed class NugetSession : IDisposable
+    internal sealed class NuGetSession : IDisposable
     {
         private readonly CancellationTokenSource _cancellationTokenSource = new();
         private readonly TaskCompletionSource<ICollection<SourceRepository>> _sourceRepositories = new();
 
-        public NugetSession()
+        public NuGetSession()
         {
             Load();
         }

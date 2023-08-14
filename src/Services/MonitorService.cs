@@ -1,10 +1,9 @@
 ﻿using Community.VisualStudio.Toolkit;
 using Microsoft.VisualStudio.Shell;
-using NuGetMonitor.Models;
 
 namespace NuGetMonitor.Services;
 
-public static class MonitorService
+internal static class MonitorService
 {
     public static void RegisterEventHandler()
     {
@@ -43,29 +42,29 @@ public static class MonitorService
             if (solution is null)
                 return;
 
-            await LoggingService.Log($"Solution: {solution.Name}").ConfigureAwait(true);
+            await LoggingService.LogAsync($"Solution: {solution.Name}").ConfigureAwait(true);
 
-            await LoggingService.Log("Check top level packages").ConfigureAwait(true);
+            await LoggingService.LogAsync("Check top level packages").ConfigureAwait(true);
 
             var packageReferences = await ProjectService.GetPackageReferences().ConfigureAwait(true);
 
             var topLevelPackages = await NuGetService.CheckPackageReferences(packageReferences).ConfigureAwait(true);
 
-            await LoggingService.Log($"{topLevelPackages.Count} packages found").ConfigureAwait(true);
+            await LoggingService.LogAsync($"{topLevelPackages.Count} packages found").ConfigureAwait(true);
 
             InfoBarService.ShowTopLevelPackageIssues(topLevelPackages);
 
-            await LoggingService.Log("Check transitive packages").ConfigureAwait(true);
+            await LoggingService.LogAsync("Check transitive packages").ConfigureAwait(true);
 
             var transitivePackages = await NuGetService.GetTransitivePackages(packageReferences, topLevelPackages).ConfigureAwait(true);
 
-            await LoggingService.Log($"{transitivePackages.Count} transitive packages found").ConfigureAwait(true);
+            await LoggingService.LogAsync($"{transitivePackages.Count} transitive packages found").ConfigureAwait(true);
 
             InfoBarService.ShowTransitivePackageIssues(transitivePackages, topLevelPackages);
         }
         catch (Exception ex)
         {
-            await LoggingService.Log($"Check for updates failed: {ex}").ConfigureAwait(false);
+            await LoggingService.LogAsync($"Check for updates failed: {ex}").ConfigureAwait(false);
         }
     }
 }
