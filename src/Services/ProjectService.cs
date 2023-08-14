@@ -26,7 +26,7 @@ internal static class ProjectService
     {
         var projectCollection = _projectCollection;
 
-        var projects = await VS.Solutions.GetAllProjectsAsync().ConfigureAwait(false);
+        var projects = await VS.Solutions.GetAllProjectsAsync();
 
         var projectPaths = projects.Select(project => project.FullPath)
             .ExceptNullItems()
@@ -41,7 +41,7 @@ internal static class ProjectService
                 .OrderBy(item => item.Identity)
                 .ThenBy(item => Path.GetFileName(item.ProjectItem.Xml.ContainingProject.FullPath))
                 .ToArray();
-        }).ConfigureAwait(false);
+        });
     }
 
     private static IEnumerable<PackageReferenceEntry> GetPackageReferences(ProjectCollection projectCollection, string projectPath)

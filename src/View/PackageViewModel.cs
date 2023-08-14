@@ -41,7 +41,7 @@ namespace NuGetMonitor.View
         {
             try
             {
-                Package = await NuGetService.GetPackage(Identity.Id).ConfigureAwait(false);
+                Package = await NuGetService.GetPackage(Identity.Id);
 
                 var versions = Package?.Versions ?? Array.Empty<NuGetVersion>();
 
@@ -62,7 +62,7 @@ namespace NuGetMonitor.View
         {
             try
             {
-                PackageInfo = await NuGetService.GetPackageInfo(Identity).ConfigureAwait(false);
+                PackageInfo = await NuGetService.GetPackageInfo(Identity);
             }
             catch (OperationCanceledException)
             {

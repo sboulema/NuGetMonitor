@@ -44,7 +44,7 @@ internal static class NuGetService
 
         var getPackageInfoTasks = identitiesById.Select(item => GetPackageInfo(item, session));
 
-        var result = await Task.WhenAll(getPackageInfoTasks).ConfigureAwait(false);
+        var result = await Task.WhenAll(getPackageInfoTasks);
 
         session.ThrowIfCancellationRequested();
 
@@ -57,7 +57,7 @@ internal static class NuGetService
     {
         var session = _session;
 
-        var package = await GetPackageCacheEntry(packageId, session).GetValue().ConfigureAwait(false);
+        var package = await GetPackageCacheEntry(packageId, session).GetValue();
 
         session.ThrowIfCancellationRequested();
 
@@ -68,7 +68,7 @@ internal static class NuGetService
     {
         var session = _session;
 
-        var packageInfo = await GetPackageInfoCacheEntry(packageIdentity, session).GetValue().ConfigureAwait(false);
+        var packageInfo = await GetPackageInfoCacheEntry(packageIdentity, session).GetValue();
 
         session.ThrowIfCancellationRequested();
 
@@ -122,7 +122,7 @@ internal static class NuGetService
                 if (ShouldSkip(dependencyId))
                     continue;
 
-                if (await GetPackageInfoCacheEntry(dependencyId, session).GetValue().ConfigureAwait(false) is not { } info)
+                if (await GetPackageInfoCacheEntry(dependencyId, session).GetValue() is not { } info)
                     continue;
 
                 inputQueue.Add(info);
@@ -137,7 +137,7 @@ internal static class NuGetService
         {
             var dependencyTasks = dependencyMap[package.PackageIdentity].Select(item => GetPackageInfoCacheEntry(item, package.Package.Session).GetValue());
 
-            var dependencies = await Task.WhenAll(dependencyTasks).ConfigureAwait(false);
+            var dependencies = await Task.WhenAll(dependencyTasks);
 
             package.Dependencies = dependencies.ExceptNullItems().ToArray();
         }
@@ -178,12 +178,12 @@ internal static class NuGetService
         if (string.Equals(packageIdentity.Id, "NETStandard.Library", StringComparison.OrdinalIgnoreCase))
             return Array.Empty<PackageIdentity>();
 
-        var resource = await repository.GetResourceAsync<FindPackageByIdResource>().ConfigureAwait(false);
+        var resource = await repository.GetResourceAsync<FindPackageByIdResource>();
 
         var packageStream = new MemoryStream();
         await resource
             .CopyNupkgToStreamAsync(packageIdentity.Id, packageIdentity.Version, packageStream, session.SourceCacheContext, NullLogger.Instance, session.CancellationToken)
-            .ConfigureAwait(false);
+            ;
 
         if (packageStream.Length == 0)
             return Array.Empty<PackageIdentity>();
@@ -217,7 +217,7 @@ internal static class NuGetService
         // if multiple version are provided, use the oldest reference with the smallest version
         var packageIdentity = packageIdentities.OrderBy(item => item.Version.Version).First();
 
-        return await GetPackageInfoCacheEntry(packageIdentity, session).GetValue().ConfigureAwait(false);
+        return await GetPackageInfoCacheEntry(packageIdentity, session).GetValue();
     }
 
     private static PackageCacheEntry GetPackageCacheEntry(string packageId, NuGetSession session)
@@ -278,7 +278,7 @@ internal static class NuGetService
         {
             try
             {
-                var value = await generator().ConfigureAwait(false);
+                var value = await generator();
 
                 _taskCompletionSource.SetResult(value);
             }
@@ -298,16 +298,16 @@ internal static class NuGetService
 
         private static async Task<Package?> GetPackage(string packageId, NuGetSession session)
         {
-            foreach (var sourceRepository in await session.GetSourceRepositories().ConfigureAwait(false))
+            foreach (var sourceRepository in await session.GetSourceRepositories())
             {
                 var packageResource = await sourceRepository
                     .GetResourceAsync<FindPackageByIdResource>(session.CancellationToken)
-                    .ConfigureAwait(false);
+                    ;
 
                 var unsortedVersions = await packageResource
                     .GetAllVersionsAsync(packageId, session.SourceCacheContext, NullLogger.Instance,
                         session.CancellationToken)
-                    .ConfigureAwait(false);
+                    ;
 
                 var versions = unsortedVersions?.OrderByDescending(item => item).ToArray();
 
@@ -330,7 +330,7 @@ internal static class NuGetService
 
         private static async Task<PackageInfo?> GetPackageInfo(PackageIdentity packageIdentity, NuGetSession session)
         {
-            var package = await GetPackageCacheEntry(packageIdentity.Id, session).GetValue().ConfigureAwait(false);
+            var package = await GetPackageCacheEntry(packageIdentity.Id, session).GetValue();
             if (package is null)
                 return null;
 
@@ -338,11 +338,11 @@ internal static class NuGetService
 
             var packageMetadataResource = await sourceRepository
                 .GetResourceAsync<PackageMetadataResource>(session.CancellationToken)
-                .ConfigureAwait(false);
+                ;
 
             var metadata = await packageMetadataResource
                 .GetMetadataAsync(packageIdentity, session.SourceCacheContext, NullLogger.Instance, session.CancellationToken)
-                .ConfigureAwait(false);
+                ;
 
             if (metadata is null)
                 return null;
@@ -351,7 +351,7 @@ internal static class NuGetService
 
             return new PackageInfo(packageIdentity, package, metadata.Vulnerabilities?.ToArray())
             {
-                IsDeprecated = await metadata.GetDeprecationMetadataAsync().ConfigureAwait(false) != null,
+                IsDeprecated = await metadata.GetDeprecationMetadataAsync() != null,
                 IsOutdated = IsOutdated(packageIdentity, versions)
             };
         }

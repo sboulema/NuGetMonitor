@@ -37,7 +37,7 @@ namespace NuGetMonitor.Models
 
         private async void Load()
         {
-            var solution = await VS.Solutions.GetCurrentSolutionAsync().ConfigureAwait(false);
+            var solution = await VS.Solutions.GetCurrentSolutionAsync();
             var solutionDirectory = Path.GetDirectoryName(solution?.FullPath);
 
             var packageSourceProvider = new PackageSourceProvider(Settings.LoadDefaultSettings(solutionDirectory));

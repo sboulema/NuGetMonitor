@@ -15,7 +15,7 @@ internal static class LoggingService
 
     public static async Task LogAsync(string message)
     {
-        var outputWindow = await VS.Services.GetOutputWindowAsync().ConfigureAwait(false);
+        var outputWindow = await VS.Services.GetOutputWindowAsync();
 
         await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 

@@ -65,12 +65,12 @@ internal sealed partial class NuGetMonitorViewModel : INotifyPropertyChanged
 
             var loadVersionTasks = packages.Select(item => item.Load());
 
-            await Task.WhenAll(loadVersionTasks).ConfigureAwait(false);
+            await Task.WhenAll(loadVersionTasks);
 
         }
         catch (Exception ex)
         {
-            await LoggingService.LogAsync($"Loading package data failed: {ex}").ConfigureAwait(false);
+            await LoggingService.LogAsync($"Loading package data failed: {ex}");
         }
         finally
         {

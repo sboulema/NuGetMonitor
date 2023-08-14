@@ -64,7 +64,7 @@ internal static class MonitorService
         }
         catch (Exception ex)
         {
-            await LoggingService.LogAsync($"Check for updates failed: {ex}").ConfigureAwait(false);
+            await LoggingService.LogAsync($"Check for updates failed: {ex}");
         }
     }
 }

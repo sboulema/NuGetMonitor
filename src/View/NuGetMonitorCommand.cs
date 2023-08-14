@@ -41,7 +41,7 @@ internal sealed class NuGetMonitorCommand
     {
         _package.JoinableTaskFactory.RunAsync(async delegate
         {
-            var window = await _package.ShowToolWindowAsync(typeof(NuGetMonitorToolWindow), 0, true, _package.DisposalToken).ConfigureAwait(false);
+            var window = await _package.ShowToolWindowAsync(typeof(NuGetMonitorToolWindow), 0, true, _package.DisposalToken);
             if (null == window || null == window.Frame)
             {
                 throw new NotSupportedException("Cannot create tool window");

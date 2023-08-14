@@ -25,6 +25,6 @@ public sealed class NuGetMonitorPackage : ToolkitPackage
 
         MonitorService.CheckForUpdates();
 
-        await NuGetMonitorCommand.InitializeAsync(this).ConfigureAwait(false);
+        await NuGetMonitorCommand.InitializeAsync(this);
     }
 }

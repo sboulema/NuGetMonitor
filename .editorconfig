@@ -136,3 +136,6 @@ dotnet_diagnostic.CA1724.severity = suggestion
 
 # NX0001: Find general usages of the NullForgiving operator
 dotnet_diagnostic.NX0001.severity = warning
+
+# CA2007: Consider calling ConfigureAwait on the awaited task (handled by Fody.ConfigureAwait)
+dotnet_diagnostic.CA2007.severity = silent
