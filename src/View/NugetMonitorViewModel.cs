@@ -1,5 +1,7 @@
 ﻿using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Text;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using Community.VisualStudio.Toolkit;
@@ -33,6 +35,8 @@ internal sealed partial class NuGetMonitorViewModel : INotifyPropertyChanged
     public ICommand RefreshCommand => new DelegateCommand<DataGrid>(Refresh);
     
     public static ICommand ShowNuGetPackageManagerCommand => new DelegateCommand(ShowNuGetPackageManager);
+
+    public ICommand CopyIssueDetailsCommand => new DelegateCommand(CanCopyIssueDetails, CopyIssueDetails);
 
     private void SolutionEvents_OnAfterOpenSolution(Solution? obj)
     {
@@ -154,5 +158,25 @@ internal sealed partial class NuGetMonitorViewModel : INotifyPropertyChanged
     private static bool IsEditablePackageReference(ProjectItemElement element)
     {
         return ProjectService.IsEditablePackageReference(element.ItemType, element.Metadata.Select(value => new KeyValuePair<string, string?>(value.Name, value.Value)));
+    }
+
+    private bool CanCopyIssueDetails()
+    {
+        return Packages?.Any(p => p.PackageInfo?.HasIssues ?? false) == true;
+    }
+
+    private void CopyIssueDetails()
+    {
+        if (Packages is null)
+            return;
+
+        var text = new StringBuilder();
+
+        foreach (var package in Packages)
+        {
+            package.PackageInfo?.AppendIssueDetails(text);
+        }
+
+        Clipboard.SetText(text.ToString());
     }
 }

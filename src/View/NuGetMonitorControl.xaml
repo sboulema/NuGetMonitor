@@ -46,6 +46,9 @@
         <Button Command="{Binding ShowNuGetPackageManagerCommand}" ToolTip="Launch NuGet Package Manager">
           <imaging:CrispImage Width="16" Height="16" Moniker="{x:Static imageCatalog:KnownMonikers.NuGet}" />
         </Button>
+        <Button Command="{Binding CopyIssueDetailsCommand}" ToolTip="Copy issue details">
+          <imaging:CrispImage Width="16" Height="16" Moniker="{x:Static imageCatalog:KnownMonikers.Copy}" />
+        </Button>
       </ToolBar>
       <DataGrid x:Name="DataGrid"
                 ItemsSource="{Binding Packages}"

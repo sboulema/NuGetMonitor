@@ -181,9 +181,7 @@ internal static class NuGetService
         var resource = await repository.GetResourceAsync<FindPackageByIdResource>();
 
         var packageStream = new MemoryStream();
-        await resource
-            .CopyNupkgToStreamAsync(packageIdentity.Id, packageIdentity.Version, packageStream, session.SourceCacheContext, NullLogger.Instance, session.CancellationToken)
-            ;
+        await resource.CopyNupkgToStreamAsync(packageIdentity.Id, packageIdentity.Version, packageStream, session.SourceCacheContext, NullLogger.Instance, session.CancellationToken);
 
         if (packageStream.Length == 0)
             return Array.Empty<PackageIdentity>();
@@ -300,14 +298,9 @@ internal static class NuGetService
         {
             foreach (var sourceRepository in await session.GetSourceRepositories())
             {
-                var packageResource = await sourceRepository
-                    .GetResourceAsync<FindPackageByIdResource>(session.CancellationToken)
-                    ;
+                var packageResource = await sourceRepository.GetResourceAsync<FindPackageByIdResource>(session.CancellationToken);
 
-                var unsortedVersions = await packageResource
-                    .GetAllVersionsAsync(packageId, session.SourceCacheContext, NullLogger.Instance,
-                        session.CancellationToken)
-                    ;
+                var unsortedVersions = await packageResource.GetAllVersionsAsync(packageId, session.SourceCacheContext, NullLogger.Instance, session.CancellationToken);
 
                 var versions = unsortedVersions?.OrderByDescending(item => item).ToArray();
 
@@ -336,22 +329,18 @@ internal static class NuGetService
 
             var sourceRepository = package.SourceRepository;
 
-            var packageMetadataResource = await sourceRepository
-                .GetResourceAsync<PackageMetadataResource>(session.CancellationToken)
-                ;
+            var packageMetadataResource = await sourceRepository.GetResourceAsync<PackageMetadataResource>(session.CancellationToken);
 
-            var metadata = await packageMetadataResource
-                .GetMetadataAsync(packageIdentity, session.SourceCacheContext, NullLogger.Instance, session.CancellationToken)
-                ;
+            var metadata = await packageMetadataResource.GetMetadataAsync(packageIdentity, session.SourceCacheContext, NullLogger.Instance, session.CancellationToken);
 
             if (metadata is null)
                 return null;
 
             var versions = package.Versions;
 
-            return new PackageInfo(packageIdentity, package, metadata.Vulnerabilities?.ToArray())
+            var deprecationMetadata = await metadata.GetDeprecationMetadataAsync();
+            return new PackageInfo(packageIdentity, package, metadata.Vulnerabilities?.ToArray(), deprecationMetadata)
             {
-                IsDeprecated = await metadata.GetDeprecationMetadataAsync() != null,
                 IsOutdated = IsOutdated(packageIdentity, versions)
             };
         }
