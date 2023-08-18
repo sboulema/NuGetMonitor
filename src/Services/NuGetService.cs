@@ -209,7 +209,7 @@ internal static class NuGetService
         }
     }
 
-    private sealed record PackageDependencyInFrameworkCacheEntryKey(PackageIdentity PackageIdentity, NuGetFramework TargetFramework);
+    private sealed record PackageDependenciesInFrameworkCacheEntryKey(PackageIdentity PackageIdentity, NuGetFramework TargetFramework);
 
     private static PackageDependenciesInFrameworkCacheEntry GetPackageDependenciesInFrameworkCacheEntry(PackageInfo packageInfo, NuGetFramework targetFramework)
     {
@@ -222,7 +222,7 @@ internal static class NuGetService
 
         lock (_session)
         {
-            return _session.Cache.GetOrCreate(new PackageDependencyInFrameworkCacheEntryKey(packageInfo.PackageIdentity, targetFramework), Factory) ??
+            return _session.Cache.GetOrCreate(new PackageDependenciesInFrameworkCacheEntryKey(packageInfo.PackageIdentity, targetFramework), Factory) ??
                    throw new InvalidOperationException("Failed to get package dependency in framework from cache");
         }
     }
