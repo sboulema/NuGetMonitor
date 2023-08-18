@@ -3,4 +3,4 @@ using NuGet.Frameworks;
 
 namespace NuGetMonitor.Models;
 
-internal record TransitiveDependencies(Project Project, NuGetFramework TargetFramework, IReadOnlyDictionary<PackageInfo, HashSet<PackageInfo>> Packages);
+internal sealed record TransitiveDependencies(Project Project, NuGetFramework TargetFramework, IReadOnlyDictionary<PackageInfo, HashSet<PackageInfo>> Packages);
