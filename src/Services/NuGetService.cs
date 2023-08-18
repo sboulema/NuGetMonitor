@@ -31,17 +31,16 @@ internal static class NuGetService
         Interlocked.Exchange(ref _session, new NuGetSession()).Dispose();
     }
 
-    public static async Task<ICollection<PackageInfo>> CheckPackageReferences(IReadOnlyCollection<PackageReferenceEntry>? packageReferences)
+    public static async Task<ICollection<PackageInfo>> CheckPackageReferences(IEnumerable<PackageReferenceEntry> packageReferences)
     {
         var session = _session;
 
         session.ThrowIfCancellationRequested();
 
-        var identitiesById = packageReferences
+        var getPackageInfoTasks = packageReferences
             .Select(item => item.Identity)
-            .GroupBy(item => item.Id);
-
-        var getPackageInfoTasks = identitiesById.Select(item => GetPackageInfo(item, session));
+            .Distinct()
+            .Select(packageIdentity => GetPackageInfoCacheEntry(packageIdentity, session).GetValue());
 
         var result = await Task.WhenAll(getPackageInfoTasks);
 
@@ -151,14 +150,6 @@ internal static class NuGetService
         return await GetPackageDependenciesInFrameworkCacheEntry(packageInfo, targetFramework).GetValue() ?? Array.Empty<PackageInfo>();
     }
 
-    private static async Task<PackageInfo?> GetPackageInfo(IEnumerable<PackageIdentity> packageIdentities, NuGetSession session)
-    {
-        // if multiple version are provided, use the oldest reference with the smallest version
-        var packageIdentity = packageIdentities.OrderBy(item => item.Version.Version).First();
-
-        return await GetPackageInfoCacheEntry(packageIdentity, session).GetValue();
-    }
-
     private static PackageCacheEntry GetPackageCacheEntry(string packageId, NuGetSession session)
     {
         PackageCacheEntry Factory(ICacheEntry cacheEntry)
@@ -191,7 +182,11 @@ internal static class NuGetService
         }
     }
 
+    // ReSharper disable NotAccessedPositionalProperty.Local
     private sealed record PackageDependencyCacheEntryKey(PackageIdentity PackageIdentity);
+
+    private sealed record PackageDependenciesInFrameworkCacheEntryKey(PackageIdentity PackageIdentity, NuGetFramework TargetFramework);
+    // ReSharper restore NotAccessedPositionalProperty.Local
 
     private static PackageDependenciesCacheEntry GetPackageDependencyCacheEntry(PackageIdentity packageIdentity, SourceRepository repository, NuGetSession session)
     {
@@ -209,8 +204,6 @@ internal static class NuGetService
         }
     }
 
-    private sealed record PackageDependenciesInFrameworkCacheEntryKey(PackageIdentity PackageIdentity, NuGetFramework TargetFramework);
-
     private static PackageDependenciesInFrameworkCacheEntry GetPackageDependenciesInFrameworkCacheEntry(PackageInfo packageInfo, NuGetFramework targetFramework)
     {
         PackageDependenciesInFrameworkCacheEntry Factory(ICacheEntry cacheEntry)
@@ -219,6 +212,8 @@ internal static class NuGetService
 
             return new PackageDependenciesInFrameworkCacheEntry(packageInfo, targetFramework);
         }
+
+        _session.ThrowIfCancellationRequested();
 
         lock (_session)
         {

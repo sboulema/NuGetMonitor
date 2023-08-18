@@ -85,4 +85,8 @@ internal sealed class PackageInfo : IEquatable<PackageInfo>
         }
     }
 
+    public override string ToString()
+    {
+        return PackageIdentity.ToString();
+    }
 }
