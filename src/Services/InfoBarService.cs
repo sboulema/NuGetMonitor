@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.IO;
+using System.Text;
 using System.Windows;
 using Community.VisualStudio.Toolkit;
 using Microsoft.VisualStudio.Imaging;
@@ -7,7 +8,9 @@ using Microsoft.VisualStudio.Shell;
 using NuGetMonitor.Models;
 using NuGetMonitor.View;
 using TomsToolbox.Essentials;
-using static System.Net.Mime.MediaTypeNames;
+
+using static NuGetMonitor.Services.LoggingService;
+
 
 namespace NuGetMonitor.Services;
 
@@ -25,11 +28,11 @@ internal static class InfoBarService
         var message = string.Join(", ", GetInfoTexts(topLevelPackages).ExceptNullItems());
         if (string.IsNullOrEmpty(message))
         {
-            LoggingService.Log("No issues found");
+            Log("No issues found");
             return;
         }
 
-        LoggingService.Log(message);
+        Log(message);
 
         var textSpans = new[]
         {
@@ -41,27 +44,32 @@ internal static class InfoBarService
         ShowInfoBar(textSpans).FireAndForget();
     }
 
-    public static void ShowTransitivePackageIssues(IEnumerable<PackageInfo> transitivePackages)
+    public static void ShowTransitivePackageIssues(ICollection<TransitiveDependencies> transitiveDependencies)
     {
+        var transitivePackages = transitiveDependencies
+            .SelectMany(project => project.Packages.Keys)
+            .Distinct()
+            .ToArray();
+
+        Log($"{transitivePackages.Length} transitive packages found");
+
         var vulnerablePackages = transitivePackages.Where(item => item.IsVulnerable).ToArray();
 
         if (vulnerablePackages.Length <= 0)
         {
-            LoggingService.Log("No issues found");
+            Log("No issues found");
             return;
         }
 
         var packageInfo = string.Join("\r\n- ", vulnerablePackages.Select(package => package.PackageIdentity));
         var message = $"{CountedDescription(vulnerablePackages, "vulnerability")} in transitive dependencies:\r\n- {packageInfo}\r\n";
 
-        LoggingService.Log(message);
+        Log(message);
 
         var textSpans = new[]
         {
             new InfoBarTextSpan(message),
-            new InfoBarHyperlink("Copy details", vulnerablePackages)
-            // TODO: maybe show the "Manage" link, when the UI can show some details about this?
-            // or show the individual vulnerability hyperlinks to open the link in a browser?
+            new InfoBarHyperlink("Copy details", transitiveDependencies)
         };
 
         ShowInfoBar(textSpans).FireAndForget();
@@ -106,21 +114,42 @@ internal static class InfoBarService
             case Actions.Manage:
                 NuGetMonitorCommand.Instance?.ShowToolWindow();
                 break;
-            case ICollection<PackageInfo> packages:
-                PrintDependencyTree(packages);
+
+            case ICollection<TransitiveDependencies> transitiveDependencies:
+                PrintDependencyTree(transitiveDependencies);
                 break;
         }
 
         (sender as InfoBar)?.Close();
     }
 
-    private static void PrintDependencyTree(IEnumerable<PackageInfo> packages)
+    private static void PrintDependencyTree(IEnumerable<TransitiveDependencies> dependencies)
     {
         var text = new StringBuilder();
 
-        foreach (var package in packages)
+        foreach (var dependency in dependencies)
         {
-            PrintDependencyTree(text, package, 0);
+            var (project, targetFramework, packages) = dependency;
+
+            var vulnerablePackages = packages
+                .Select(item => item.Key)
+                .Where(item => item.IsVulnerable)
+                .ToArray();
+
+            if (vulnerablePackages.Length == 0)
+                continue;
+
+            var header = $"{Path.GetFileName(project.FullPath)}, {targetFramework}";
+
+            text.AppendLine(header)
+                .AppendLine(new string('-', header.Length));
+
+            foreach (var vulnerablePackage in vulnerablePackages)
+            {
+                PrintDependencyTree(text, vulnerablePackage, dependency.Packages, 0);
+            }
+
+            text.AppendLine().AppendLine();
         }
 
         Clipboard.SetText(text.ToString());
@@ -128,7 +157,7 @@ internal static class InfoBarService
         ShowInfoBar("Dependency tree copied to clipboard", TimeSpan.FromSeconds(10));
     }
 
-    private static void PrintDependencyTree(StringBuilder text, PackageInfo package, int nesting)
+    private static void PrintDependencyTree(StringBuilder text, PackageInfo package, IReadOnlyDictionary<PackageInfo, HashSet<PackageInfo>> dependencyTree, int nesting)
     {
         var indent = new string(' ', nesting * 4);
 
@@ -152,10 +181,12 @@ internal static class InfoBarService
 
         text.AppendLine();
 
+        if (!dependencyTree.TryGetValue(package, out var dependsOn))
+            return;
 
-        foreach (var info in package.DependsOn)
+        foreach (var item in dependsOn)
         {
-            PrintDependencyTree(text, info, nesting + 1);
+            PrintDependencyTree(text, item, dependencyTree, nesting + 1);
         }
     }
 

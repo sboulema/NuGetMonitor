@@ -1,10 +1,12 @@
 ﻿using System.IO;
 using Community.VisualStudio.Toolkit;
 using Microsoft.Build.Evaluation;
+using NuGet.Frameworks;
 using NuGet.Packaging.Core;
 using NuGet.Versioning;
 using NuGetMonitor.Models;
 using TomsToolbox.Essentials;
+using Project = Microsoft.Build.Evaluation.Project;
 
 namespace NuGetMonitor.Services;
 
@@ -42,6 +44,22 @@ internal static class ProjectService
                 .ThenBy(item => Path.GetFileName(item.ProjectItem.Xml.ContainingProject.FullPath))
                 .ToArray();
         });
+    }
+
+
+    public static NuGetFramework[]? GetTargetFrameworks(this Project project)
+    {
+        var frameworkNames = (project.GetProperty("TargetFrameworks") ?? project.GetProperty("TargetFramework"))
+            ?.EvaluatedValue
+            ?.Split(';')
+            .Select(value => value.Trim());
+
+        var frameworks = frameworkNames?
+            .Select(NuGetFramework.Parse)
+            .Distinct()
+            .ToArray();
+
+        return frameworks;
     }
 
     private static IEnumerable<PackageReferenceEntry> GetPackageReferences(ProjectCollection projectCollection, string projectPath)

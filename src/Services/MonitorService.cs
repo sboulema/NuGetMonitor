@@ -59,11 +59,9 @@ internal static class MonitorService
 
             await LoggingService.LogAsync("Check transitive packages").ConfigureAwait(true);
 
-            var transitivePackages = await NuGetService.GetTransitivePackages(packageReferences, topLevelPackages).ConfigureAwait(true);
+            var transitiveDependencies = await NuGetService.GetTransitivePackages(packageReferences, topLevelPackages).ConfigureAwait(true);
 
-            await LoggingService.LogAsync($"{transitivePackages.Count} transitive packages found").ConfigureAwait(true);
-
-            InfoBarService.ShowTransitivePackageIssues(transitivePackages);
+            InfoBarService.ShowTransitivePackageIssues(transitiveDependencies);
         }
         catch (Exception ex) when (ex is not (OperationCanceledException or ObjectDisposedException))
         {

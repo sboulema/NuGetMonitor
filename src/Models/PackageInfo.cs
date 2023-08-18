@@ -1,5 +1,4 @@
 ﻿using System.Text;
-using System.Windows;
 using NuGet.Packaging.Core;
 using NuGet.Protocol;
 using NuGetMonitor.Services;
@@ -9,10 +8,11 @@ namespace NuGetMonitor.Models;
 
 internal sealed class PackageInfo : IEquatable<PackageInfo>
 {
-    public PackageInfo(PackageIdentity packageIdentity, Package package, ICollection<PackageVulnerabilityMetadata>? vulnerabilities, PackageDeprecationMetadata? deprecationMetadata)
+    public PackageInfo(PackageIdentity packageIdentity, Package package, NuGetSession session, ICollection<PackageVulnerabilityMetadata>? vulnerabilities, PackageDeprecationMetadata? deprecationMetadata)
     {
         PackageIdentity = packageIdentity;
         Package = package;
+        Session = session;
         Vulnerabilities = vulnerabilities;
         DeprecationMetadata = deprecationMetadata;
     }
@@ -20,6 +20,8 @@ internal sealed class PackageInfo : IEquatable<PackageInfo>
     public PackageIdentity PackageIdentity { get; }
 
     public Package Package { get; }
+
+    public NuGetSession Session { get; }
 
     public ICollection<PackageVulnerabilityMetadata>? Vulnerabilities { get; }
 
@@ -34,10 +36,6 @@ internal sealed class PackageInfo : IEquatable<PackageInfo>
     public string Issues => string.Join(", ", GetIssues().ExceptNullItems());
 
     public bool HasIssues => IsDeprecated || IsVulnerable;
-
-    public IReadOnlyCollection<PackageInfo> Dependencies { get; set; } = Array.Empty<PackageInfo>();
-
-    public HashSet<PackageInfo> DependsOn { get; } = new();
 
     private IEnumerable<string?> GetIssues()
     {
