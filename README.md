@@ -1,22 +1,25 @@
 # NuGet Monitor
+
 A Visual Studio extension that checks and notifies about available updates
-for the installed NuGet packages for the current solution.
+for the installed NuGet packages in the current solution.
 
 [![Build Status](https://github.com/sboulema/NuGetMonitor/actions/workflows/workflow.yml/badge.svg)](https://github.com/sboulema/NuGetMonitor/actions/workflows/workflow.yml)
 [![Sponsor](https://img.shields.io/badge/-Sponsor-fafbfc?logo=GitHub%20Sponsors)](https://github.com/sponsors/sboulema)
 
 ## Features
+
 - Checks for updates, deprecations and vulnerabilities when a solution is opened
 - Shows an info bar with the number of available updates, deprecations and vulnerabilities
-- Shows an info bar with vulnerabilites found in transient projects
-- Comes with a lean package management tool window to give an instant overview and fast package update 
+- Shows an info bar with vulnerabilities found in transient packages
+- Comes with a package management tool window that gives an instant overview over all packages, with a lean and fast package update functionality
 - Works with .NET Framework projects and with .NET projects using `PackageReference` items
 
-
 ## Supported Visual Studio versions
+
 - Visual Studio 2022
 
 ## Installing
+
 [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=SamirBoulema.NuGetMonitor) [![Visual Studio Marketplace](https://img.shields.io/vscode-marketplace/v/SamirBoulema.NuGetMonitor.svg?style=flat)](https://marketplace.visualstudio.com/items?itemName=SamirBoulema.NuGetMonitor)
 
 [GitHub Releases](https://github.com/sboulema/NuGetMonitor/releases)
@@ -41,7 +44,7 @@ The package manager shows all installed packages of the current solution. Updati
 
 Compared to the original NuGet Package Manager updating packages is very fast, because the package version is instantly updated without validation against other packages - version conflicts may show up only at the next build and have to be resolved manually.
 
-Shared package refernces, e.g. in the `Directory.Build.props` file, are handeld gracefully, and will not be replaced by `Update` entries in every project.
+Shared package references, e.g. in the `Directory.Build.props` file, are handled gracefully, and will not be replaced by `Update` entries in every project.
 
 ![ToolWindow](art/ToolWindow.png)
 
