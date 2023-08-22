@@ -1,0 +1,213 @@
+﻿<UserControl x:Class="NuGetMonitor.View.NuGetMonitorControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:view="clr-namespace:NuGetMonitor.View"
+             xmlns:toms="urn:TomsToolbox"
+             xmlns:styles="urn:TomsToolbox.Wpf.Styles"
+             xmlns:toolkit="clr-namespace:Community.VisualStudio.Toolkit;assembly=Community.VisualStudio.Toolkit"
+             xmlns:imaging="clr-namespace:Microsoft.VisualStudio.Imaging;assembly=Microsoft.VisualStudio.Imaging"
+             xmlns:imageCatalog="clr-namespace:Microsoft.VisualStudio.Imaging;assembly=Microsoft.VisualStudio.ImageCatalog"
+             xmlns:dgx="urn:tom-englert.de/DataGridExtensions"
+             toolkit:Themes.UseVsTheme="True"
+             mc:Ignorable="d" d:DesignHeight="450" d:DesignWidth="800">
+  <UserControl.DataContext>
+    <view:NuGetMonitorViewModel />
+  </UserControl.DataContext>
+  <UserControl.Resources>
+    <ResourceDictionary Source="/NuGetMonitor;component/Resources/VSColorScheme.xaml" />
+  </UserControl.Resources>
+  <Grid FocusManager.FocusedElement="{Binding ElementName=DataGrid}">
+    <DockPanel>
+      <ToolBar DockPanel.Dock="Top" Style="{DynamicResource {x:Static styles:ResourceKeys.ToolBarStyle}}">
+        <Button Command="{Binding UpdateSelectedCommand}"
+                ToolTip="Update Selected Items">
+          <Grid Width="16" Height="16"
+                Background="Transparent"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center">
+            <Ellipse Width="16" Height="16" Stroke="{Binding Foreground, RelativeSource={RelativeSource FindAncestor, AncestorType=Button}}" StrokeThickness="1" />
+            <Path Data="M8,4 L8,13 M5,8 L8,4 L11,8" Stroke="{Binding Foreground, RelativeSource={RelativeSource FindAncestor, AncestorType=Button}}" StrokeThickness="1" />
+          </Grid>
+          <Button.Style>
+            <Style TargetType="Button" BasedOn="{StaticResource {x:Static ToolBar.ButtonStyleKey}}">
+              <Style.Triggers>
+                <Trigger Property="IsEnabled" Value="False">
+                  <Setter Property="Foreground" Value="Gray" />
+                </Trigger>
+              </Style.Triggers>
+            </Style>
+          </Button.Style>
+        </Button>
+        <Button Command="{Binding RefreshCommand}" CommandParameter="{Binding ElementName=DataGrid}" ToolTip="Refresh">
+          <imaging:CrispImage Width="16" Height="16" Moniker="{x:Static imageCatalog:KnownMonikers.Refresh}" />
+        </Button>
+        <Button Command="{Binding ShowNuGetPackageManagerCommand}" ToolTip="Launch NuGet Package Manager">
+          <imaging:CrispImage Width="16" Height="16" Moniker="{x:Static imageCatalog:KnownMonikers.NuGet}" />
+        </Button>
+        <Button Command="{Binding CopyIssueDetailsCommand}" ToolTip="Copy issue details">
+          <imaging:CrispImage Width="16" Height="16" Moniker="{x:Static imageCatalog:KnownMonikers.Copy}" />
+        </Button>
+      </ToolBar>
+      <DataGrid x:Name="DataGrid"
+                ItemsSource="{Binding Packages}"
+                AutoGenerateColumns="False"
+                IsReadOnly="True"
+                Style="{DynamicResource {x:Static styles:ResourceKeys.DataGridStyle}}"
+                VerticalContentAlignment="Center"
+                dgx:DataGridFilter.IsAutoFilterEnabled="True"
+                toms:MultiSelectorExtensions.SelectionBinding="{Binding SelectedPackages}">
+        <DataGrid.CellStyle>
+          <Style TargetType="DataGridCell" BasedOn="{StaticResource {x:Static styles:ResourceKeys.DataGridCellStyle}}">
+            <Style.Triggers>
+              <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource FindAncestor, AncestorType=DataGridRow}}" Value="True">
+                <Setter Property="Background" Value="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}" />
+                <Setter Property="BorderBrush" Value="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}" />
+              </DataTrigger>
+            </Style.Triggers>
+          </Style>
+        </DataGrid.CellStyle>
+        <DataGrid.RowStyle>
+          <Style TargetType="DataGridRow" BasedOn="{StaticResource {x:Static styles:ResourceKeys.DataGridRowStyle}}">
+            <Style.Triggers>
+              <Trigger Property="IsSelected" Value="True">
+                <Setter Property="Background" Value="Transparent" />
+              </Trigger>
+            </Style.Triggers>
+          </Style>
+        </DataGrid.RowStyle>
+        <DataGrid.Columns>
+          <DataGridTextColumn Binding="{Binding Identity.Id}"
+                              Header="Package"
+                              MinWidth="300" />
+          <DataGridTextColumn Binding="{Binding Identity.Version}"
+                              Header="Installed Version"
+                              MinWidth="120"
+                              dgx:DataGridFilterColumn.IsFilterVisible="False">
+            <DataGridTextColumn.ElementStyle>
+              <Style TargetType="FrameworkElement">
+                <Setter Property="HorizontalAlignment" Value="Right" />
+              </Style>
+            </DataGridTextColumn.ElementStyle>
+          </DataGridTextColumn>
+          <DataGridTemplateColumn Header="Available Versions"
+                                  MinWidth="120"
+                                  dgx:DataGridFilterColumn.IsFilterVisible="False">
+            <DataGridTemplateColumn.CellTemplate>
+              <DataTemplate>
+                <Grid>
+                  <ComboBox ItemsSource="{Binding Package.Versions}"
+                            SelectedItem="{Binding SelectedVersion, UpdateSourceTrigger=PropertyChanged}"
+                            HorizontalAlignment="Right">
+                    <ComboBox.Style>
+                      <Style TargetType="ComboBox" BasedOn="{StaticResource {x:Static styles:ResourceKeys.DataGridComboBoxEditingElementStyle}}">
+                        <Style.Triggers>
+                          <Trigger Property="IsDropDownOpen" Value="False">
+                            <Setter Property="Background" Value="Transparent" />
+                            <Setter Property="BorderBrush" Value="Transparent" />
+                          </Trigger>
+                          <MultiDataTrigger>
+                            <MultiDataTrigger.Conditions>
+                              <Condition Binding="{Binding IsSelected, RelativeSource={RelativeSource FindAncestor, AncestorType=DataGridRow}}" Value="True" />
+                              <Condition Binding="{Binding IsKeyboardFocusWithin, RelativeSource={RelativeSource FindAncestor, AncestorType=DataGridRow}}" Value="True" />
+                              <Condition Binding="{Binding IsDropDownOpen, RelativeSource={RelativeSource Self}}" Value="False" />
+                            </MultiDataTrigger.Conditions>
+                            <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.HighlightTextBrushKey}}" />
+                          </MultiDataTrigger>
+                        </Style.Triggers>
+                      </Style>
+                    </ComboBox.Style>
+                  </ComboBox>
+                  <TextBlock x:Name="LoadingItemText" Text="Loading..." VerticalAlignment="Center" HorizontalAlignment="Center" Visibility="Collapsed" />
+                </Grid>
+                <DataTemplate.Triggers>
+                  <DataTrigger Binding="{Binding IsLoading}" Value="true">
+                    <Setter TargetName="LoadingItemText" Property="Visibility" Value="Visible" />
+                  </DataTrigger>
+                </DataTemplate.Triggers>
+              </DataTemplate>
+            </DataGridTemplateColumn.CellTemplate>
+          </DataGridTemplateColumn>
+          <DataGridTemplateColumn SortMemberPath="IsUpdateAvailable"
+                                  Width="36"
+                                  dgx:DataGridFilterColumn.Template="{StaticResource {x:Static dgx:DataGridFilter.CheckBoxColumnFilterTemplateKey}}">
+            <DataGridTemplateColumn.CellTemplate>
+              <DataTemplate>
+                <Button ToolTip="Update this package"
+                        MinWidth="16"
+                        Command="{Binding UpdateCommand}">
+                  <Button.Template>
+                    <ControlTemplate TargetType="{x:Type Button}">
+                      <Grid Width="16" Height="16" Background="Transparent" HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <Ellipse x:Name="Ellipse" Width="16" Height="16" Stroke="{TemplateBinding Foreground}" StrokeThickness="1" />
+                        <Path Data="M8,4 L8,13 M5,8 L8,4 L11,8" Stroke="{TemplateBinding Foreground}" StrokeThickness="1" />
+                      </Grid>
+                      <ControlTemplate.Triggers>
+                        <Trigger Property="IsEnabled" Value="False">
+                          <Setter Property="Visibility" Value="Hidden" />
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                          <Setter TargetName="Ellipse" Property="Fill" Value="Gray" />
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                          <Setter TargetName="Ellipse" Property="Fill" Value="Gray" />
+                        </Trigger>
+                        <MultiDataTrigger>
+                          <MultiDataTrigger.Conditions>
+                            <Condition Binding="{Binding IsSelected, RelativeSource={RelativeSource FindAncestor, AncestorType=DataGridRow}}" Value="True" />
+                            <Condition Binding="{Binding IsKeyboardFocusWithin, RelativeSource={RelativeSource FindAncestor, AncestorType=DataGridRow}}" Value="True" />
+                          </MultiDataTrigger.Conditions>
+                          <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.HighlightTextBrushKey}}" />
+                        </MultiDataTrigger>
+                      </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                  </Button.Template>
+                </Button>
+              </DataTemplate>
+            </DataGridTemplateColumn.CellTemplate>
+          </DataGridTemplateColumn>
+          <DataGridTextColumn Header="Issues"
+                              Width="120"
+                              Binding="{Binding PackageInfo.Issues, FallbackValue=''}"
+                              dgx:DataGridFilterColumn.IsFilterVisible="False" />
+          <DataGridTemplateColumn Header="Projects"
+                                  dgx:DataGridFilterColumn.IsFilterVisible="False">
+            <DataGridTemplateColumn.CellStyle>
+              <Style TargetType="DataGridCell">
+                <Style.Triggers>
+                  <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource FindAncestor, AncestorType=DataGridRow}}" Value="True">
+                    <Setter Property="Background" Value="Transparent" />
+                    <Setter Property="BorderBrush" Value="Transparent" />
+                  </DataTrigger>
+                </Style.Triggers>
+              </Style>
+            </DataGridTemplateColumn.CellStyle>
+            <DataGridTemplateColumn.CellTemplate>
+              <DataTemplate>
+                <ItemsControl ItemsSource="{Binding Projects}">
+                  <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                      <StackPanel Orientation="Horizontal" />
+                    </ItemsPanelTemplate>
+                  </ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                      <TextBlock Margin="2,0" VerticalAlignment="Center">
+                        <Hyperlink Command="{Binding OpenProjectCommand}">
+                          <Run Text="{Binding Name, Mode=OneWay}" />
+                        </Hyperlink>
+                      </TextBlock>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </DataTemplate>
+            </DataGridTemplateColumn.CellTemplate>
+          </DataGridTemplateColumn>
+        </DataGrid.Columns>
+      </DataGrid>
+
+    </DockPanel>
+    <toms:LoadingIndicator IsActive="{Binding IsLoading}" Header="Loading..." />
+  </Grid>
+</UserControl>

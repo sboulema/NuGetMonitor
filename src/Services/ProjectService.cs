@@ -1,34 +1,70 @@
-﻿using Community.VisualStudio.Toolkit;
+﻿using System.IO;
+using Community.VisualStudio.Toolkit;
 using Microsoft.Build.Evaluation;
+using NuGet.Frameworks;
 using NuGet.Packaging.Core;
 using NuGet.Versioning;
 using NuGetMonitor.Models;
 using TomsToolbox.Essentials;
+using Project = Microsoft.Build.Evaluation.Project;
 
 namespace NuGetMonitor.Services;
 
-public static class ProjectService
+internal static class ProjectService
 {
+    private static ProjectCollection _projectCollection = new();
+
+    static ProjectService()
+    {
+        VS.Events.SolutionEvents.OnAfterCloseSolution += ClearCache;
+    }
+
+    public static void ClearCache()
+    {
+        Interlocked.Exchange(ref _projectCollection, new ProjectCollection()).Dispose();
+    }
+
     public static async Task<IReadOnlyCollection<PackageReferenceEntry>> GetPackageReferences()
     {
-        var projects = await VS.Solutions.GetAllProjectsAsync().ConfigureAwait(false);
+        var projectCollection = _projectCollection;
+
+        var projects = await VS.Solutions.GetAllProjectsAsync();
 
         var projectPaths = projects.Select(project => project.FullPath)
             .ExceptNullItems()
             .ToArray();
 
-        var refTasks = projectPaths.Select(path => Task.Run(() => GetPackageReferences(path)));
+        return await Task.Run(() =>
+        {
+            var references = projectPaths.Select(path => GetPackageReferences(projectCollection, path));
 
-        var references = await Task.WhenAll(refTasks).ConfigureAwait(false);
-
-        return references
-            .SelectMany(items => items)
-            .ToArray();
+            return references
+                .SelectMany(items => items)
+                .OrderBy(item => item.Identity)
+                .ThenBy(item => Path.GetFileName(item.ProjectItem.Xml.ContainingProject.FullPath))
+                .ToArray();
+        });
     }
 
-    internal static IEnumerable<PackageReferenceEntry> GetPackageReferences(string projectPath)
+
+    public static NuGetFramework[]? GetTargetFrameworks(this Project project)
     {
-        var items = GetPackageReferenceItems(projectPath);
+        var frameworkNames = (project.GetProperty("TargetFrameworks") ?? project.GetProperty("TargetFramework"))
+            ?.EvaluatedValue
+            ?.Split(';')
+            .Select(value => value.Trim());
+
+        var frameworks = frameworkNames?
+            .Select(NuGetFramework.Parse)
+            .Distinct()
+            .ToArray();
+
+        return frameworks;
+    }
+
+    private static IEnumerable<PackageReferenceEntry> GetPackageReferences(ProjectCollection projectCollection, string projectPath)
+    {
+        var items = GetPackageReferenceItems(projectCollection, projectPath);
 
         var packageReferences = items
             .Select(CreateEntry)
@@ -37,11 +73,34 @@ public static class ProjectService
         return packageReferences;
     }
 
-    internal static IEnumerable<ProjectItem> GetPackageReferenceItems(string projectPath)
+    private static IEnumerable<ProjectItem> GetPackageReferenceItems(ProjectCollection projectCollection, string projectPath)
     {
-        var project = new Microsoft.Build.Evaluation.Project(projectPath);
+        try
+        {
+            lock (projectCollection)
+            {
+                var project = projectCollection.LoadProject(projectPath);
 
-        return project.AllEvaluatedItems.Where(item => item.ItemType == "PackageReference");
+                return project.AllEvaluatedItems.Where(IsEditablePackageReference);
+            }
+        }
+        catch (Exception ex)
+        {
+            LoggingService.Log($"Get package reference item failed: {ex}");
+
+            return Enumerable.Empty<ProjectItem>();
+        }
+    }
+
+    private static bool IsEditablePackageReference(ProjectItem element)
+    {
+        return IsEditablePackageReference(element.ItemType, element.Metadata.Select(value => new KeyValuePair<string, string?>(value.Name, value.EvaluatedValue)));
+    }
+
+    public static bool IsEditablePackageReference(string itemType, IEnumerable<KeyValuePair<string, string?>> metadataEntries)
+    {
+        return string.Equals(itemType, "PackageReference", StringComparison.OrdinalIgnoreCase)
+               && metadataEntries.All(metadata => !string.Equals(metadata.Key, "Condition", StringComparison.OrdinalIgnoreCase) || string.IsNullOrWhiteSpace(metadata.Value));
     }
 
     private static PackageReferenceEntry? CreateEntry(ProjectItem projectItem)

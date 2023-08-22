@@ -1,14 +1,7 @@
-﻿using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics;
-using System.Runtime.CompilerServices;
+﻿using Microsoft.VisualStudio.Shell;
 
-[assembly: InternalsVisibleTo("Tests")]
-
-namespace System.Runtime.CompilerServices
-{
-    [ExcludeFromCodeCoverage]
-    [DebuggerNonUserCode]
-    internal static class IsExternalInit
-    {
-    }
-}
+[assembly: ProvideCodeBase(AssemblyName = "DataGridExtensions")]
+[assembly: ProvideCodeBase(AssemblyName = "Microsoft.Xaml.Behaviors")]
+[assembly: ProvideCodeBase(AssemblyName = "TomsToolbox.Essentials")]
+[assembly: ProvideCodeBase(AssemblyName = "TomsToolbox.Wpf")]
+[assembly: ProvideCodeBase(AssemblyName = "TomsToolbox.Wpf.Styles")]
