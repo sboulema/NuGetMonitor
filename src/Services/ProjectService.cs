@@ -2,7 +2,6 @@
 using Community.VisualStudio.Toolkit;
 using Microsoft.Build.Evaluation;
 using NuGet.Frameworks;
-using NuGet.Packaging.Core;
 using NuGet.Versioning;
 using NuGetMonitor.Models;
 using TomsToolbox.Essentials;
@@ -40,7 +39,7 @@ internal static class ProjectService
 
             return references
                 .SelectMany(items => items)
-                .OrderBy(item => item.Identity)
+                .OrderBy(item => item.Identity.Id)
                 .ThenBy(item => Path.GetFileName(item.ProjectItem.Xml.ContainingProject.FullPath))
                 .ToArray();
         });
@@ -81,7 +80,7 @@ internal static class ProjectService
             {
                 var project = projectCollection.LoadProject(projectPath);
 
-                return project.AllEvaluatedItems.Where(IsEditablePackageReference);
+                return project.AllEvaluatedItems;
             }
         }
         catch (Exception ex)
@@ -92,24 +91,15 @@ internal static class ProjectService
         }
     }
 
-    private static bool IsEditablePackageReference(ProjectItem element)
-    {
-        return IsEditablePackageReference(element.ItemType, element.Metadata.Select(value => new KeyValuePair<string, string?>(value.Name, value.EvaluatedValue)));
-    }
-
-    public static bool IsEditablePackageReference(string itemType, IEnumerable<KeyValuePair<string, string?>> metadataEntries)
-    {
-        return string.Equals(itemType, "PackageReference", StringComparison.OrdinalIgnoreCase)
-               && metadataEntries.All(metadata => !string.Equals(metadata.Key, "Condition", StringComparison.OrdinalIgnoreCase) || string.IsNullOrWhiteSpace(metadata.Value));
-    }
-
     private static PackageReferenceEntry? CreateEntry(ProjectItem projectItem)
     {
         var id = projectItem.EvaluatedInclude;
         var versionValue = projectItem.GetMetadata("Version")?.EvaluatedValue;
+        if (versionValue.IsNullOrEmpty())
+            return null;
 
-        return NuGetVersion.TryParse(versionValue, out var version)
-            ? new PackageReferenceEntry(new PackageIdentity(id, version), projectItem)
+        return VersionRange.TryParse(versionValue, out var versionRange)
+            ? new PackageReferenceEntry(id, versionRange, projectItem)
             : null;
     }
 }

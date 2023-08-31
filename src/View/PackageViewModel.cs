@@ -11,25 +11,29 @@ namespace NuGetMonitor.View
 {
     internal sealed partial class PackageViewModel : INotifyPropertyChanged
     {
-        public PackageViewModel(IGrouping<PackageIdentity, PackageReferenceEntry> items)
+        public PackageViewModel(IGrouping<PackageReference, PackageReferenceEntry> items)
         {
             Items = items;
-            Identity = items.Key;
+            PackageReference = items.Key;
             Projects = items.GroupBy(item => item.ProjectItem.Xml.ContainingProject).Select(item => new ProjectViewModel(item.Key)).ToArray();
+            ActiveVersion = NuGetVersion.TryParse(PackageReference.VersionRange.OriginalString, out var simpleVersion) ? simpleVersion : PackageReference.VersionRange;
         }
 
-        public IGrouping<PackageIdentity, PackageReferenceEntry> Items { get; }
+        public IGrouping<PackageReference, PackageReferenceEntry> Items { get; }
 
         public ICollection<ProjectViewModel> Projects { get; }
 
-        [OnChangedMethod(nameof(OnIdentityChanged))]
-        public PackageIdentity Identity { get; private set; }
+        [OnChangedMethod(nameof(OnPackageReferenceChanged))]
+        public PackageReference PackageReference { get; private set; }
+
+        public object? ActiveVersion { get; private set; }
 
         public Package? Package { get; private set; }
 
+        [OnChangedMethod(nameof(OnSelectedVersionChanged))]
         public NuGetVersion? SelectedVersion { get; set; }
 
-        public bool IsUpdateAvailable => SelectedVersion is not null && SelectedVersion != Identity.Version;
+        public bool IsUpdateAvailable { get; private set; }
 
         public bool IsLoading => Package == null;
 
@@ -41,11 +45,16 @@ namespace NuGetMonitor.View
         {
             try
             {
-                Package = await NuGetService.GetPackage(Identity.Id);
+                Package = await NuGetService.GetPackage(PackageReference.Id);
 
                 var versions = Package?.Versions ?? Array.Empty<NuGetVersion>();
 
-                SelectedVersion = versions.FirstOrDefault(i => !i.IsPrerelease && i >= Identity.Version) ?? versions.FirstOrDefault();
+                SelectedVersion = ActiveVersion switch
+                {
+                    NuGetVersion version => versions.FirstOrDefault(i => !i.IsPrerelease && i >= version) ?? versions.FirstOrDefault(),
+                    VersionRange versionRange => versionRange.FindBestMatch(versions),
+                    _ => null
+                };
             }
             catch (OperationCanceledException)
             {
@@ -53,16 +62,38 @@ namespace NuGetMonitor.View
             }
         }
 
-        public void ApplyVersion()
+        public void ApplySelectedVersion()
         {
-            Identity = new PackageIdentity(Identity.Id, SelectedVersion);
+            if (SelectedVersion is null)
+                return;
+
+            PackageReference = PackageReference with { VersionRange = new VersionRange(SelectedVersion) };
+            IsUpdateAvailable = false;
+            ActiveVersion = SelectedVersion;
         }
 
-        private async void OnIdentityChanged()
+        private void OnSelectedVersionChanged()
+        {
+            IsUpdateAvailable = (SelectedVersion is not null) && ActiveVersion switch
+            {
+                NuGetVersion version => version != SelectedVersion,
+                VersionRange versionRange => versionRange.FindBestMatch(Package?.Versions) != SelectedVersion,
+                _ => false
+            };
+        }
+
+        private async void OnPackageReferenceChanged()
         {
             try
             {
-                PackageInfo = await NuGetService.GetPackageInfo(Identity);
+                Package = await NuGetService.GetPackage(PackageReference.Id);
+
+                var packageIdentity = PackageReference.FindBestMatch(Package?.Versions);
+
+                if (packageIdentity != null)
+                {
+                    PackageInfo = await NuGetService.GetPackageInfo(packageIdentity);
+                }
             }
             catch (OperationCanceledException)
             {
