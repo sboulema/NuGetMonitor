@@ -10,6 +10,7 @@ using Microsoft.Build.Construction;
 using Microsoft.Build.Evaluation;
 using Microsoft.VisualStudio.Shell;
 using NuGetMonitor.Services;
+using TomsToolbox.Essentials;
 using TomsToolbox.Wpf;
 
 namespace NuGetMonitor.View;
@@ -121,9 +122,7 @@ internal sealed partial class NuGetMonitorViewModel : INotifyPropertyChanged
 
             var project = ProjectRootElement.Open(fullPath, projectCollection, true);
 
-            var packageReferences = project.Items
-                .Where(IsEditablePackageReference)
-                .ToArray();
+            var packageReferences = project.Items;
 
             foreach (var packageReferenceEntry in packageReferenceEntries)
             {
@@ -133,17 +132,17 @@ internal sealed partial class NuGetMonitorViewModel : INotifyPropertyChanged
                 if (selectedVersion == null)
                     continue;
 
-                var metadata = packageReferences
+                var metadataItems = packageReferences
                     .Where(item => string.Equals(item.Include, identity.Id, StringComparison.OrdinalIgnoreCase))
                     .Select(item => item.Metadata.FirstOrDefault(metadata => string.Equals(metadata.Name, "Version", StringComparison.OrdinalIgnoreCase)
-                                                                          && string.Equals(metadata.Value, identity.Version.ToString(), StringComparison.OrdinalIgnoreCase)))
-                    .FirstOrDefault();
+                                                                          && string.Equals(metadata.Value, identity.VersionRange.OriginalString, StringComparison.OrdinalIgnoreCase)))
+                    .ExceptNullItems();
 
-                if (metadata == null)
-                    continue;
-
-                metadata.Value = selectedVersion.ToString();
-                metadata.ExpressedAsAttribute = true;
+                foreach (var metadata in metadataItems)
+                {
+                    metadata.Value = selectedVersion.ToString();
+                    metadata.ExpressedAsAttribute = true;
+                }
             }
 
             project.Save();
@@ -151,13 +150,8 @@ internal sealed partial class NuGetMonitorViewModel : INotifyPropertyChanged
 
         foreach (var packageViewModel in packageViewModels)
         {
-            packageViewModel.ApplyVersion();
+            packageViewModel.ApplySelectedVersion();
         }
-    }
-
-    private static bool IsEditablePackageReference(ProjectItemElement element)
-    {
-        return ProjectService.IsEditablePackageReference(element.ItemType, element.Metadata.Select(value => new KeyValuePair<string, string?>(value.Name, value.Value)));
     }
 
     private bool CanCopyIssueDetails()

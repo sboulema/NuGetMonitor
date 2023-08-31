@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using System.Security.Principal;
 using Microsoft.Extensions.Caching.Memory;
 using NuGet.Common;
 using NuGet.Frameworks;
@@ -8,6 +9,7 @@ using NuGet.Protocol.Core.Types;
 using NuGet.Versioning;
 using NuGetMonitor.Models;
 using TomsToolbox.Essentials;
+using PackageReference = NuGetMonitor.Models.PackageReference;
 
 namespace NuGetMonitor.Services;
 
@@ -31,16 +33,15 @@ internal static class NuGetService
         Interlocked.Exchange(ref _session, new NuGetSession()).Dispose();
     }
 
-    public static async Task<ICollection<PackageInfo>> CheckPackageReferences(IEnumerable<PackageReferenceEntry> packageReferences)
+    public static async Task<ICollection<PackageReferenceInfo>> CheckPackageReferences(IEnumerable<PackageReferenceEntry> packageReferences)
     {
         var session = _session;
 
         session.ThrowIfCancellationRequested();
 
         var getPackageInfoTasks = packageReferences
-            .Select(item => item.Identity)
-            .Distinct()
-            .Select(packageIdentity => GetPackageInfoCacheEntry(packageIdentity, session).GetValue());
+            .GroupBy(item => item.Identity)
+            .Select(group => FindPackageInfo(group.Key, group.ToHashSet(), session));
 
         var result = await Task.WhenAll(getPackageInfoTasks);
 
@@ -73,12 +74,11 @@ internal static class NuGetService
         return packageInfo;
     }
 
-    public static async Task<ICollection<TransitiveDependencies>> GetTransitivePackages(IEnumerable<PackageReferenceEntry> packageReferences, ICollection<PackageInfo> topLevelPackages)
+    public static async Task<ICollection<TransitiveDependencies>> GetTransitivePackages(IEnumerable<PackageReferenceEntry> packageReferences, ICollection<PackageReferenceInfo> topLevelPackages)
     {
         var results = new List<TransitiveDependencies>();
 
         var packagesReferencesByProject = packageReferences.GroupBy(item => item.ProjectItem.Project);
-        var topLevelPackagesByIdentity = topLevelPackages.ToDictionary(package => package.PackageIdentity);
 
         foreach (var projectPackageReferences in packagesReferencesByProject)
         {
@@ -91,23 +91,16 @@ internal static class NuGetService
                 continue;
             }
 
+            var topLevelPackagesInProject = topLevelPackages
+                .Where(package => projectPackageReferences.Any(item => package.PackageReferenceEntries.Contains(item)))
+                .Select(item => item.PackageInfo)
+                .ToArray();
+
             foreach (var targetFramework in targetFrameworks)
             {
-                var topLevelPackagesInProject = projectPackageReferences
-                    .Select(packageReference => topLevelPackagesByIdentity.GetValueOrDefault(packageReference.Identity))
-                    .ExceptNullItems();
-
                 var inputQueue = new Queue<PackageInfo>(topLevelPackagesInProject);
-                var dependencyMap = new Dictionary<PackageInfo, HashSet<PackageInfo>>();
-                var processedItems = new Dictionary<string, PackageInfo>();
-
-                bool ShouldSkip(PackageIdentity identity)
-                {
-                    if (!processedItems.TryGetValue(identity.Id, out var existing))
-                        return false;
-
-                    return existing.PackageIdentity.Version >= identity.Version;
-                }
+                var parentsByChild = new Dictionary<PackageInfo, HashSet<PackageInfo>>();
+                var processedItemsByPackageId = new Dictionary<string, PackageInfo>();
 
                 while (inputQueue.Count > 0)
                 {
@@ -115,16 +108,16 @@ internal static class NuGetService
 
                     var packageIdentity = packageInfo.PackageIdentity;
 
-                    if (ShouldSkip(packageIdentity))
+                    if (processedItemsByPackageId.TryGetValue(packageIdentity.Id, out var existing) && existing.PackageIdentity.Version >= packageIdentity.Version)
                         continue;
 
-                    processedItems[packageIdentity.Id] = packageInfo;
+                    processedItemsByPackageId[packageIdentity.Id] = packageInfo;
 
                     var dependencies = await packageInfo.GetPackageDependenciesInFramework(targetFramework);
 
                     foreach (var dependency in dependencies)
                     {
-                        dependencyMap
+                        parentsByChild
                             .ForceValue(dependency, _ => new HashSet<PackageInfo>())
                             .Add(packageInfo);
 
@@ -132,17 +125,29 @@ internal static class NuGetService
                     }
                 }
 
-                var transitivePackages = processedItems.Values.Except(topLevelPackages).ToHashSet();
+                var transitivePackages = processedItemsByPackageId.Values.Except(topLevelPackages.Select(item => item.PackageInfo)).ToHashSet();
 
-                dependencyMap = dependencyMap
+                parentsByChild = parentsByChild
                     .Where(item => transitivePackages.Contains(item.Key))
                     .ToDictionary();
 
-                results.Add(new TransitiveDependencies(project, targetFramework, dependencyMap));
+                results.Add(new TransitiveDependencies(project, targetFramework, parentsByChild));
             }
         }
 
         return results;
+    }
+
+    private static async Task<PackageReferenceInfo?> FindPackageInfo(PackageReference item, HashSet<PackageReferenceEntry> packageReferenceEntries, NuGetSession session)
+    {
+        var package = await GetPackageCacheEntry(item.Id, session).GetValue();
+
+        var identity = item.FindBestMatch(package?.Versions);
+        if (identity is null)
+            return null;
+
+        var packageInfo = await GetPackageInfoCacheEntry(identity, session).GetValue();
+        return packageInfo is null ? null : new PackageReferenceInfo(packageInfo, packageReferenceEntries);
     }
 
     private static async Task<PackageInfo[]> GetPackageDependenciesInFramework(this PackageInfo packageInfo, NuGetFramework targetFramework)
@@ -311,6 +316,7 @@ internal static class NuGetService
             var versions = package.Versions;
 
             var deprecationMetadata = await metadata.GetDeprecationMetadataAsync();
+
             return new PackageInfo(packageIdentity, package, session, metadata.Vulnerabilities?.ToArray(), deprecationMetadata)
             {
                 IsOutdated = IsOutdated(packageIdentity, versions)
@@ -387,6 +393,5 @@ internal static class NuGetService
 
             return packageInfos?.ExceptNullItems().ToArray();
         }
-
     }
 }

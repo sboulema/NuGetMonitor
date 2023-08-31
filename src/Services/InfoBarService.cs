@@ -5,12 +5,12 @@ using Community.VisualStudio.Toolkit;
 using Microsoft.VisualStudio.Imaging;
 using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Shell;
+using NuGet.Versioning;
 using NuGetMonitor.Models;
 using NuGetMonitor.View;
 using TomsToolbox.Essentials;
 
 using static NuGetMonitor.Services.LoggingService;
-
 
 namespace NuGetMonitor.Services;
 
@@ -23,9 +23,10 @@ internal static class InfoBarService
         Manage
     }
 
-    public static void ShowTopLevelPackageIssues(ICollection<PackageInfo> topLevelPackages)
+    public static void ShowTopLevelPackageIssues(IEnumerable<PackageReferenceInfo> topLevelPackages)
     {
         var message = string.Join(", ", GetInfoTexts(topLevelPackages).ExceptNullItems());
+
         if (string.IsNullOrEmpty(message))
         {
             Log("No issues found");
@@ -47,7 +48,7 @@ internal static class InfoBarService
     public static void ShowTransitivePackageIssues(ICollection<TransitiveDependencies> transitiveDependencies)
     {
         var transitivePackages = transitiveDependencies
-            .SelectMany(project => project.Packages.Keys)
+            .SelectMany(dependency => dependency.ParentsByChild.Keys)
             .Distinct()
             .ToArray();
 
@@ -146,7 +147,7 @@ internal static class InfoBarService
 
             foreach (var vulnerablePackage in vulnerablePackages)
             {
-                PrintDependencyTree(text, vulnerablePackage, dependency.Packages, 0);
+                PrintDependencyTree(text, vulnerablePackage, dependency.ParentsByChild, 0);
             }
 
             text.AppendLine().AppendLine();
@@ -190,10 +191,15 @@ internal static class InfoBarService
         }
     }
 
-    private static IEnumerable<string?> GetInfoTexts(ICollection<PackageInfo> topLevelPackages)
+    private static IEnumerable<string?> GetInfoTexts(IEnumerable<PackageReferenceInfo> topLevelPackageInfos)
     {
         // Idea for showing counts, not sure if unicode icons in a InfoBar feel native
         // new InfoBarTextSpan($"NuGet update: 🔼 {outdatedCount} ⚠ {deprecatedCount} 💀 {vulnerableCount}. "),
+
+        var topLevelPackages = topLevelPackageInfos
+            .Where(item => item.PackageReferenceEntries.Any(entry => NuGetVersion.TryParse(entry.Identity.VersionRange.OriginalString, out _)))
+            .Select(item => item.PackageInfo)
+            .ToArray();
 
         yield return CountedDescription(topLevelPackages, "update", item => item.IsOutdated);
         yield return CountedDescription(topLevelPackages, "deprecation", item => item.IsDeprecated);

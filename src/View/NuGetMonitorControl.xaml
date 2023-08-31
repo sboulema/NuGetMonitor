@@ -78,10 +78,10 @@
           </Style>
         </DataGrid.RowStyle>
         <DataGrid.Columns>
-          <DataGridTextColumn Binding="{Binding Identity.Id}"
+          <DataGridTextColumn Binding="{Binding PackageReference.Id}"
                               Header="Package"
                               MinWidth="300" />
-          <DataGridTextColumn Binding="{Binding Identity.Version}"
+          <DataGridTextColumn Binding="{Binding ActiveVersion}"
                               Header="Installed Version"
                               MinWidth="120"
                               dgx:DataGridFilterColumn.IsFilterVisible="False">
@@ -97,7 +97,7 @@
             <DataGridTemplateColumn.CellTemplate>
               <DataTemplate>
                 <Grid>
-                  <ComboBox ItemsSource="{Binding Package.Versions}"
+                  <ComboBox ItemsSource="{Binding Package.Versions, FallbackValue={x:Null}}"
                             SelectedItem="{Binding SelectedVersion, UpdateSourceTrigger=PropertyChanged}"
                             HorizontalAlignment="Right">
                     <ComboBox.Style>
@@ -170,6 +170,10 @@
           <DataGridTextColumn Header="Issues"
                               Width="120"
                               Binding="{Binding PackageInfo.Issues, FallbackValue=''}"
+                              dgx:DataGridFilterColumn.IsFilterVisible="False" />
+          <DataGridTextColumn Header="Justifications"
+                              Width="120"
+                              Binding="{Binding Justifications}"
                               dgx:DataGridFilterColumn.IsFilterVisible="False" />
           <DataGridTemplateColumn Header="Projects"
                                   dgx:DataGridFilterColumn.IsFilterVisible="False">
