@@ -1,6 +1,5 @@
 ﻿using System.ComponentModel;
 using System.Windows.Input;
-using NuGet.Packaging.Core;
 using NuGet.Versioning;
 using NuGetMonitor.Models;
 using NuGetMonitor.Services;
@@ -17,6 +16,8 @@ namespace NuGetMonitor.View
             PackageReference = items.Key;
             Projects = items.GroupBy(item => item.ProjectItem.Xml.ContainingProject).Select(item => new ProjectViewModel(item.Key)).ToArray();
             ActiveVersion = NuGetVersion.TryParse(PackageReference.VersionRange.OriginalString, out var simpleVersion) ? simpleVersion : PackageReference.VersionRange;
+            Justifications = string.Join(", ", Items.Select(reference => reference.Justification).Distinct());
+
         }
 
         public IGrouping<PackageReference, PackageReferenceEntry> Items { get; }
@@ -40,6 +41,8 @@ namespace NuGetMonitor.View
         public ICommand UpdateCommand => new DelegateCommand(() => IsUpdateAvailable, () => { NuGetMonitorViewModel.Update(this); });
 
         public PackageInfo? PackageInfo { get; private set; }
+
+        public string Justifications { get; }
 
         public async Task Load()
         {

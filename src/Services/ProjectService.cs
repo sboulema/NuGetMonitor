@@ -99,7 +99,7 @@ internal static class ProjectService
             return null;
 
         return VersionRange.TryParse(versionValue, out var versionRange)
-            ? new PackageReferenceEntry(id, versionRange, projectItem)
+            ? new PackageReferenceEntry(id, versionRange, projectItem, projectItem.GetMetadataValue("Justification"))
             : null;
     }
 }

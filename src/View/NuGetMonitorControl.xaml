@@ -171,6 +171,10 @@
                               Width="120"
                               Binding="{Binding PackageInfo.Issues, FallbackValue=''}"
                               dgx:DataGridFilterColumn.IsFilterVisible="False" />
+          <DataGridTextColumn Header="Justifications"
+                              Width="120"
+                              Binding="{Binding Justifications}"
+                              dgx:DataGridFilterColumn.IsFilterVisible="False" />
           <DataGridTemplateColumn Header="Projects"
                                   dgx:DataGridFilterColumn.IsFilterVisible="False">
             <DataGridTemplateColumn.CellStyle>
