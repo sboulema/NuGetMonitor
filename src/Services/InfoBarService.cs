@@ -11,6 +11,7 @@ using NuGetMonitor.View;
 using TomsToolbox.Essentials;
 
 using static NuGetMonitor.Services.LoggingService;
+using NuGetMonitor.Options;
 
 namespace NuGetMonitor.Services;
 
@@ -47,6 +48,11 @@ internal static class InfoBarService
 
     public static void ShowTransitivePackageIssues(ICollection<TransitiveDependencies> transitiveDependencies)
     {
+        if (!General.Instance.ShowTransitivePackagesIssues)
+        {
+            return;
+        }
+
         var transitivePackages = transitiveDependencies
             .SelectMany(dependency => dependency.ParentsByChild.Keys)
             .Distinct()

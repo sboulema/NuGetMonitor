@@ -13,6 +13,8 @@ namespace NuGetMonitor;
 [ProvideAutoLoad(VSConstants.UICONTEXT.SolutionExistsAndFullyLoaded_string, PackageAutoLoadFlags.BackgroundLoad)]
 [ProvideMenuResource("Menus.ctmenu", 1)]
 [ProvideToolWindow(typeof(NuGetMonitorToolWindow))]
+[ProvideOptionPage(typeof(Options.OptionsProvider.GeneralOptions), "NuGet Monitor", "General", 0, 0, true)]
+[ProvideProfile(typeof(Options.OptionsProvider.GeneralOptions), "NuGet Monitor", "General", 0, 0, true)]
 public sealed class NuGetMonitorPackage : ToolkitPackage
 {
     public const string PackageGuidString = "38279e01-6b27-4a29-9221-c4ea8748f16e";
