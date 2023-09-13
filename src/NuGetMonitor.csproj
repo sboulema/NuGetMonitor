@@ -21,7 +21,7 @@
     <PackageReference Include="Microsoft.Build.Utilities.Core" Version="[17.4.0]" ExcludeAssets="runtime" />
     <PackageReference Include="Community.VisualStudio.Toolkit.17" Version="17.0.507" />
     <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="7.0.0" />
-    <PackageReference Include="Microsoft.VSSDK.BuildTools" Version="17.6.2164" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.VSSDK.BuildTools" Version="17.7.2196" PrivateAssets="all" />
     <PackageReference Include="NuGet.Protocol" Version="6.7.0" />
     <PackageReference Include="PropertyChanged.Fody" Version="4.1.0" PrivateAssets="all" />
     <PackageReference Include="TomsToolbox.Wpf.Styles" Version="2.8.10" />

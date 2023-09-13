@@ -235,6 +235,19 @@ internal static class NuGetService
         return latestVersion > packageIdentity.Version;
     }
 
+    private static NuGetFramework ToPlatformVersionIndependent(NuGetFramework framework)
+    {
+        return new NuGetFramework(framework.Framework, framework.Version, framework.Platform, FrameworkConstants.EmptyVersion);
+    }
+
+    private static T? GetNearestFramework<T>(ICollection<T> items, NuGetFramework framework)
+        where T : class, IFrameworkSpecific
+    {
+        return NuGetFrameworkUtility.GetNearest(items, framework)
+               // e.g net6.0-windows project can use net6.0-windows7.0 package
+               ?? NuGetFrameworkUtility.GetNearest(items, ToPlatformVersionIndependent(framework), item => ToPlatformVersionIndependent(item.TargetFramework));
+    }
+
     private abstract class CacheEntry<T> where T : class
     {
         private readonly TaskCompletionSource<T?> _taskCompletionSource = new();
@@ -368,12 +381,12 @@ internal static class NuGetService
 
             var dependencyGroups = await GetPackageDependencyCacheEntry(packageInfo.PackageIdentity, packageInfo.Package.SourceRepository, session).GetValue();
 
-            if (dependencyGroups is null)
+            if (dependencyGroups == null || dependencyGroups.Length < 1)
                 return Array.Empty<PackageInfo>();
 
-            var dependencyGroup = NuGetFrameworkUtility.GetNearest(dependencyGroups, targetFramework, item => item.TargetFramework);
-            if (dependencyGroup is null)
-                return Array.Empty<PackageInfo>();
+            var dependentPackages = GetNearestFramework(dependencyGroups, targetFramework)?.Packages
+                                    // fallback to all when GetNearestFramework fails, better have some false positives than to miss one
+                                    ?? dependencyGroups.SelectMany(group => group.Packages).Distinct();
 
             async Task<PackageInfo?> ToPackageInfo(PackageDependency packageDependency)
             {
@@ -389,7 +402,7 @@ internal static class NuGetService
                 return info;
             }
 
-            var packageInfos = await Task.WhenAll(dependencyGroup.Packages.Select(ToPackageInfo));
+            var packageInfos = await Task.WhenAll(dependentPackages.Select(ToPackageInfo));
 
             return packageInfos?.ExceptNullItems().ToArray();
         }
