@@ -83,8 +83,8 @@ internal static class NuGetService
         {
             var project = projectPackageReferences.Key;
 
-            var targetFrameworks = project.GetTargetFrameworks();
-            if (targetFrameworks is null)
+            var projectsInTargetFramework = project.GetProjectsInTargetFramework();
+            if (projectsInTargetFramework is null)
             {
                 await LoggingService.LogAsync($"No target framework found in project {Path.GetFileName(project.FullPath)} (old project format?) - skipping transitive package analysis.");
                 continue;
@@ -95,7 +95,7 @@ internal static class NuGetService
                 .Select(item => item.PackageInfo)
                 .ToArray();
 
-            foreach (var targetFramework in targetFrameworks)
+            foreach (var projectInTargetFramework in projectsInTargetFramework)
             {
                 var inputQueue = new Queue<PackageInfo>(topLevelPackagesInProject);
                 var parentsByChild = new Dictionary<PackageInfo, HashSet<PackageInfo>>();
@@ -112,7 +112,7 @@ internal static class NuGetService
 
                     processedItemsByPackageId[packageIdentity.Id] = packageInfo;
 
-                    var dependencies = await packageInfo.GetPackageDependenciesInFramework(targetFramework);
+                    var dependencies = await packageInfo.GetPackageDependenciesInFramework(projectInTargetFramework.TargetFramework);
 
                     foreach (var dependency in dependencies)
                     {
@@ -130,7 +130,7 @@ internal static class NuGetService
                     .Where(item => transitivePackages.Contains(item.Key))
                     .ToDictionary();
 
-                results.Add(new TransitiveDependencies(project, targetFramework, parentsByChild));
+                results.Add(new TransitiveDependencies(projectInTargetFramework.Project, projectInTargetFramework.TargetFramework, parentsByChild));
             }
         }
 
@@ -284,7 +284,7 @@ internal static class NuGetService
 
         private static async Task<Package?> GetPackage(string packageId, NuGetSession session)
         {
-            foreach (var sourceRepository in await session.GetSourceRepositories())
+            foreach (var sourceRepository in session.SourceRepositories)
             {
                 var packageResource = await sourceRepository.GetResourceAsync<FindPackageByIdResource>(session.CancellationToken);
 

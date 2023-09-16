@@ -1,13 +1,17 @@
 ﻿using System.IO;
 using Community.VisualStudio.Toolkit;
+using EnvDTE;
 using Microsoft.Build.Evaluation;
 using NuGet.Frameworks;
 using NuGet.Versioning;
 using NuGetMonitor.Models;
 using TomsToolbox.Essentials;
 using Project = Microsoft.Build.Evaluation.Project;
+using ProjectItem = Microsoft.Build.Evaluation.ProjectItem;
 
 namespace NuGetMonitor.Services;
+
+internal sealed record ProjectInTargetFramework(Project Project, NuGetFramework TargetFramework);
 
 internal static class ProjectService
 {
@@ -45,20 +49,45 @@ internal static class ProjectService
         });
     }
 
-
-    public static NuGetFramework[]? GetTargetFrameworks(this Project project)
+    public static ProjectInTargetFramework[] GetProjectsInTargetFramework(this Project project)
     {
         var frameworkNames = (project.GetProperty("TargetFrameworks") ?? project.GetProperty("TargetFramework"))
             ?.EvaluatedValue
             ?.Split(';')
-            .Select(value => value.Trim());
+            .Select(value => value.Trim())
+            .ToArray();
 
-        var frameworks = frameworkNames?
+        if (frameworkNames is null || frameworkNames.Length == 0)
+            return new[] { new ProjectInTargetFramework(project, NuGetFramework.AgnosticFramework) };
+
+        var frameworks = frameworkNames
             .Select(NuGetFramework.Parse)
             .Distinct()
             .ToArray();
 
-        return frameworks;
+        if (frameworks.Length == 1)
+            return new[] { new ProjectInTargetFramework(project, frameworks[0]) };
+
+        var projectCollection = _projectCollection;
+
+        lock (projectCollection)
+        {
+            return frameworks
+                .Select(framework => LoadProjectInTargetFramework(project, framework, projectCollection))
+                .ToArray();
+        }
+    }
+
+    private static ProjectInTargetFramework LoadProjectInTargetFramework(Project project, NuGetFramework framework, ProjectCollection projectCollection)
+    {
+        var properties = new Dictionary<string, string>
+        {
+            { "TargetFramework", framework.GetShortFolderName() }
+        };
+
+        var specificProject = projectCollection.LoadProject(project.FullPath, properties, null);
+
+        return new ProjectInTargetFramework(specificProject, framework);
     }
 
     private static IEnumerable<PackageReferenceEntry> GetPackageReferences(ProjectCollection projectCollection, string projectPath)
@@ -76,12 +105,18 @@ internal static class ProjectService
     {
         try
         {
+            Project project;
+
             lock (projectCollection)
             {
-                var project = projectCollection.LoadProject(projectPath);
-
-                return project.AllEvaluatedItems;
+                project = projectCollection.LoadProject(projectPath);
             }
+
+            var projects = project.GetProjectsInTargetFramework();
+
+            var allItems = projects.SelectMany(p => p.Project.GetItems("PackageReference"));
+
+            return allItems;
         }
         catch (Exception ex)
         {

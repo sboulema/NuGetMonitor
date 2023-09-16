@@ -4,13 +4,13 @@ using System.Runtime.InteropServices;
 
 namespace NuGetMonitor.Options;
 
-internal partial class OptionsProvider
+internal sealed class OptionsProvider
 {
     [ComVisible(true)]
     public class GeneralOptions : BaseOptionPage<General> { }
 }
 
-public class General : BaseOptionModel<General>
+public sealed class General : BaseOptionModel<General>
 {
     [Category("Notifications")]
     [DisplayName("Show transitive packages issues")]
