@@ -1,6 +1,7 @@
 ﻿using System.IO;
 using Community.VisualStudio.Toolkit;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.VisualStudio.Shell;
 using NuGet.Configuration;
 using NuGet.Protocol.Core.Types;
 using Settings = NuGet.Configuration.Settings;
@@ -10,20 +11,37 @@ namespace NuGetMonitor.Models
     internal sealed class NuGetSession : IDisposable
     {
         private readonly CancellationTokenSource _cancellationTokenSource = new();
-        private readonly TaskCompletionSource<ICollection<SourceRepository>> _sourceRepositories = new();
 
         public NuGetSession()
         {
-            Load();
+            ThreadHelper.ThrowIfNotOnUIThread();
+
+            var solution = VS.Solutions.GetCurrentSolution();
+            var solutionDirectory = Path.GetDirectoryName(solution?.FullPath);
+
+            var settings = Settings.LoadDefaultSettings(solutionDirectory);
+
+            GlobalPackagesFolder = SettingsUtility.GetGlobalPackagesFolder(settings);
+
+            var packageSourceProvider = new PackageSourceProvider(settings);
+            var sourceRepositoryProvider = new SourceRepositoryProvider(packageSourceProvider, Repository.Provider.GetCoreV3());
+            var sourceRepositories = sourceRepositoryProvider.GetRepositories();
+
+            SourceRepositories = sourceRepositories.ToArray();
+            PackageDownloadContext = new PackageDownloadContext(SourceCacheContext);
         }
 
         public MemoryCache Cache { get; } = new(new MemoryCacheOptions { });
 
         public SourceCacheContext SourceCacheContext { get; } = new();
 
+        public PackageDownloadContext PackageDownloadContext { get; }
+
         public CancellationToken CancellationToken => _cancellationTokenSource.Token;
 
-        public Task<ICollection<SourceRepository>> GetSourceRepositories() => _sourceRepositories.Task;
+        public ICollection<SourceRepository> SourceRepositories { get; }
+
+        public string GlobalPackagesFolder { get; private set; }
 
         public void ThrowIfCancellationRequested() => CancellationToken.ThrowIfCancellationRequested();
 
@@ -33,18 +51,6 @@ namespace NuGetMonitor.Models
             _cancellationTokenSource.Dispose();
             SourceCacheContext.Dispose();
             Cache.Dispose();
-        }
-
-        private async void Load()
-        {
-            var solution = await VS.Solutions.GetCurrentSolutionAsync();
-            var solutionDirectory = Path.GetDirectoryName(solution?.FullPath);
-
-            var packageSourceProvider = new PackageSourceProvider(Settings.LoadDefaultSettings(solutionDirectory));
-            var sourceRepositoryProvider = new SourceRepositoryProvider(packageSourceProvider, Repository.Provider.GetCoreV3());
-            var sourceRepositories = sourceRepositoryProvider.GetRepositories();
-
-            _sourceRepositories.SetResult(sourceRepositories.ToArray());
         }
     }
 }

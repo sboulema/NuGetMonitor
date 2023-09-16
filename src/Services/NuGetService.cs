@@ -1,5 +1,4 @@
 ﻿using System.IO;
-using System.Security.Principal;
 using Microsoft.Extensions.Caching.Memory;
 using NuGet.Common;
 using NuGet.Frameworks;
@@ -229,8 +228,7 @@ internal static class NuGetService
 
     private static bool IsOutdated(PackageIdentity packageIdentity, IEnumerable<NuGetVersion> versions)
     {
-        var latestVersion =
-            versions.FirstOrDefault(version => version.IsPrerelease == packageIdentity.Version.IsPrerelease);
+        var latestVersion = versions.FirstOrDefault(version => version.IsPrerelease == packageIdentity.Version.IsPrerelease);
 
         return latestVersion > packageIdentity.Version;
     }
@@ -350,21 +348,16 @@ internal static class NuGetService
             if (string.Equals(packageIdentity.Id, "NETStandard.Library", StringComparison.OrdinalIgnoreCase))
                 return Array.Empty<PackageDependencyGroup>();
 
-            var resource = await repository.GetResourceAsync<FindPackageByIdResource>();
+            var resource = await repository.GetResourceAsync<DownloadResource>(session.CancellationToken);
 
-            var packageStream = new MemoryStream();
-            await resource.CopyNupkgToStreamAsync(packageIdentity.Id, packageIdentity.Version, packageStream, session.SourceCacheContext, NullLogger.Instance, session.CancellationToken);
+            using var downloadResult = await resource.GetDownloadResourceResultAsync(packageIdentity, session.PackageDownloadContext, session.GlobalPackagesFolder, NullLogger.Instance, session.CancellationToken);
 
-            if (packageStream.Length == 0)
+            if (downloadResult.Status != DownloadResourceResultStatus.Available)
                 return Array.Empty<PackageDependencyGroup>();
 
-            packageStream.Position = 0;
+            var dependencyGroups = await downloadResult.PackageReader.GetPackageDependenciesAsync(session.CancellationToken);
 
-            using var package = new PackageArchiveReader(packageStream);
-
-            var dependencyGroups = package.GetPackageDependencies().ToArray();
-
-            return dependencyGroups;
+            return dependencyGroups.ToArray();
         }
     }
 
