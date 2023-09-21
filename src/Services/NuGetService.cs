@@ -1,5 +1,4 @@
 ﻿using System.IO;
-using System.Security.Principal;
 using Microsoft.Extensions.Caching.Memory;
 using NuGet.Common;
 using NuGet.Frameworks;
@@ -84,19 +83,14 @@ internal static class NuGetService
         {
             var project = projectPackageReferences.Key;
 
-            var targetFrameworks = project.GetTargetFrameworks();
-            if (targetFrameworks is null)
-            {
-                await LoggingService.LogAsync($"No target framework found in project {Path.GetFileName(project.FullPath)} (old project format?) - skipping transitive package analysis.");
-                continue;
-            }
+            var projectsInTargetFramework = project.GetProjectsInTargetFramework();
 
             var topLevelPackagesInProject = topLevelPackages
                 .Where(package => projectPackageReferences.Any(item => package.PackageReferenceEntries.Contains(item)))
                 .Select(item => item.PackageInfo)
                 .ToArray();
 
-            foreach (var targetFramework in targetFrameworks)
+            foreach (var projectInTargetFramework in projectsInTargetFramework)
             {
                 var inputQueue = new Queue<PackageInfo>(topLevelPackagesInProject);
                 var parentsByChild = new Dictionary<PackageInfo, HashSet<PackageInfo>>();
@@ -113,7 +107,7 @@ internal static class NuGetService
 
                     processedItemsByPackageId[packageIdentity.Id] = packageInfo;
 
-                    var dependencies = await packageInfo.GetPackageDependenciesInFramework(targetFramework);
+                    var dependencies = await packageInfo.GetPackageDependenciesInFramework(projectInTargetFramework.TargetFramework);
 
                     foreach (var dependency in dependencies)
                     {
@@ -131,7 +125,7 @@ internal static class NuGetService
                     .Where(item => transitivePackages.Contains(item.Key))
                     .ToDictionary();
 
-                results.Add(new TransitiveDependencies(project, targetFramework, parentsByChild));
+                results.Add(new TransitiveDependencies(projectInTargetFramework.Project, projectInTargetFramework.TargetFramework, parentsByChild));
             }
         }
 
@@ -229,8 +223,7 @@ internal static class NuGetService
 
     private static bool IsOutdated(PackageIdentity packageIdentity, IEnumerable<NuGetVersion> versions)
     {
-        var latestVersion =
-            versions.FirstOrDefault(version => version.IsPrerelease == packageIdentity.Version.IsPrerelease);
+        var latestVersion = versions.FirstOrDefault(version => version.IsPrerelease == packageIdentity.Version.IsPrerelease);
 
         return latestVersion > packageIdentity.Version;
     }
@@ -286,15 +279,20 @@ internal static class NuGetService
 
         private static async Task<Package?> GetPackage(string packageId, NuGetSession session)
         {
-            foreach (var sourceRepository in await session.GetSourceRepositories())
+            foreach (var sourceRepository in session.SourceRepositories)
             {
-                var packageResource = await sourceRepository.GetResourceAsync<FindPackageByIdResource>(session.CancellationToken);
+                var dependencyInfoResource = await sourceRepository.GetResourceAsync<DependencyInfoResource>(session.CancellationToken);
 
-                var unsortedVersions = await packageResource.GetAllVersionsAsync(packageId, session.SourceCacheContext, NullLogger.Instance, session.CancellationToken);
+                var resolvePackages = await dependencyInfoResource.ResolvePackages(packageId, session.SourceCacheContext, NullLogger.Instance, session.CancellationToken);
 
-                var versions = unsortedVersions?.OrderByDescending(item => item).ToArray();
+                var unsortedVersions = resolvePackages
+                    .Where(item => item.Listed)
+                    .Select(item => item.Identity.Version)
+                    .ToArray();
 
-                if (versions?.Length > 0)
+                var versions = unsortedVersions.OrderByDescending(item => item).ToArray();
+
+                if (versions.Length > 0)
                 {
                     return new Package(packageId, versions, sourceRepository);
                 }
@@ -350,21 +348,16 @@ internal static class NuGetService
             if (string.Equals(packageIdentity.Id, "NETStandard.Library", StringComparison.OrdinalIgnoreCase))
                 return Array.Empty<PackageDependencyGroup>();
 
-            var resource = await repository.GetResourceAsync<FindPackageByIdResource>();
+            var resource = await repository.GetResourceAsync<DownloadResource>(session.CancellationToken);
 
-            var packageStream = new MemoryStream();
-            await resource.CopyNupkgToStreamAsync(packageIdentity.Id, packageIdentity.Version, packageStream, session.SourceCacheContext, NullLogger.Instance, session.CancellationToken);
+            using var downloadResult = await resource.GetDownloadResourceResultAsync(packageIdentity, session.PackageDownloadContext, session.GlobalPackagesFolder, NullLogger.Instance, session.CancellationToken);
 
-            if (packageStream.Length == 0)
+            if (downloadResult.Status != DownloadResourceResultStatus.Available)
                 return Array.Empty<PackageDependencyGroup>();
 
-            packageStream.Position = 0;
+            var dependencyGroups = await downloadResult.PackageReader.GetPackageDependenciesAsync(session.CancellationToken);
 
-            using var package = new PackageArchiveReader(packageStream);
-
-            var dependencyGroups = package.GetPackageDependencies().ToArray();
-
-            return dependencyGroups;
+            return dependencyGroups.ToArray();
         }
     }
 
