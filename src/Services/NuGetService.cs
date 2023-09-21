@@ -281,13 +281,18 @@ internal static class NuGetService
         {
             foreach (var sourceRepository in session.SourceRepositories)
             {
-                var packageResource = await sourceRepository.GetResourceAsync<FindPackageByIdResource>(session.CancellationToken);
+                var dependencyInfoResource = await sourceRepository.GetResourceAsync<DependencyInfoResource>(session.CancellationToken);
 
-                var unsortedVersions = await packageResource.GetAllVersionsAsync(packageId, session.SourceCacheContext, NullLogger.Instance, session.CancellationToken);
+                var resolvePackages = await dependencyInfoResource.ResolvePackages(packageId, session.SourceCacheContext, NullLogger.Instance, session.CancellationToken);
 
-                var versions = unsortedVersions?.OrderByDescending(item => item).ToArray();
+                var unsortedVersions = resolvePackages
+                    .Where(item => item.Listed)
+                    .Select(item => item.Identity.Version)
+                    .ToArray();
 
-                if (versions?.Length > 0)
+                var versions = unsortedVersions.OrderByDescending(item => item).ToArray();
+
+                if (versions.Length > 0)
                 {
                     return new Package(packageId, versions, sourceRepository);
                 }
