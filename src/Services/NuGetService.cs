@@ -84,11 +84,6 @@ internal static class NuGetService
             var project = projectPackageReferences.Key;
 
             var projectsInTargetFramework = project.GetProjectsInTargetFramework();
-            if (projectsInTargetFramework is null)
-            {
-                await LoggingService.LogAsync($"No target framework found in project {Path.GetFileName(project.FullPath)} (old project format?) - skipping transitive package analysis.");
-                continue;
-            }
 
             var topLevelPackagesInProject = topLevelPackages
                 .Where(package => projectPackageReferences.Any(item => package.PackageReferenceEntries.Contains(item)))
