@@ -1,13 +1,11 @@
 ﻿using System.IO;
 using Community.VisualStudio.Toolkit;
-using EnvDTE;
 using Microsoft.Build.Evaluation;
 using NuGet.Frameworks;
 using NuGet.Versioning;
 using NuGetMonitor.Models;
 using TomsToolbox.Essentials;
 using Project = Microsoft.Build.Evaluation.Project;
-using ProjectItem = Microsoft.Build.Evaluation.ProjectItem;
 
 namespace NuGetMonitor.Services;
 
@@ -120,7 +118,7 @@ internal static class ProjectService
         }
         catch (Exception ex)
         {
-            LoggingService.Log($"Get package reference item failed: {ex}");
+            Log($"Get package reference item failed: {ex}");
 
             return Enumerable.Empty<ProjectItem>();
         }
@@ -129,6 +127,11 @@ internal static class ProjectService
     private static PackageReferenceEntry? CreateEntry(ProjectItem projectItem)
     {
         var id = projectItem.EvaluatedInclude;
+
+        // Ignore the implicit NetStandard library reference in projects targeting NetStandard.
+        if (id.Equals(NetStandardPackageId, StringComparison.OrdinalIgnoreCase))
+            return null;
+
         var versionValue = projectItem.GetMetadata("Version")?.EvaluatedValue;
         if (versionValue.IsNullOrEmpty())
             return null;
@@ -136,5 +139,6 @@ internal static class ProjectService
         return VersionRange.TryParse(versionValue, out var versionRange)
             ? new PackageReferenceEntry(id, versionRange, projectItem, projectItem.GetMetadataValue("Justification"))
             : null;
+
     }
 }

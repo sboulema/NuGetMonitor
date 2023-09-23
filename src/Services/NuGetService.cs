@@ -1,5 +1,4 @@
-﻿using System.IO;
-using Microsoft.Extensions.Caching.Memory;
+﻿using Microsoft.Extensions.Caching.Memory;
 using NuGet.Common;
 using NuGet.Frameworks;
 using NuGet.Packaging;
@@ -345,7 +344,8 @@ internal static class NuGetService
         private static async Task<PackageDependencyGroup[]?> GetDirectDependencies(PackageIdentity packageIdentity, SourceRepository repository, NuGetSession session)
         {
             // Don't scan packages with pseudo-references, they don't get physically included, but cause vulnerability warnings.
-            if (string.Equals(packageIdentity.Id, "NETStandard.Library", StringComparison.OrdinalIgnoreCase))
+
+            if (string.Equals(packageIdentity.Id, NetStandardPackageId, StringComparison.OrdinalIgnoreCase))
                 return Array.Empty<PackageDependencyGroup>();
 
             var resource = await repository.GetResourceAsync<DownloadResource>(session.CancellationToken);

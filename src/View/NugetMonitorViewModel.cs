@@ -75,7 +75,7 @@ internal sealed partial class NuGetMonitorViewModel : INotifyPropertyChanged
         }
         catch (Exception ex)
         {
-            await LoggingService.LogAsync($"Loading package data failed: {ex}");
+            await LogAsync($"Loading package data failed: {ex}");
         }
         finally
         {

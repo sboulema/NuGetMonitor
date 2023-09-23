@@ -1,5 +1,5 @@
-﻿using Microsoft.VisualStudio.Shell;
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
+using Microsoft.VisualStudio.Shell;
 
 namespace NuGetMonitor.View;
 

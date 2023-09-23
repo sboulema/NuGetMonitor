@@ -17,4 +17,4 @@ internal sealed record PackageReferenceEntry
     public ProjectItem ProjectItem { get; }
 
     public string Justification { get; }
-};
+}

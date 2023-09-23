@@ -3,15 +3,13 @@ using System.Text;
 using System.Windows;
 using Community.VisualStudio.Toolkit;
 using Microsoft.VisualStudio.Imaging;
-using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Shell.Interop;
 using NuGet.Versioning;
 using NuGetMonitor.Models;
+using NuGetMonitor.Options;
 using NuGetMonitor.View;
 using TomsToolbox.Essentials;
-
-using static NuGetMonitor.Services.LoggingService;
-using NuGetMonitor.Options;
 
 namespace NuGetMonitor.Services;
 
@@ -114,7 +112,7 @@ internal static class InfoBarService
 
     private static void InfoBar_ActionItemClicked(object sender, InfoBarActionItemEventArgs e)
     {
-        ThreadHelper.ThrowIfNotOnUIThread();
+        ThrowIfNotOnUIThread();
 
         switch (e.ActionItem.ActionContext)
         {

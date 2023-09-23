@@ -42,22 +42,22 @@ internal static class MonitorService
             if (solution is null)
                 return;
 
-            await LoggingService.LogAsync($"Solution: {solution.Name}").ConfigureAwait(true);
+            await LogAsync($"Solution: {solution.Name}").ConfigureAwait(true);
 
-            await LoggingService.LogAsync("Check top level packages").ConfigureAwait(true);
+            await LogAsync("Check top level packages").ConfigureAwait(true);
 
             var packageReferences = await ProjectService.GetPackageReferences().ConfigureAwait(true);
 
             var topLevelPackages = await NuGetService.CheckPackageReferences(packageReferences).ConfigureAwait(true);
 
-            await LoggingService.LogAsync($"{topLevelPackages.Count} packages found").ConfigureAwait(true);
+            await LogAsync($"{topLevelPackages.Count} packages found").ConfigureAwait(true);
 
             if (topLevelPackages.Count == 0)
                 return;
 
             InfoBarService.ShowTopLevelPackageIssues(topLevelPackages);
 
-            await LoggingService.LogAsync("Check transitive packages").ConfigureAwait(true);
+            await LogAsync("Check transitive packages").ConfigureAwait(true);
 
             var transitiveDependencies = await NuGetService.GetTransitivePackages(packageReferences, topLevelPackages).ConfigureAwait(true);
 
@@ -65,7 +65,7 @@ internal static class MonitorService
         }
         catch (Exception ex) when (ex is not (OperationCanceledException or ObjectDisposedException))
         {
-            await LoggingService.LogAsync($"Check for updates failed: {ex}");
+            await LogAsync($"Check for updates failed: {ex}");
         }
     }
 }
