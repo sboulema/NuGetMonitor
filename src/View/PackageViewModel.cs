@@ -14,7 +14,7 @@ namespace NuGetMonitor.View
         {
             Items = items;
             PackageReference = items.Key;
-            Projects = items.GroupBy(item => item.ProjectItem.Xml.ContainingProject).Select(item => new ProjectViewModel(item.Key)).ToArray();
+            Projects = items.GroupBy(item => item.ProjectItemInTargetFramework.ContainingProject).Select(item => new ProjectViewModel(item.Key)).ToArray();
             ActiveVersion = NuGetVersion.TryParse(PackageReference.VersionRange.OriginalString, out var simpleVersion) ? simpleVersion : PackageReference.VersionRange;
             Justifications = string.Join(", ", Items.Select(reference => reference.Justification).Distinct());
 

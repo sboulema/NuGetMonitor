@@ -1,5 +1,4 @@
-﻿using System.IO;
-using Microsoft.Extensions.Caching.Memory;
+﻿using Microsoft.Extensions.Caching.Memory;
 using NuGet.Common;
 using NuGet.Frameworks;
 using NuGet.Packaging;
@@ -77,21 +76,23 @@ internal static class NuGetService
     {
         var results = new List<TransitiveDependencies>();
 
-        var packagesReferencesByProject = packageReferences.GroupBy(item => item.ProjectItem.Project);
+        var projectItemsByTargetFramework = packageReferences.GroupBy(item => item.ProjectItemInTargetFramework.TargetFramework);
 
-        foreach (var projectPackageReferences in packagesReferencesByProject)
+        foreach (var projectItemsInTargetFramework in projectItemsByTargetFramework)
         {
-            var project = projectPackageReferences.Key;
+            var targetFramework = projectItemsInTargetFramework.Key;
 
-            var projectsInTargetFramework = project.GetProjectsInTargetFramework();
+            var packagesReferencesByProject = projectItemsInTargetFramework.GroupBy(item => item.ProjectItemInTargetFramework.ProjectItem.Project);
 
-            var topLevelPackagesInProject = topLevelPackages
-                .Where(package => projectPackageReferences.Any(item => package.PackageReferenceEntries.Contains(item)))
-                .Select(item => item.PackageInfo)
-                .ToArray();
-
-            foreach (var projectInTargetFramework in projectsInTargetFramework)
+            foreach (var projectPackageReferences in packagesReferencesByProject)
             {
+                var project = projectPackageReferences.Key;
+
+                var topLevelPackagesInProject = topLevelPackages
+                    .Where(package => projectPackageReferences.Any(item => package.PackageReferenceEntries.Contains(item)))
+                    .Select(item => item.PackageInfo)
+                    .ToArray();
+
                 var inputQueue = new Queue<PackageInfo>(topLevelPackagesInProject);
                 var parentsByChild = new Dictionary<PackageInfo, HashSet<PackageInfo>>();
                 var processedItemsByPackageId = new Dictionary<string, PackageInfo>();
@@ -107,7 +108,7 @@ internal static class NuGetService
 
                     processedItemsByPackageId[packageIdentity.Id] = packageInfo;
 
-                    var dependencies = await packageInfo.GetPackageDependenciesInFramework(projectInTargetFramework.TargetFramework);
+                    var dependencies = await packageInfo.GetPackageDependenciesInFramework(targetFramework);
 
                     foreach (var dependency in dependencies)
                     {
@@ -125,7 +126,7 @@ internal static class NuGetService
                     .Where(item => transitivePackages.Contains(item.Key))
                     .ToDictionary();
 
-                results.Add(new TransitiveDependencies(projectInTargetFramework.Project, projectInTargetFramework.TargetFramework, parentsByChild));
+                results.Add(new TransitiveDependencies(project, targetFramework, parentsByChild));
             }
         }
 
@@ -345,7 +346,8 @@ internal static class NuGetService
         private static async Task<PackageDependencyGroup[]?> GetDirectDependencies(PackageIdentity packageIdentity, SourceRepository repository, NuGetSession session)
         {
             // Don't scan packages with pseudo-references, they don't get physically included, but cause vulnerability warnings.
-            if (string.Equals(packageIdentity.Id, "NETStandard.Library", StringComparison.OrdinalIgnoreCase))
+
+            if (string.Equals(packageIdentity.Id, NetStandardPackageId, StringComparison.OrdinalIgnoreCase))
                 return Array.Empty<PackageDependencyGroup>();
 
             var resource = await repository.GetResourceAsync<DownloadResource>(session.CancellationToken);

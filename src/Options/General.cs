@@ -1,6 +1,6 @@
-﻿using Community.VisualStudio.Toolkit;
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.Runtime.InteropServices;
+using Community.VisualStudio.Toolkit;
 
 namespace NuGetMonitor.Options;
 

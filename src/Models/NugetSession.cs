@@ -1,7 +1,6 @@
 ﻿using System.IO;
 using Community.VisualStudio.Toolkit;
 using Microsoft.Extensions.Caching.Memory;
-using Microsoft.VisualStudio.Shell;
 using NuGet.Configuration;
 using NuGet.Protocol.Core.Types;
 using Settings = NuGet.Configuration.Settings;
@@ -14,7 +13,7 @@ namespace NuGetMonitor.Models
 
         public NuGetSession()
         {
-            ThreadHelper.ThrowIfNotOnUIThread();
+            ThrowIfNotOnUIThread();
 
             var solution = VS.Solutions.GetCurrentSolution();
             var solutionDirectory = Path.GetDirectoryName(solution?.FullPath);
@@ -31,7 +30,7 @@ namespace NuGetMonitor.Models
             PackageDownloadContext = new PackageDownloadContext(SourceCacheContext);
         }
 
-        public MemoryCache Cache { get; } = new(new MemoryCacheOptions { });
+        public MemoryCache Cache { get; } = new(new MemoryCacheOptions());
 
         public SourceCacheContext SourceCacheContext { get; } = new();
 

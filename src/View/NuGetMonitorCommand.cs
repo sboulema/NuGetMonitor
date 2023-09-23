@@ -1,6 +1,5 @@
-﻿using Microsoft.VisualStudio.Shell;
-using System.ComponentModel.Design;
-using Task = System.Threading.Tasks.Task;
+﻿using System.ComponentModel.Design;
+using Microsoft.VisualStudio.Shell;
 
 namespace NuGetMonitor.View;
 
@@ -30,7 +29,7 @@ internal sealed class NuGetMonitorCommand
 
     public static async Task InitializeAsync(AsyncPackage package)
     {
-        await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(package.DisposalToken);
+        await JoinableTaskFactory.SwitchToMainThreadAsync(package.DisposalToken);
 
         var commandService = await package.GetServiceAsync(typeof(IMenuCommandService)).ConfigureAwait(true) as OleMenuCommandService ?? throw new InvalidOperationException("Failed to get menu command service");
 
