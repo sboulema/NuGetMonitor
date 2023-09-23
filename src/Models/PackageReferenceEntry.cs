@@ -1,20 +1,20 @@
-﻿using Microsoft.Build.Evaluation;
-using NuGet.Versioning;
+﻿using NuGet.Versioning;
+using NuGetMonitor.Services;
 
 namespace NuGetMonitor.Models;
 
 internal sealed record PackageReferenceEntry
 {
-    public PackageReferenceEntry(string id, VersionRange versionRange, ProjectItem projectItem, string justification)
+    public PackageReferenceEntry(string id, VersionRange versionRange, ProjectItemInTargetFramework projectItemInTargetFramework, string justification)
     {
-        ProjectItem = projectItem;
+        ProjectItemInTargetFramework = projectItemInTargetFramework;
         Justification = justification;
         Identity = new PackageReference(id, versionRange);
     }
 
     public PackageReference Identity { get; }
 
-    public ProjectItem ProjectItem { get; }
+    public ProjectItemInTargetFramework ProjectItemInTargetFramework { get; }
 
     public string Justification { get; }
 }

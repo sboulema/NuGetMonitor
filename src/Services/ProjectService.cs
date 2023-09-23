@@ -1,5 +1,6 @@
 ﻿using System.IO;
 using Community.VisualStudio.Toolkit;
+using Microsoft.Build.Construction;
 using Microsoft.Build.Evaluation;
 using NuGet.Frameworks;
 using NuGet.Versioning;
@@ -8,6 +9,11 @@ using TomsToolbox.Essentials;
 using Project = Microsoft.Build.Evaluation.Project;
 
 namespace NuGetMonitor.Services;
+
+internal sealed record ProjectItemInTargetFramework(ProjectItem ProjectItem, NuGetFramework TargetFramework)
+{
+    public ProjectRootElement ContainingProject => ProjectItem.Xml.ContainingProject;
+}
 
 internal sealed record ProjectInTargetFramework(Project Project, NuGetFramework TargetFramework);
 
@@ -42,7 +48,7 @@ internal static class ProjectService
             return references
                 .SelectMany(items => items)
                 .OrderBy(item => item.Identity.Id)
-                .ThenBy(item => Path.GetFileName(item.ProjectItem.Xml.ContainingProject.FullPath))
+                .ThenBy(item => Path.GetFileName(item.ProjectItemInTargetFramework.ContainingProject.FullPath))
                 .ToArray();
         });
     }
@@ -51,7 +57,7 @@ internal static class ProjectService
     {
         var frameworkNames = (project.GetProperty("TargetFrameworks") ?? project.GetProperty("TargetFramework"))
             ?.EvaluatedValue
-            ?.Split(';')
+            .Split(';')
             .Select(value => value.Trim())
             .ToArray();
 
@@ -99,7 +105,7 @@ internal static class ProjectService
         return packageReferences;
     }
 
-    private static IEnumerable<ProjectItem> GetPackageReferenceItems(ProjectCollection projectCollection, string projectPath)
+    private static IEnumerable<ProjectItemInTargetFramework> GetPackageReferenceItems(ProjectCollection projectCollection, string projectPath)
     {
         try
         {
@@ -112,7 +118,7 @@ internal static class ProjectService
 
             var projects = project.GetProjectsInTargetFramework();
 
-            var allItems = projects.SelectMany(p => p.Project.GetItems("PackageReference"));
+            var allItems = projects.SelectMany(p => p.Project.GetItems("PackageReference").Select(item => new ProjectItemInTargetFramework(item, p.TargetFramework)));
 
             return allItems;
         }
@@ -120,12 +126,14 @@ internal static class ProjectService
         {
             Log($"Get package reference item failed: {ex}");
 
-            return Enumerable.Empty<ProjectItem>();
+            return Enumerable.Empty<ProjectItemInTargetFramework>();
         }
     }
 
-    private static PackageReferenceEntry? CreateEntry(ProjectItem projectItem)
+    private static PackageReferenceEntry? CreateEntry(ProjectItemInTargetFramework projectItemInTargetFramework)
     {
+        var projectItem = projectItemInTargetFramework.ProjectItem;
+
         var id = projectItem.EvaluatedInclude;
 
         // Ignore the implicit NetStandard library reference in projects targeting NetStandard.
@@ -137,7 +145,7 @@ internal static class ProjectService
             return null;
 
         return VersionRange.TryParse(versionValue, out var versionRange)
-            ? new PackageReferenceEntry(id, versionRange, projectItem, projectItem.GetMetadataValue("Justification"))
+            ? new PackageReferenceEntry(id, versionRange, projectItemInTargetFramework, projectItem.GetMetadataValue("Justification"))
             : null;
 
     }

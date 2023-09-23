@@ -113,7 +113,7 @@ internal sealed partial class NuGetMonitorViewModel : INotifyPropertyChanged
 
         var packageReferencesByProject = packageViewModels
             .Where(viewModel => viewModel.IsUpdateAvailable)
-            .SelectMany(viewModel => viewModel.Items.Select(item => new { item.Identity, item.ProjectItem.Xml.ContainingProject.FullPath, viewModel.SelectedVersion }))
+            .SelectMany(viewModel => viewModel.Items.Select(item => new { item.Identity, item.ProjectItemInTargetFramework.ContainingProject.FullPath, viewModel.SelectedVersion }))
             .GroupBy(item => item.FullPath);
 
         foreach (var packageReferenceEntries in packageReferencesByProject)
