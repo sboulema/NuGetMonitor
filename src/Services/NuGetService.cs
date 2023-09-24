@@ -93,6 +93,10 @@ internal static class NuGetService
                     .Select(item => item.PackageInfo)
                     .ToArray();
 
+                var topLevelPackageIdentities = topLevelPackagesInProject
+                    .Select(item => item.PackageIdentity)
+                    .ToHashSet();
+
                 var inputQueue = new Queue<PackageInfo>(topLevelPackagesInProject);
                 var parentsByChild = new Dictionary<PackageInfo, HashSet<PackageInfo>>();
                 var processedItemsByPackageId = new Dictionary<string, PackageInfo>();
@@ -120,10 +124,13 @@ internal static class NuGetService
                     }
                 }
 
-                var transitivePackages = processedItemsByPackageId.Values.Except(topLevelPackages.Select(item => item.PackageInfo)).ToHashSet();
+                var transitivePackageIdentities = processedItemsByPackageId.Values
+                    .Select(item => item.PackageIdentity)
+                    .Where(item => !topLevelPackageIdentities.Contains(item))
+                    .ToHashSet();
 
                 parentsByChild = parentsByChild
-                    .Where(item => transitivePackages.Contains(item.Key))
+                    .Where(item => transitivePackageIdentities.Contains(item.Key.PackageIdentity))
                     .ToDictionary();
 
                 results.Add(new TransitiveDependencies(project, targetFramework, parentsByChild));

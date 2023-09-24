@@ -6,7 +6,7 @@ using TomsToolbox.Essentials;
 
 namespace NuGetMonitor.Models;
 
-internal sealed class PackageInfo : IEquatable<PackageInfo>
+internal sealed class PackageInfo
 {
     public PackageInfo(PackageIdentity packageIdentity, Package package, NuGetSession session, ICollection<PackageVulnerabilityMetadata>? vulnerabilities, PackageDeprecationMetadata? deprecationMetadata)
     {
@@ -43,24 +43,6 @@ internal sealed class PackageInfo : IEquatable<PackageInfo>
             yield return "Deprecated";
 
         yield return Vulnerabilities?.CountedDescription("vulnerability");
-    }
-
-    public bool Equals(PackageInfo? other)
-    {
-        if (other is null)
-            return false;
-
-        return ReferenceEquals(this, other) || PackageIdentity.Equals(other.PackageIdentity);
-    }
-
-    public override bool Equals(object? obj)
-    {
-        return Equals(obj as PackageInfo);
-    }
-
-    public override int GetHashCode()
-    {
-        return PackageIdentity.GetHashCode();
     }
 
     public void AppendIssueDetails(StringBuilder text)
