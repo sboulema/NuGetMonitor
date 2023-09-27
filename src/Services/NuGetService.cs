@@ -287,26 +287,58 @@ internal static class NuGetService
 
         private static async Task<Package?> GetPackage(string packageId, NuGetSession session)
         {
-            foreach (var sourceRepository in session.SourceRepositories)
+            foreach (var repositoryContext in session.SourceRepositories)
             {
-                var dependencyInfoResource = await sourceRepository.GetResourceAsync<DependencyInfoResource>(session.CancellationToken);
+                var unsortedVersions = await GetPackageVersions(packageId, session, repositoryContext);
 
-                var resolvePackages = await dependencyInfoResource.ResolvePackages(packageId, session.SourceCacheContext, NullLogger.Instance, session.CancellationToken);
-
-                var unsortedVersions = resolvePackages
-                    .Where(item => item.Listed)
-                    .Select(item => item.Identity.Version)
-                    .ToArray();
+                if (unsortedVersions.Length <= 0)
+                    continue;
 
                 var versions = unsortedVersions.OrderByDescending(item => item).ToArray();
-
-                if (versions.Length > 0)
-                {
-                    return new Package(packageId, versions, sourceRepository);
-                }
+                return new Package(packageId, versions, repositoryContext);
             }
 
             return null;
+        }
+
+        private static async Task<NuGetVersion[]> GetPackageVersions(string packageId, NuGetSession session, RepositoryContext repositoryContext)
+        {
+            if (repositoryContext.IsDependencyInfoSupported)
+            {
+                try
+                {
+                    var dependencyInfoResource = await repositoryContext.SourceRepository.GetResourceAsync<DependencyInfoResource>(session.CancellationToken);
+
+                    var packages = await dependencyInfoResource.ResolvePackages(packageId, session.SourceCacheContext, NullLogger.Instance, session.CancellationToken);
+
+                    return packages
+                        .Where(item => item.Listed)
+                        .Select(item => item.Identity.Version)
+                        .ToArray();
+                }
+                catch (NotSupportedException)
+                {
+                    repositoryContext.IsDependencyInfoSupported = false;
+                }
+            }
+
+            if (repositoryContext.IsAccessible)
+            {
+                try
+                {
+                    var packageResource = await repositoryContext.SourceRepository.GetResourceAsync<FindPackageByIdResource>(session.CancellationToken);
+
+                    var versions = await packageResource.GetAllVersionsAsync(packageId, session.SourceCacheContext, NullLogger.Instance, session.CancellationToken);
+
+                    return versions.ToArray();
+                }
+                catch
+                {
+                    repositoryContext.IsAccessible = false;
+                }
+            }
+
+            return Array.Empty<NuGetVersion>();
         }
     }
 
@@ -323,7 +355,7 @@ internal static class NuGetService
             if (package is null)
                 return null;
 
-            var sourceRepository = package.SourceRepository;
+            var sourceRepository = package.RepositoryContext.SourceRepository;
 
             var packageMetadataResource = await sourceRepository.GetResourceAsync<PackageMetadataResource>(session.CancellationToken);
 
@@ -353,7 +385,6 @@ internal static class NuGetService
         private static async Task<PackageDependencyGroup[]?> GetDirectDependencies(PackageIdentity packageIdentity, SourceRepository repository, NuGetSession session)
         {
             // Don't scan packages with pseudo-references, they don't get physically included, but cause vulnerability warnings.
-
             if (string.Equals(packageIdentity.Id, NetStandardPackageId, StringComparison.OrdinalIgnoreCase))
                 return Array.Empty<PackageDependencyGroup>();
 
@@ -380,8 +411,9 @@ internal static class NuGetService
         private static async Task<PackageInfo[]?> GetDirectDependencies(PackageInfo packageInfo, NuGetFramework targetFramework)
         {
             var session = packageInfo.Session;
+            var sourceRepository = packageInfo.Package.RepositoryContext.SourceRepository;
 
-            var dependencyGroups = await GetPackageDependencyCacheEntry(packageInfo.PackageIdentity, packageInfo.Package.SourceRepository, session).GetValue();
+            var dependencyGroups = await GetPackageDependencyCacheEntry(packageInfo.PackageIdentity, sourceRepository, session).GetValue();
 
             if (dependencyGroups == null || dependencyGroups.Length < 1)
                 return Array.Empty<PackageInfo>();

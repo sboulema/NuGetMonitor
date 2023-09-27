@@ -26,7 +26,7 @@ namespace NuGetMonitor.Models
             var sourceRepositoryProvider = new SourceRepositoryProvider(packageSourceProvider, Repository.Provider.GetCoreV3());
             var sourceRepositories = sourceRepositoryProvider.GetRepositories();
 
-            SourceRepositories = sourceRepositories.ToArray();
+            SourceRepositories = sourceRepositories.Select(item => new RepositoryContext(item)).ToArray();
             PackageDownloadContext = new PackageDownloadContext(SourceCacheContext);
         }
 
@@ -38,7 +38,7 @@ namespace NuGetMonitor.Models
 
         public CancellationToken CancellationToken => _cancellationTokenSource.Token;
 
-        public ICollection<SourceRepository> SourceRepositories { get; }
+        public ICollection<RepositoryContext> SourceRepositories { get; }
 
         public string GlobalPackagesFolder { get; private set; }
 
