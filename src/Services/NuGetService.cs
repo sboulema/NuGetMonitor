@@ -332,9 +332,9 @@ internal static class NuGetService
 
                     return versions.ToArray();
                 }
-                catch
+                catch (Exception ex)
                 {
-                    repositoryContext.IsAccessible = false;
+                    repositoryContext.AccessError(ex);
                 }
             }
 

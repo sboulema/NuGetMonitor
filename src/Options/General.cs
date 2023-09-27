@@ -4,11 +4,8 @@ using Community.VisualStudio.Toolkit;
 
 namespace NuGetMonitor.Options;
 
-internal sealed class OptionsProvider
-{
-    [ComVisible(true)]
-    public class GeneralOptions : BaseOptionPage<General> { }
-}
+[ComVisible(true)]
+public class GeneralOptions : BaseOptionPage<General> { }
 
 public sealed class General : BaseOptionModel<General>
 {
