@@ -18,18 +18,17 @@ internal static class LoggingService
 
     public static async Task LogAsync(string message)
     {
-        _outputWindowPane ??= await GetOutputWindowPane();
-
         await JoinableTaskFactory.SwitchToMainThreadAsync();
 
+        _outputWindowPane ??= GetOutputWindowPane();
         _outputWindowPane?.OutputStringThreadSafe($"[{DateTime.Now:T}] {message}\r\n");
     }
 
-    private static async Task<IVsOutputWindowPane?> GetOutputWindowPane()
+    private static IVsOutputWindowPane? GetOutputWindowPane()
     {
-        var outputWindow = await VS.Services.GetOutputWindowAsync();
+        ThrowIfNotOnUIThread();
 
-        await JoinableTaskFactory.SwitchToMainThreadAsync();
+        var outputWindow = VS.GetRequiredService<SVsOutputWindow, IVsOutputWindow>();
 
         var errorCode = outputWindow.GetPane(ref _outputPaneGuid, out var pane);
 
