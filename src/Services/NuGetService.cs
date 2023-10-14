@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Caching.Memory;
+using Microsoft.IO;
 using NuGet.Common;
 using NuGet.Frameworks;
 using NuGet.Packaging;
@@ -133,7 +134,7 @@ internal static class NuGetService
                     .Where(item => transitivePackageIdentities.Contains(item.Key.PackageIdentity))
                     .ToDictionary();
 
-                results.Add(new TransitiveDependencies(project, targetFramework, parentsByChild));
+                results.Add(new TransitiveDependencies(Path.GetFileName(project.FullPath), targetFramework, parentsByChild));
             }
         }
 

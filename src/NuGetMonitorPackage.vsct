@@ -26,6 +26,13 @@
           <ButtonText>NuGet Monitor</ButtonText>
         </Strings>
       </Button>
+      <Button guid="guidNuGetMonitorPackageCmdSet" id="DependencyTreeCommandId" priority="0x0100" type="Button">
+        <Parent guid="guidSHLMainMenu" id="IDG_VS_WNDO_OTRWNDWS1"/>
+        <Icon guid="guidImages" id="bmpPic1" />
+        <Strings>
+          <ButtonText>NuGet Dependency Tree</ButtonText>
+        </Strings>
+      </Button>
     </Buttons>
 
     <Bitmaps>
@@ -41,6 +48,7 @@
     <GuidSymbol name="guidNuGetMonitorPackageCmdSet" value="{df4cd5dd-21c1-4666-8b25-bffe33b47ac1}">
       <IDSymbol name="cmdidMyToolsMenuGroup" value="0x1020" />
       <IDSymbol name="NuGetMonitorCommandId" value="0x0100" />
+      <IDSymbol name="DependencyTreeCommandId" value="0x0101" />
     </GuidSymbol>
 
     <GuidSymbol name="guidImages" value="{8bddfaf8-b480-4c22-893c-33b486c4d4f0}" >

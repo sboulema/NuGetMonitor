@@ -1,7 +1,7 @@
 ﻿using System.Runtime.InteropServices;
 using Microsoft.VisualStudio.Shell;
 
-namespace NuGetMonitor.View;
+namespace NuGetMonitor.View.Monitor;
 
 
 [Guid("6ce47eec-3296-48f5-9dec-8883a276a7c8")]

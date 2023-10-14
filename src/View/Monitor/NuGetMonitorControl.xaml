@@ -46,6 +46,9 @@
         <Button Command="{Binding ShowNuGetPackageManagerCommand}" ToolTip="Launch NuGet Package Manager">
           <imaging:CrispImage Width="16" Height="16" Moniker="{x:Static imageCatalog:KnownMonikers.NuGet}" />
         </Button>
+        <Button Command="{Binding ShowDependencyTreeCommand}" ToolTip="Show dependency tree">
+          <imaging:CrispImage Width="16" Height="16" Moniker="{x:Static imageCatalog:KnownMonikers.DecisionTree}" />
+        </Button>
         <Button Command="{Binding CopyIssueDetailsCommand}" ToolTip="Copy issue details">
           <imaging:CrispImage Width="16" Height="16" Moniker="{x:Static imageCatalog:KnownMonikers.Copy}" />
         </Button>
@@ -54,6 +57,7 @@
                 ItemsSource="{Binding Packages}"
                 AutoGenerateColumns="False"
                 IsReadOnly="True"
+                BorderThickness="0 1 0 0"
                 Style="{DynamicResource {x:Static styles:ResourceKeys.DataGridStyle}}"
                 VerticalContentAlignment="Center"
                 dgx:DataGridFilter.IsAutoFilterEnabled="True"
@@ -212,6 +216,6 @@
       </DataGrid>
 
     </DockPanel>
-    <toms:LoadingIndicator IsActive="{Binding IsLoading}" Header="Loading..." />
+    <toms:LoadingIndicator IsActive="{Binding IsLoading}" Header="Loading..." d:IsHidden="True"/>
   </Grid>
 </UserControl>
