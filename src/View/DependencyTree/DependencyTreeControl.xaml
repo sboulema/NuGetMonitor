@@ -73,7 +73,6 @@
                   </MultiBinding.Bindings>
                 </MultiBinding>
               </TextBlock.Text>
-              <!--<Run Text="{Binding ProjectName, Mode=OneWay}" /><Run Text=" [" /><Run Text="{Binding TargetFramework, Mode=OneWay}" /><Run Text="]" />-->
             </TextBlock>
           </HierarchicalDataTemplate>
         </TreeView.ItemTemplate>
