@@ -8,6 +8,7 @@
              xmlns:styles="urn:TomsToolbox.Wpf.Styles"
              xmlns:imaging="clr-namespace:Microsoft.VisualStudio.Imaging;assembly=Microsoft.VisualStudio.Imaging"
              xmlns:imageCatalog="clr-namespace:Microsoft.VisualStudio.Imaging;assembly=Microsoft.VisualStudio.ImageCatalog"
+             xmlns:view="clr-namespace:NuGetMonitor.View"
              mc:Ignorable="d"
              d:DesignHeight="450" d:DesignWidth="800">
   <UserControl.DataContext>
@@ -27,13 +28,16 @@
             <Setter Property="IsExpanded" Value="True" />
           </Style>
         </HierarchicalDataTemplate.ItemContainerStyle>
-        <TextBlock x:Name="TextBlock" Margin="{StaticResource NodeMargin}">
-          <Run Text="{Binding PackageIdentity, Mode=OneWay}" />
-          <Run Text="{Binding Issues, Mode=OneWay}" Foreground="{DynamicResource {x:Static SystemColors.ControlDarkDarkBrushKey}}" />
-        </TextBlock>
+        <StackPanel Orientation="Horizontal" Margin="{StaticResource NodeMargin}">
+          <view:HighlightingTextBlock x:Name="Identity"
+                                      Text="{Binding PackageIdentity}"
+                                      SearchText="{Binding ElementName=SearchText, Path=Text}"
+                                      HighLightBrush="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}"/>
+          <TextBlock Text="{Binding Issues}" Foreground="{DynamicResource {x:Static SystemColors.ControlDarkDarkBrushKey}}" />
+        </StackPanel>
         <HierarchicalDataTemplate.Triggers>
           <DataTrigger Binding="{Binding HasChildren}" Value="False">
-            <Setter TargetName="TextBlock" Property="FontWeight" Value="Bold" />
+            <Setter TargetName="Identity" Property="TextBlock.FontWeight" Value="Bold" />
           </DataTrigger>
         </HierarchicalDataTemplate.Triggers>
       </HierarchicalDataTemplate>
@@ -46,6 +50,11 @@
         <Button Command="{Binding RefreshCommand}" ToolTip="Refresh">
           <imaging:CrispImage Width="16" Height="16" Moniker="{x:Static imageCatalog:KnownMonikers.Refresh}" />
         </Button>
+        <Separator />
+        <StackPanel Orientation="Horizontal">
+          <imaging:CrispImage Width="16" Height="16" Moniker="{x:Static imageCatalog:KnownMonikers.QuickFind}" Margin="4,0" />
+          <TextBox x:Name="SearchText" Width="200" Style="{DynamicResource {x:Static ToolBar.TextBoxStyleKey}}" />
+        </StackPanel>
       </ToolBar>
       <TreeView x:Name="TreeView"
                 BorderThickness="0 1 0 0"
