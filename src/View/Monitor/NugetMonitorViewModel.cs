@@ -35,6 +35,8 @@ internal sealed partial class NuGetMonitorViewModel : INotifyPropertyChanged
 
     public ICommand RefreshCommand => new DelegateCommand<DataGrid>(Refresh);
     
+    public static ICommand ShowDependencyTreeCommand => new DelegateCommand(ShowDependencyTree);
+
     public static ICommand ShowNuGetPackageManagerCommand => new DelegateCommand(ShowNuGetPackageManager);
 
     public ICommand CopyIssueDetailsCommand => new DelegateCommand(CanCopyIssueDetails, CopyIssueDetails);
@@ -86,6 +88,11 @@ internal sealed partial class NuGetMonitorViewModel : INotifyPropertyChanged
     private static void ShowNuGetPackageManager()
     {
         VS.Commands.ExecuteAsync("Tools.ManageNuGetPackagesForSolution").FireAndForget();
+    }
+
+    private static void ShowDependencyTree()
+    {
+        NuGetMonitorCommands.Instance?.ShowDependencyTreeToolWindow();
     }
 
     private void Refresh(DataGrid dataGrid)
@@ -152,6 +159,8 @@ internal sealed partial class NuGetMonitorViewModel : INotifyPropertyChanged
         {
             packageViewModel.ApplySelectedVersion();
         }
+
+        ProjectService.ClearCache();
     }
 
     private bool CanCopyIssueDetails()

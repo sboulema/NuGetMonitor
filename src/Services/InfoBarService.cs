@@ -8,7 +8,6 @@ using Microsoft.VisualStudio.Shell.Interop;
 using NuGet.Versioning;
 using NuGetMonitor.Models;
 using NuGetMonitor.Options;
-using NuGetMonitor.View;
 using TomsToolbox.Essentials;
 
 namespace NuGetMonitor.Services;
@@ -46,10 +45,8 @@ internal static class InfoBarService
 
     public static void ShowTransitivePackageIssues(ICollection<TransitiveDependencies> transitiveDependencies)
     {
-        if (!General.Instance.ShowTransitivePackagesIssues)
-        {
+        if (!GeneralOptions.Instance.ShowTransitivePackagesIssues)
             return;
-        }
 
         var transitivePackages = transitiveDependencies
             .SelectMany(dependency => dependency.ParentsByChild.Keys)
@@ -117,7 +114,7 @@ internal static class InfoBarService
         switch (e.ActionItem.ActionContext)
         {
             case Actions.Manage:
-                NuGetMonitorCommand.Instance?.ShowToolWindow();
+                NuGetMonitorCommands.Instance?.ShowMonitorToolWindow();
                 break;
 
             case ICollection<TransitiveDependencies> transitiveDependencies:
@@ -134,7 +131,7 @@ internal static class InfoBarService
 
         foreach (var dependency in dependencies)
         {
-            var (project, targetFramework, packages) = dependency;
+            var (projectName, targetFramework, packages) = dependency;
 
             var vulnerablePackages = packages
                 .Select(item => item.Key)
@@ -144,14 +141,14 @@ internal static class InfoBarService
             if (vulnerablePackages.Length == 0)
                 continue;
 
-            var header = $"{Path.GetFileName(project.FullPath)}, {targetFramework}";
+            var header = $"{projectName}, {targetFramework}";
 
             text.AppendLine(header)
                 .AppendLine(new string('-', header.Length));
 
             foreach (var vulnerablePackage in vulnerablePackages)
             {
-                PrintDependencyTree(text, vulnerablePackage, dependency.ParentsByChild, 0);
+                PrintDependencyTree(text, vulnerablePackage, packages, 0);
             }
 
             text.AppendLine().AppendLine();
@@ -162,7 +159,7 @@ internal static class InfoBarService
         ShowInfoBar("Dependency tree copied to clipboard", TimeSpan.FromSeconds(10));
     }
 
-    private static void PrintDependencyTree(StringBuilder text, PackageInfo package, IReadOnlyDictionary<PackageInfo, HashSet<PackageInfo>> dependencyTree, int nesting)
+    private static void PrintDependencyTree(StringBuilder text, PackageInfo package, IReadOnlyDictionary<PackageInfo, HashSet<PackageInfo>> parentsByChild, int nesting)
     {
         var indent = new string(' ', nesting * 4);
 
@@ -186,12 +183,12 @@ internal static class InfoBarService
 
         text.AppendLine();
 
-        if (!dependencyTree.TryGetValue(package, out var dependsOn))
+        if (!parentsByChild.TryGetValue(package, out var dependsOn))
             return;
 
         foreach (var item in dependsOn)
         {
-            PrintDependencyTree(text, item, dependencyTree, nesting + 1);
+            PrintDependencyTree(text, item, parentsByChild, nesting + 1);
         }
     }
 
