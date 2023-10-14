@@ -11,7 +11,7 @@ for the installed NuGet packages in the current solution.
 - Checks for updates, deprecations and vulnerabilities when a solution is opened
 - Shows an info bar with the number of available updates, deprecations and vulnerabilities
 - Shows an info bar with vulnerabilities found in transient packages
-- Comes with a package management tool window that gives an instant overview over all packages, with a lean and fast package update functionality
+- Provides a package management tool window that gives an instant overview over all packages, with a lean and fast package update functionality
 - Works with .NET Framework projects and with .NET projects using `PackageReference` items
 
 ## Supported Visual Studio versions
@@ -42,7 +42,7 @@ The package manager can be opened via the entry in the `Tools` menu.
 
 The package manager shows all installed packages of the current solution. Updating a single package is just one click, multiple packages can be updated via the tool bar button after selecting the packages.
 
-Compared to the original NuGet Package Manager updating packages is very fast, because the package version is instantly updated without validation against other packages - version conflicts may show up only at the next build and have to be resolved manually.
+Compared to the original NuGet Package Manager updating packages is very fast, because the package version is instantly updated without validation against other packages - however version conflicts may show up only at the next build and have to be resolved manually.
 
 Shared package references, e.g. in the `Directory.Build.props` file, are handled gracefully, and will not be replaced by `Update` entries in every project.
 
@@ -51,18 +51,21 @@ Shared package references, e.g. in the `Directory.Build.props` file, are handled
 ## Thanks
 
 ### AnushaG2201
+
 A big thanks goes to [AnushaG2201](https://github.com/AnushaG2201)!
 
-I was playing with the idea for this extension for quite a while but never figured out how I would create this extension. 
+I was playing with the idea for this extension for quite a while but never figured out how I would create this extension.
 
 That is until I saw the [Nuget-updates-notifier](https://marketplace.visualstudio.com/items?itemName=Anusha.NugetPackageUpdateNotifier) ([GitHub](https://github.com/AnushaG2201/Nuget-updates-notifier)) which gave me the remaining puzzle pieces, so that I could create my own version.
 
 ### tom-englert
+
 A big thanks goes to [tom-englert](https://github.com/tom-englert)!
 
-A massive improvement [PR](https://github.com/sboulema/NuGetMonitor/pull/4) really improved the quality of this extension. 
+A massive improvement [PR](https://github.com/sboulema/NuGetMonitor/pull/4) really improved the quality of this extension.
 
 ## Links
+
 [NuGet Client SDK / NuGet.Protocol](https://learn.microsoft.com/en-us/nuget/reference/nuget-client-sdk)
 
 [Visual Studio Extensibility Cookbook - Notifications](https://www.vsixcookbook.com/recipes/notifications.html)

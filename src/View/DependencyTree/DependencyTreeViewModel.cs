@@ -74,6 +74,7 @@ internal sealed partial class RootNode : INotifyPropertyChanged
         .Select(item => new ChildNode(item.Key, _transitiveDependencies.ParentsByChild));
 }
 
+#pragma warning disable CA1812 // Avoid uninstantiated internal classes => used in xaml!
 internal sealed partial class DependencyTreeViewModel : INotifyPropertyChanged
 {
     public DependencyTreeViewModel()
