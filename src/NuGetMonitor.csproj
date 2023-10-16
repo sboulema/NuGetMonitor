@@ -24,7 +24,7 @@
     <PackageReference Include="Microsoft.VSSDK.BuildTools" Version="17.7.2196" PrivateAssets="all" />
     <PackageReference Include="NuGet.Protocol" Version="6.7.0" />
     <PackageReference Include="PropertyChanged.Fody" Version="4.1.0" PrivateAssets="all" />
-    <PackageReference Include="TomsToolbox.Wpf.Styles" Version="2.8.10" />
+    <PackageReference Include="TomsToolbox.Wpf.Styles" Version="2.9.0" />
     <PackageReference Include="VSIX-SdkProjectAdapter" Version="3.0.0" PrivateAssets="all" />
   </ItemGroup>
   <ItemGroup>

@@ -88,7 +88,14 @@ internal sealed partial class DependencyTreeViewModel : INotifyPropertyChanged
 
     public ICollection<RootNode>? TransitivePackages { get; private set; }
 
-    public ICommand RefreshCommand => new DelegateCommand(() => Load().FireAndForget());
+    public ICommand RefreshCommand => new DelegateCommand(Refresh);
+
+    private void Refresh()
+    {
+        ProjectService.ClearCache();
+
+        Load().FireAndForget();
+    }
 
     public async Task Load()
     {
