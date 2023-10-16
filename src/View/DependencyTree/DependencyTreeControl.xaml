@@ -29,7 +29,7 @@
           </Style>
         </HierarchicalDataTemplate.ItemContainerStyle>
         <StackPanel Orientation="Horizontal" Margin="{StaticResource NodeMargin}">
-          <view:HighlightingTextBlock x:Name="Identity"
+          <toms:HighlightingTextBlock x:Name="Identity"
                                       Text="{Binding PackageIdentity}"
                                       SearchText="{Binding ElementName=SearchText, Path=Text}"
                                       HighLightBrush="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}"/>
