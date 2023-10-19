@@ -8,9 +8,9 @@
              xmlns:styles="urn:TomsToolbox.Wpf.Styles"
              xmlns:imaging="clr-namespace:Microsoft.VisualStudio.Imaging;assembly=Microsoft.VisualStudio.Imaging"
              xmlns:imageCatalog="clr-namespace:Microsoft.VisualStudio.Imaging;assembly=Microsoft.VisualStudio.ImageCatalog"
-             xmlns:view="clr-namespace:NuGetMonitor.View"
              mc:Ignorable="d"
-             d:DesignHeight="450" d:DesignWidth="800">
+             d:DesignHeight="450" d:DesignWidth="800"
+             TextOptions.TextFormattingMode="Display">
   <UserControl.DataContext>
     <local:DependencyTreeViewModel />
   </UserControl.DataContext>
@@ -29,10 +29,7 @@
           </Style>
         </HierarchicalDataTemplate.ItemContainerStyle>
         <StackPanel Orientation="Horizontal" Margin="{StaticResource NodeMargin}">
-          <toms:HighlightingTextBlock x:Name="Identity"
-                                      Text="{Binding PackageIdentity}"
-                                      SearchText="{Binding ElementName=SearchText, Path=Text}"
-                                      HighLightBrush="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}"/>
+          <TextBlock x:Name="Identity" Text="{Binding PackageIdentity}" />
           <TextBlock Text="{Binding Issues}" Foreground="{DynamicResource {x:Static SystemColors.ControlDarkDarkBrushKey}}" />
         </StackPanel>
         <HierarchicalDataTemplate.Triggers>
@@ -40,6 +37,23 @@
             <Setter TargetName="Identity" Property="TextBlock.FontWeight" Value="Bold" />
           </DataTrigger>
         </HierarchicalDataTemplate.Triggers>
+      </HierarchicalDataTemplate>
+      <HierarchicalDataTemplate x:Key="FirstLevelNodeTemplate"
+                                DataType="{x:Type local:ChildNode}"
+                                ItemsSource="{Binding Children}"
+                                ItemTemplate="{StaticResource NodeTemplate}">
+        <HierarchicalDataTemplate.ItemContainerStyle>
+          <Style TargetType="TreeViewItem">
+            <Setter Property="IsExpanded" Value="True" />
+          </Style>
+        </HierarchicalDataTemplate.ItemContainerStyle>
+        <StackPanel Orientation="Horizontal" Margin="{StaticResource NodeMargin}">
+          <toms:HighlightingTextBlock x:Name="Identity"
+                                      Text="{Binding PackageIdentity}"
+                                      SearchText="{Binding ElementName=SearchText, Path=Text}"
+                                      HighLightBrush="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}"/>
+          <TextBlock Text="{Binding Issues}" Foreground="{DynamicResource {x:Static SystemColors.ControlDarkDarkBrushKey}}" />
+        </StackPanel>
       </HierarchicalDataTemplate>
     </ResourceDictionary>
   </UserControl.Resources>
@@ -53,12 +67,14 @@
         <Separator />
         <StackPanel Orientation="Horizontal">
           <imaging:CrispImage Width="16" Height="16" Moniker="{x:Static imageCatalog:KnownMonikers.QuickFind}" Margin="4,0" />
-          <TextBox x:Name="SearchText" Width="200" Style="{DynamicResource {x:Static ToolBar.TextBoxStyleKey}}" />
+          <TextBox x:Name="SearchText" Width="200" Style="{DynamicResource {x:Static ToolBar.TextBoxStyleKey}}" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" />
         </StackPanel>
       </ToolBar>
       <TreeView x:Name="TreeView"
                 BorderThickness="0 1 0 0"
-                ItemsSource="{Binding TransitivePackages}">
+                ItemsSource="{Binding TransitivePackages}"
+                VirtualizingStackPanel.IsVirtualizing="True"
+                VirtualizingStackPanel.VirtualizationMode="Recycling">
         <TreeView.ItemContainerStyle>
           <Style TargetType="TreeViewItem">
             <Setter Property="IsExpanded" Value="True" />
@@ -67,13 +83,13 @@
         <TreeView.ItemTemplate>
           <HierarchicalDataTemplate DataType="{x:Type local:RootNode}"
                                     ItemsSource="{Binding Children}"
-                                    ItemTemplate="{StaticResource NodeTemplate}">
+                                    ItemTemplate="{StaticResource FirstLevelNodeTemplate}">
             <HierarchicalDataTemplate.ItemContainerStyle>
               <Style TargetType="TreeViewItem">
                 <Setter Property="IsExpanded" Value="False" />
               </Style>
             </HierarchicalDataTemplate.ItemContainerStyle>
-            <TextBlock Margin="{StaticResource NodeMargin}" FontSize="14">
+            <TextBlock Margin="{StaticResource NodeMargin}" FontWeight="Bold">
               <TextBlock.Text>
                 <MultiBinding StringFormat="{}{0} [{1}]">
                   <MultiBinding.Bindings>

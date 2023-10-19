@@ -1,12 +1,16 @@
 ﻿using Community.VisualStudio.Toolkit;
 using NuGetMonitor.Services;
 using System.ComponentModel;
+using System.Windows.Data;
 using System.Windows.Input;
 using Microsoft.VisualStudio.Shell;
 using NuGet.Frameworks;
 using NuGetMonitor.Models;
 using TomsToolbox.Wpf;
 using NuGet.Packaging.Core;
+using PropertyChanged;
+using Throttle;
+using TomsToolbox.Essentials;
 
 namespace NuGetMonitor.View.DependencyTree;
 
@@ -59,19 +63,36 @@ internal sealed partial class ChildNode : INotifyPropertyChanged
 internal sealed partial class RootNode : INotifyPropertyChanged
 {
     private readonly TransitiveDependencies _transitiveDependencies;
+    private readonly ListCollectionView _children;
 
     public RootNode(TransitiveDependencies transitiveDependencies)
     {
         _transitiveDependencies = transitiveDependencies;
+
+        var children = _transitiveDependencies.ParentsByChild
+            .OrderBy(item => item.Key.PackageIdentity)
+            .Select(item => new ChildNode(item.Key, _transitiveDependencies.ParentsByChild))
+            .ToArray();
+
+        _children = new ListCollectionView(children);
     }
 
     public string ProjectName => _transitiveDependencies.ProjectName;
 
     public NuGetFramework TargetFramework => _transitiveDependencies.TargetFramework;
 
-    public IEnumerable<ChildNode> Children => _transitiveDependencies.ParentsByChild
-        .OrderBy(item => item.Key.PackageIdentity)
-        .Select(item => new ChildNode(item.Key, _transitiveDependencies.ParentsByChild));
+    public ICollectionView Children => _children;
+
+    public void SetFilter(string? searchText)
+    {
+        if (searchText.IsNullOrWhiteSpace())
+        {
+            _children.Filter = null;
+            return;
+        }
+
+        _children.Filter = item => ((ChildNode)item).PackageIdentity.ToString().IndexOf(searchText, StringComparison.OrdinalIgnoreCase) >= 0;
+    }
 }
 
 #pragma warning disable CA1812 // Avoid uninstantiated internal classes => used in xaml!
@@ -90,6 +111,15 @@ internal sealed partial class DependencyTreeViewModel : INotifyPropertyChanged
 
     public ICommand RefreshCommand => new DelegateCommand(Refresh);
 
+    [OnChangedMethod(nameof(OnSearchTextChanged))]
+    public string? SearchText { get; set; }
+
+    [Throttled(typeof(TomsToolbox.Wpf.Throttle), 200)]
+    private void OnSearchTextChanged()
+    {
+        TransitivePackages?.ForEach(item => item.SetFilter(SearchText));
+    }
+
     private void Refresh()
     {
         ProjectService.ClearCache();
@@ -97,7 +127,7 @@ internal sealed partial class DependencyTreeViewModel : INotifyPropertyChanged
         Load().FireAndForget();
     }
 
-    public async Task Load()
+    private async Task Load()
     {
         try
         {
@@ -115,7 +145,10 @@ internal sealed partial class DependencyTreeViewModel : INotifyPropertyChanged
             TransitivePackages = transitivePackages
                 .OrderBy(item => item.ProjectName)
                 .ThenBy(item => item.TargetFramework.ToString())
-                .Select(item => new RootNode(item)).ToArray();
+                .Select(item => new RootNode(item))
+                .ToArray();
+
+            OnSearchTextChanged();
         }
         finally
         {
