@@ -20,17 +20,22 @@
         <ResourceDictionary Source="/NuGetMonitor;component/Resources/VSColorScheme.xaml" />
       </ResourceDictionary.MergedDictionaries>
       <Thickness x:Key="NodeMargin">4</Thickness>
+      <Style x:Key="ExpandedNodeStyle" TargetType="TreeViewItem">
+        <Setter Property="IsExpanded" Value="True" />
+      </Style>
+      <Style x:Key="CollapsedNodeStyle" TargetType="TreeViewItem">
+        <Setter Property="IsExpanded" Value="False" />
+      </Style>
       <HierarchicalDataTemplate x:Key="NodeTemplate"
                                 DataType="{x:Type local:ChildNode}"
+                                ItemContainerStyle="{StaticResource ExpandedNodeStyle}"
                                 ItemsSource="{Binding Children}">
-        <HierarchicalDataTemplate.ItemContainerStyle>
-          <Style TargetType="TreeViewItem">
-            <Setter Property="IsExpanded" Value="True" />
-          </Style>
-        </HierarchicalDataTemplate.ItemContainerStyle>
-        <StackPanel Orientation="Horizontal" Margin="{StaticResource NodeMargin}">
-          <TextBlock x:Name="Identity" Text="{Binding PackageIdentity}" />
-          <TextBlock Text="{Binding Issues}" Foreground="{DynamicResource {x:Static SystemColors.ControlDarkDarkBrushKey}}" />
+        <StackPanel Orientation="Horizontal"
+                    Margin="{StaticResource NodeMargin}">
+          <TextBlock x:Name="Identity"
+                     Text="{Binding PackageIdentity}" />
+          <TextBlock Text="{Binding Issues}"
+                     Foreground="{DynamicResource {x:Static SystemColors.ControlDarkDarkBrushKey}}" />
         </StackPanel>
         <HierarchicalDataTemplate.Triggers>
           <DataTrigger Binding="{Binding HasChildren}" Value="False">
@@ -40,20 +45,43 @@
       </HierarchicalDataTemplate>
       <HierarchicalDataTemplate x:Key="FirstLevelNodeTemplate"
                                 DataType="{x:Type local:ChildNode}"
+                                ItemContainerStyle="{StaticResource ExpandedNodeStyle}"
                                 ItemsSource="{Binding Children}"
                                 ItemTemplate="{StaticResource NodeTemplate}">
-        <HierarchicalDataTemplate.ItemContainerStyle>
-          <Style TargetType="TreeViewItem">
-            <Setter Property="IsExpanded" Value="True" />
-          </Style>
-        </HierarchicalDataTemplate.ItemContainerStyle>
         <StackPanel Orientation="Horizontal" Margin="{StaticResource NodeMargin}">
-          <toms:HighlightingTextBlock x:Name="Identity"
-                                      Text="{Binding PackageIdentity}"
-                                      SearchText="{Binding ElementName=SearchText, Path=Text}"
-                                      HighLightBrush="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}"/>
-          <TextBlock Text="{Binding Issues}" Foreground="{DynamicResource {x:Static SystemColors.ControlDarkDarkBrushKey}}" />
+          <Grid>
+            <TextBlock x:Name="Plain"
+                       Visibility="Hidden"
+                       Text="{Binding PackageIdentity}" />
+            <toms:HighlightingTextBlock x:Name="Highlighted"
+                                        Text="{Binding PackageIdentity}"
+                                        SearchText="{Binding ElementName=SearchText, Path=Text}"
+                                        HighLightBrush="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}" />
+          </Grid>
+          <TextBlock Text="{Binding Issues}"
+                     Foreground="{DynamicResource {x:Static SystemColors.ControlDarkDarkBrushKey}}" />
         </StackPanel>
+        <HierarchicalDataTemplate.Triggers>
+          <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource FindAncestor, AncestorType=TreeViewItem}}" Value="True">
+            <Setter TargetName="Plain" Property="Visibility" Value="Visible" />
+            <Setter TargetName="Highlighted" Property="Visibility" Value="Hidden" />
+          </DataTrigger>
+        </HierarchicalDataTemplate.Triggers>
+      </HierarchicalDataTemplate>
+      <HierarchicalDataTemplate DataType="{x:Type local:RootNode}"
+                                ItemContainerStyle="{StaticResource CollapsedNodeStyle}"
+                                ItemsSource="{Binding Children}"
+                                ItemTemplate="{StaticResource FirstLevelNodeTemplate}">
+        <TextBlock Margin="{StaticResource NodeMargin}" FontWeight="Bold">
+          <TextBlock.Text>
+            <MultiBinding StringFormat="{}{0} [{1}]">
+              <MultiBinding.Bindings>
+                <Binding Path="ProjectName" />
+                <Binding Path="TargetFramework" />
+              </MultiBinding.Bindings>
+            </MultiBinding>
+          </TextBlock.Text>
+        </TextBlock>
       </HierarchicalDataTemplate>
     </ResourceDictionary>
   </UserControl.Resources>
@@ -73,35 +101,9 @@
       <TreeView x:Name="TreeView"
                 BorderThickness="0 1 0 0"
                 ItemsSource="{Binding TransitivePackages}"
+                ItemContainerStyle="{StaticResource ExpandedNodeStyle}"
                 VirtualizingStackPanel.IsVirtualizing="True"
-                VirtualizingStackPanel.VirtualizationMode="Recycling">
-        <TreeView.ItemContainerStyle>
-          <Style TargetType="TreeViewItem">
-            <Setter Property="IsExpanded" Value="True" />
-          </Style>
-        </TreeView.ItemContainerStyle>
-        <TreeView.ItemTemplate>
-          <HierarchicalDataTemplate DataType="{x:Type local:RootNode}"
-                                    ItemsSource="{Binding Children}"
-                                    ItemTemplate="{StaticResource FirstLevelNodeTemplate}">
-            <HierarchicalDataTemplate.ItemContainerStyle>
-              <Style TargetType="TreeViewItem">
-                <Setter Property="IsExpanded" Value="False" />
-              </Style>
-            </HierarchicalDataTemplate.ItemContainerStyle>
-            <TextBlock Margin="{StaticResource NodeMargin}" FontWeight="Bold">
-              <TextBlock.Text>
-                <MultiBinding StringFormat="{}{0} [{1}]">
-                  <MultiBinding.Bindings>
-                    <Binding Path="ProjectName" />
-                    <Binding Path="TargetFramework" />
-                  </MultiBinding.Bindings>
-                </MultiBinding>
-              </TextBlock.Text>
-            </TextBlock>
-          </HierarchicalDataTemplate>
-        </TreeView.ItemTemplate>
-      </TreeView>
+                VirtualizingStackPanel.VirtualizationMode="Recycling" />
     </DockPanel>
     <toms:LoadingIndicator IsActive="{Binding IsLoading}" Header="Loading..." d:IsHidden="True" />
   </Grid>
