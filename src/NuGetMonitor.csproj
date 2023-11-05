@@ -7,6 +7,7 @@
     <StartAction>Program</StartAction>
     <StartProgram Condition="'$(DevEnvDir)' != ''">$(DevEnvDir)devenv.exe</StartProgram>
     <StartArguments>/rootsuffix Exp</StartArguments>
+    <IsDeploymentTarget>true</IsDeploymentTarget>
   </PropertyGroup>
   <ItemGroup>
     <None Update="source.extension.vsixmanifest">

@@ -185,7 +185,7 @@ internal static class ProjectService
         if (id.Equals(NetStandardPackageId, StringComparison.OrdinalIgnoreCase))
             return null;
 
-        var version = projectItem.GetVersion();
+        var version = projectItem.GetVersion() ?? projectItem.GetVersionOverride();
         var project = projectItemInTargetFramework.Project;
 
         if (version is null && project.CentralVersionMap.TryGetValue(id, out versionSource))
@@ -206,6 +206,15 @@ internal static class ProjectService
     internal static VersionRange? GetVersion(this ProjectItem projectItem)
     {
         var versionValue = projectItem.GetMetadata("Version")?.EvaluatedValue;
+        if (versionValue.IsNullOrEmpty())
+            return null;
+
+        return VersionRange.TryParse(versionValue, out var version) ? version : null;
+    }
+
+    internal static VersionRange? GetVersionOverride(this ProjectItem projectItem)
+    {
+        var versionValue = projectItem.GetMetadata("VersionOverride")?.EvaluatedValue;
         if (versionValue.IsNullOrEmpty())
             return null;
 
