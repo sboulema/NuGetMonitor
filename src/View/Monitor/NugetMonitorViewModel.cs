@@ -18,6 +18,8 @@ namespace NuGetMonitor.View;
 #pragma warning disable CA1812 // Avoid uninstantiated internal classes => used in xaml!
 internal sealed partial class NuGetMonitorViewModel : INotifyPropertyChanged
 {
+    private static readonly string[] _versionMetadataNames = { "Version", "VersionOverride" };
+
     public NuGetMonitorViewModel()
     {
         VS.Events.SolutionEvents.OnAfterOpenSolution += SolutionEvents_OnAfterOpenSolution;
@@ -34,7 +36,7 @@ internal sealed partial class NuGetMonitorViewModel : INotifyPropertyChanged
     public ICommand UpdateSelectedCommand => new DelegateCommand(() => SelectedPackages.Any(item => item.IsUpdateAvailable), UpdateSelected);
 
     public ICommand RefreshCommand => new DelegateCommand<DataGrid>(Refresh);
-    
+
     public static ICommand ShowDependencyTreeCommand => new DelegateCommand(ShowDependencyTree);
 
     public static ICommand ShowNuGetPackageManagerCommand => new DelegateCommand(ShowNuGetPackageManager);
@@ -143,7 +145,7 @@ internal sealed partial class NuGetMonitorViewModel : INotifyPropertyChanged
                 var metadataItems = projectItems
                     .Where(item => item.ItemType == versionSource.ItemType)
                     .Where(item => string.Equals(item.Include, identity.Id, StringComparison.OrdinalIgnoreCase))
-                    .Select(item => item.Metadata.FirstOrDefault(metadata => string.Equals(metadata.Name, "Version", StringComparison.OrdinalIgnoreCase)
+                    .Select(item => item.Metadata.FirstOrDefault(metadata => _versionMetadataNames.Any(name => string.Equals(metadata.Name, name, StringComparison.OrdinalIgnoreCase))
                                                                           && string.Equals(metadata.Value, identity.VersionRange.OriginalString, StringComparison.OrdinalIgnoreCase)))
                     .ExceptNullItems();
 
