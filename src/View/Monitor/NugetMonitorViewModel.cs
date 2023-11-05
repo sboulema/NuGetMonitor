@@ -120,7 +120,7 @@ internal sealed partial class NuGetMonitorViewModel : INotifyPropertyChanged
 
         var packageReferencesByProject = packageViewModels
             .Where(viewModel => viewModel.IsUpdateAvailable)
-            .SelectMany(viewModel => viewModel.Items.Select(item => new { item.Identity, item.ProjectItemInTargetFramework.ContainingProject.FullPath, viewModel.SelectedVersion }))
+            .SelectMany(viewModel => viewModel.Items.Select(item => new { item.Identity, item.VersionSource, item.VersionSource.GetContainingProject().FullPath, viewModel.SelectedVersion }))
             .GroupBy(item => item.FullPath);
 
         foreach (var packageReferenceEntries in packageReferencesByProject)
@@ -129,17 +129,19 @@ internal sealed partial class NuGetMonitorViewModel : INotifyPropertyChanged
 
             var project = ProjectRootElement.Open(fullPath, projectCollection, true);
 
-            var packageReferences = project.Items;
+            var projectItems = project.Items;
 
             foreach (var packageReferenceEntry in packageReferenceEntries)
             {
                 var identity = packageReferenceEntry.Identity;
                 var selectedVersion = packageReferenceEntry.SelectedVersion;
+                var versionSource = packageReferenceEntry.VersionSource;
 
                 if (selectedVersion == null)
                     continue;
 
-                var metadataItems = packageReferences
+                var metadataItems = projectItems
+                    .Where(item => item.ItemType == versionSource.ItemType)
                     .Where(item => string.Equals(item.Include, identity.Id, StringComparison.OrdinalIgnoreCase))
                     .Select(item => item.Metadata.FirstOrDefault(metadata => string.Equals(metadata.Name, "Version", StringComparison.OrdinalIgnoreCase)
                                                                           && string.Equals(metadata.Value, identity.VersionRange.OriginalString, StringComparison.OrdinalIgnoreCase)))
@@ -148,7 +150,6 @@ internal sealed partial class NuGetMonitorViewModel : INotifyPropertyChanged
                 foreach (var metadata in metadataItems)
                 {
                     metadata.Value = selectedVersion.ToString();
-                    metadata.ExpressedAsAttribute = true;
                 }
             }
 
