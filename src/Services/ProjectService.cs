@@ -198,9 +198,9 @@ internal static class ProjectService
             : new PackageReferenceEntry(id, version, versionSource, projectItemInTargetFramework, projectItem.GetMetadataValue("Justification"));
     }
 
-    internal static bool IsTrue(this ProjectProperty property)
+    internal static bool IsTrue(this ProjectProperty? property)
     {
-        return "true".Equals(property.EvaluatedValue, StringComparison.OrdinalIgnoreCase);
+        return "true".Equals(property?.EvaluatedValue, StringComparison.OrdinalIgnoreCase);
     }
 
     internal static VersionRange? GetVersion(this ProjectItem projectItem)
