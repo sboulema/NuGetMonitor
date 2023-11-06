@@ -8,7 +8,7 @@ on:
   pull_request:
 
 env:
-  version: '1.3.${{ github.run_number }}'
+  version: '1.4.${{ github.run_number }}'
   repoUrl: ${{ github.server_url }}/${{ github.repository }}
   vsixPath: ${{ github.workspace }}/NuGetMonitor/src/bin/release/net48/win/NuGetMonitor.vsix
 

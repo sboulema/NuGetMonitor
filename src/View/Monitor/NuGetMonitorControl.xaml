@@ -212,6 +212,17 @@
               </DataTemplate>
             </DataGridTemplateColumn.CellTemplate>
           </DataGridTemplateColumn>
+          <DataGridTemplateColumn Header="Project URL">
+            <DataGridTemplateColumn.CellTemplate>
+              <DataTemplate>
+                <TextBlock Margin="2,0" VerticalAlignment="Center">
+                  <Hyperlink Command="{Binding OpenProjectUrlCommand}">
+                    <Run Text="{Binding PackageInfo.ProjectUrl, Mode=OneWay}" />
+                  </Hyperlink>
+                </TextBlock>
+              </DataTemplate>
+            </DataGridTemplateColumn.CellTemplate>
+          </DataGridTemplateColumn>
         </DataGrid.Columns>
       </DataGrid>
 

@@ -8,13 +8,14 @@ namespace NuGetMonitor.Models;
 
 internal sealed class PackageInfo
 {
-    public PackageInfo(PackageIdentity packageIdentity, Package package, NuGetSession session, ICollection<PackageVulnerabilityMetadata>? vulnerabilities, PackageDeprecationMetadata? deprecationMetadata)
+    public PackageInfo(PackageIdentity packageIdentity, Package package, NuGetSession session, ICollection<PackageVulnerabilityMetadata>? vulnerabilities, PackageDeprecationMetadata? deprecationMetadata, Uri projectUrl)
     {
         PackageIdentity = packageIdentity;
         Package = package;
         Session = session;
         Vulnerabilities = vulnerabilities;
         DeprecationMetadata = deprecationMetadata;
+        ProjectUrl = projectUrl;
     }
 
     public PackageIdentity PackageIdentity { get; }
@@ -36,6 +37,8 @@ internal sealed class PackageInfo
     public string Issues => string.Join(", ", GetIssues().ExceptNullItems());
 
     public bool HasIssues => IsDeprecated || IsVulnerable;
+
+    public Uri ProjectUrl { get; }
 
     private IEnumerable<string?> GetIssues()
     {

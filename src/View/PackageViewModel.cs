@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel;
+using System.Diagnostics;
 using System.Windows.Input;
 using NuGet.Versioning;
 using NuGetMonitor.Models;
@@ -38,6 +39,8 @@ namespace NuGetMonitor.View
         public bool IsLoading => Package == null;
 
         public ICommand UpdateCommand => new DelegateCommand(() => IsUpdateAvailable, () => { NuGetMonitorViewModel.Update(this); });
+
+        public ICommand OpenProjectUrlCommand => new DelegateCommand(() => PackageInfo?.ProjectUrl != null, () => { Process.Start(PackageInfo!.ProjectUrl.AbsoluteUri); });
 
         public PackageInfo? PackageInfo { get; private set; }
 

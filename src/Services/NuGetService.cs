@@ -369,7 +369,7 @@ internal static class NuGetService
 
             var deprecationMetadata = await metadata.GetDeprecationMetadataAsync();
 
-            return new PackageInfo(packageIdentity, package, session, metadata.Vulnerabilities?.ToArray(), deprecationMetadata)
+            return new PackageInfo(packageIdentity, package, session, metadata.Vulnerabilities?.ToArray(), deprecationMetadata, metadata.ProjectUrl)
             {
                 IsOutdated = IsOutdated(packageIdentity, versions)
             };
