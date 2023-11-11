@@ -25,7 +25,7 @@ internal sealed partial class ChildNode : INotifyPropertyChanged
         _packageInfo = packageInfo;
         _parentsByChild = parentsByChild;
 
-        parentsByChild.TryGetValue(_packageInfo, out _dependsOn);
+        parentsByChild.TryGetValue(packageInfo, out _dependsOn);
     }
 
     public PackageIdentity PackageIdentity => _packageInfo.PackageIdentity;

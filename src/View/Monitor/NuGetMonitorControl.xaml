@@ -60,8 +60,20 @@
                 BorderThickness="0 1 0 0"
                 Style="{DynamicResource {x:Static styles:ResourceKeys.DataGridStyle}}"
                 VerticalContentAlignment="Center"
+                FrozenColumnCount="2"
                 dgx:DataGridFilter.IsAutoFilterEnabled="True"
                 toms:MultiSelectorExtensions.SelectionBinding="{Binding SelectedPackages}">
+        <DataGrid.Resources>
+          <toms:BindingRelay x:Key="DataGridRelay" DataContext="{Binding ElementName=DataGrid}" />
+          <Style TargetType="DataGridCell" x:Key="InfoColumnCellStyle">
+            <Style.Triggers>
+              <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource FindAncestor, AncestorType=DataGridRow}}" Value="True">
+                <Setter Property="Background" Value="Transparent" />
+                <Setter Property="BorderBrush" Value="Transparent" />
+              </DataTrigger>
+            </Style.Triggers>
+          </Style>
+        </DataGrid.Resources>
         <DataGrid.CellStyle>
           <Style TargetType="DataGridCell" BasedOn="{StaticResource {x:Static styles:ResourceKeys.DataGridCellStyle}}">
             <Style.Triggers>
@@ -180,17 +192,8 @@
                               Binding="{Binding Justifications}"
                               dgx:DataGridFilterColumn.IsFilterVisible="False" />
           <DataGridTemplateColumn Header="Projects"
-                                  dgx:DataGridFilterColumn.IsFilterVisible="False">
-            <DataGridTemplateColumn.CellStyle>
-              <Style TargetType="DataGridCell">
-                <Style.Triggers>
-                  <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource FindAncestor, AncestorType=DataGridRow}}" Value="True">
-                    <Setter Property="Background" Value="Transparent" />
-                    <Setter Property="BorderBrush" Value="Transparent" />
-                  </DataTrigger>
-                </Style.Triggers>
-              </Style>
-            </DataGridTemplateColumn.CellStyle>
+                                  dgx:DataGridFilterColumn.IsFilterVisible="False"
+                                  CellStyle="{StaticResource InfoColumnCellStyle}">
             <DataGridTemplateColumn.CellTemplate>
               <DataTemplate>
                 <ItemsControl ItemsSource="{Binding Projects}">
@@ -213,27 +216,21 @@
             </DataGridTemplateColumn.CellTemplate>
           </DataGridTemplateColumn>
           <DataGridTemplateColumn Header="Project URL"
-                                  dgx:DataGridFilterColumn.IsFilterVisible="False">
-            <DataGridTemplateColumn.CellStyle>
-              <Style TargetType="DataGridCell">
-                <Style.Triggers>
-                  <DataTrigger Binding="{Binding IsSelected, RelativeSource={RelativeSource FindAncestor, AncestorType=DataGridRow}}" Value="True">
-                    <Setter Property="Background" Value="Transparent" />
-                    <Setter Property="BorderBrush" Value="Transparent" />
-                  </DataTrigger>
-                </Style.Triggers>
-              </Style>
-            </DataGridTemplateColumn.CellStyle>
+                                  dgx:DataGridFilterColumn.IsFilterVisible="False"
+                                  CellStyle="{StaticResource InfoColumnCellStyle}">
             <DataGridTemplateColumn.CellTemplate>
               <DataTemplate>
                 <TextBlock Margin="2,0" VerticalAlignment="Center">
                   <Hyperlink Command="{Binding OpenProjectUrlCommand}">
-                    <Run Text="{Binding PackageInfo.ProjectUrl, Mode=OneWay}" />
+                    <Run Text="{Binding PackageInfo.ProjectUrl, Mode=OneWay, FallbackValue=''}" />
                   </Hyperlink>
                 </TextBlock>
               </DataTemplate>
             </DataGridTemplateColumn.CellTemplate>
           </DataGridTemplateColumn>
+          <!-- Add an extra padding column, so we can always scroll to the last column. -->
+          <DataGridTextColumn Width="{Binding DataContext.(DataGrid.ActualWidth), Source={StaticResource DataGridRelay}}"
+                              dgx:DataGridFilterColumn.IsFilterVisible="False" />
         </DataGrid.Columns>
       </DataGrid>
 
