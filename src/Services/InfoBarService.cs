@@ -1,5 +1,4 @@
-﻿using System.IO;
-using System.Text;
+﻿using System.Text;
 using System.Windows;
 using Community.VisualStudio.Toolkit;
 using Microsoft.VisualStudio.Imaging;

@@ -10,6 +10,7 @@ using Microsoft.Build.Construction;
 using Microsoft.Build.Evaluation;
 using Microsoft.VisualStudio.Shell;
 using NuGetMonitor.Services;
+using NuGetMonitor.View.Monitor;
 using TomsToolbox.Essentials;
 using TomsToolbox.Wpf;
 
@@ -42,6 +43,8 @@ internal sealed partial class NuGetMonitorViewModel : INotifyPropertyChanged
     public static ICommand ShowNuGetPackageManagerCommand => new DelegateCommand(ShowNuGetPackageManager);
 
     public ICommand CopyIssueDetailsCommand => new DelegateCommand(CanCopyIssueDetails, CopyIssueDetails);
+
+    public ICommand NormalizePackageReferencesCommand => new DelegateCommand(NormalizePackageReferences);
 
     private void SolutionEvents_OnAfterOpenSolution(Solution? obj)
     {
@@ -164,6 +167,32 @@ internal sealed partial class NuGetMonitorViewModel : INotifyPropertyChanged
         }
 
         ProjectService.ClearCache();
+    }
+
+    private void NormalizePackageReferences()
+    {
+        NormalizePackageReferencesAsync().FireAndForget();
+    }
+
+    private async Task NormalizePackageReferencesAsync()
+    {
+        var projectItems = Packages
+            .SelectMany(p => p.Items.Select(item => item.ProjectItemInTargetFramework.ProjectItem));
+
+        var numberOfUpdatedItems = ProjectService.NormalizePackageReferences(projectItems);
+
+        await ShowInfoBar($"{numberOfUpdatedItems} package references normalized");
+    }
+
+    private static async Task ShowInfoBar(string text)
+    {
+        var model = new InfoBarModel(text);
+        var infoBar = await VS.InfoBar.CreateAsync(NuGetMonitorToolWindow.Guid, model).ConfigureAwait(true) ?? throw new InvalidOperationException("Failed to create the info bar");
+        await infoBar.TryShowInfoBarUIAsync().ConfigureAwait(true);
+
+        await Task.Delay(TimeSpan.FromSeconds(5)).ConfigureAwait(true);
+
+        infoBar.Close();
     }
 
     private bool CanCopyIssueDetails()
