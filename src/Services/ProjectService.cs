@@ -22,8 +22,6 @@ internal sealed class ProjectItemInTargetFramework
 
     public ProjectItem ProjectItem { get; init; }
 
-    public NuGetFramework TargetFramework => Project.TargetFramework;
-
     public ProjectInTargetFramework Project { get; }
 }
 
@@ -63,6 +61,8 @@ internal sealed class ProjectInTargetFramework
 
 internal static class ProjectService
 {
+    private static readonly string[] _allAssets = new[] { "runtime", "build", "native", "contentfiles", "analyzers", "buildtransitive" }.OrderBy(i => i).ToArray();
+
     private static ProjectCollection _projectCollection = new();
 
     static ProjectService()
@@ -95,6 +95,72 @@ internal static class ProjectService
                 .ThenBy(item => Path.GetFileName(item.VersionSource.GetContainingProject().FullPath))
                 .ToArray();
         });
+    }
+
+    public static int NormalizePackageReferences(IEnumerable<ProjectItem> projectItems)
+    {
+        using var projectCollection = new ProjectCollection();
+        var numberOfUpdatedItems = 0;
+
+        var projectFiles = projectItems
+            .Select(i => i.GetContainingProject().FullPath)
+            .Distinct(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var projectFile in projectFiles)
+        {
+            var isDirty = false;
+
+            var project = ProjectRootElement.Open(projectFile, projectCollection, true);
+
+            var itemElements = project.Items
+                .Where(item => item.ItemType == "PackageReference");
+
+            foreach (var itemElement in itemElements)
+            {
+                var metadata = itemElement.Metadata;
+
+                var metadataElements = metadata.Where(meta => !meta.ExpressedAsAttribute).ToArray();
+                if (metadataElements.Length == 0)
+                    continue;
+
+                foreach (var metadataElement in metadataElements)
+                {
+                    metadataElement.ExpressedAsAttribute = true;
+                }
+
+                NormalizeIncludeAssets(metadata);
+
+                numberOfUpdatedItems += 1;
+                isDirty = true;
+            }
+
+            if (isDirty)
+            {
+                project.Save();
+            }
+        }
+
+        return numberOfUpdatedItems;
+    }
+
+    private static void NormalizeIncludeAssets(IEnumerable<ProjectMetadataElement> metadata)
+    {
+        var includeAssetsElement = metadata.FirstOrDefault(meta => meta.Name == "IncludeAssets");
+        if (includeAssetsElement is null)
+            return;
+
+        var includeAssets = includeAssetsElement.Value;
+        if (string.IsNullOrEmpty(includeAssets))
+            return;
+
+        var parts = includeAssets.Split(';')
+            .Select(s => s.Trim())
+            .OrderBy(s => s, StringComparer.OrdinalIgnoreCase);
+
+        if (!_allAssets.SequenceEqual(parts, StringComparer.OrdinalIgnoreCase))
+            return;
+
+        includeAssetsElement.Value = string.Empty;
     }
 
     public static ProjectInTargetFramework[] GetProjectsInTargetFramework(this Project project)

@@ -77,7 +77,7 @@ internal static class NuGetService
     {
         var results = new List<TransitiveDependencies>();
 
-        var projectItemsByTargetFramework = packageReferences.GroupBy(item => item.ProjectItemInTargetFramework.TargetFramework);
+        var projectItemsByTargetFramework = packageReferences.GroupBy(item => item.ProjectItemInTargetFramework.Project.TargetFramework);
 
         foreach (var projectItemsInTargetFramework in projectItemsByTargetFramework)
         {

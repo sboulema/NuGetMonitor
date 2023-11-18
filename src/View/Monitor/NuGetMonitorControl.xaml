@@ -49,6 +49,9 @@
         <Button Command="{Binding ShowDependencyTreeCommand}" ToolTip="Show dependency tree">
           <imaging:CrispImage Width="16" Height="16" Moniker="{x:Static imageCatalog:KnownMonikers.DecisionTree}" />
         </Button>
+        <Button Command="{Binding NormalizePackageReferencesCommand}" ToolTip="Normalize package references">
+          <imaging:CrispImage Width="16" Height="16" Moniker="{x:Static imageCatalog:KnownMonikers.GraphRightToLeft}" />
+        </Button>
         <Button Command="{Binding CopyIssueDetailsCommand}" ToolTip="Copy issue details">
           <imaging:CrispImage Width="16" Height="16" Moniker="{x:Static imageCatalog:KnownMonikers.Copy}" />
         </Button>
