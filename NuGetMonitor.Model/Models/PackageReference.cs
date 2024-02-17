@@ -3,7 +3,7 @@ using NuGet.Versioning;
 
 namespace NuGetMonitor.Models;
 
-internal sealed record PackageReference(string Id, VersionRange VersionRange)
+public sealed record PackageReference(string Id, VersionRange VersionRange)
 {
     public PackageIdentity? FindBestMatch(IEnumerable<NuGetVersion>? versions)
     {

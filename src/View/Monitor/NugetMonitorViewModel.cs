@@ -4,13 +4,13 @@ using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using Community.VisualStudio.Toolkit;
 using DataGridExtensions;
 using Microsoft.Build.Construction;
 using Microsoft.Build.Evaluation;
 using Microsoft.VisualStudio.Shell;
+using NuGetMonitor.Model.Abstractions;
+using NuGetMonitor.Model.Services;
 using NuGetMonitor.Services;
-using NuGetMonitor.View.Monitor;
 using TomsToolbox.Essentials;
 using TomsToolbox.Wpf;
 
@@ -21,10 +21,15 @@ internal sealed partial class NuGetMonitorViewModel : INotifyPropertyChanged
 {
     private static readonly string[] _versionMetadataNames = { "Version", "VersionOverride" };
 
-    public NuGetMonitorViewModel()
+    private readonly ISolutionService _solutionService;
+
+    public NuGetMonitorViewModel(ISolutionService solutionService)
     {
-        VS.Events.SolutionEvents.OnAfterOpenSolution += SolutionEvents_OnAfterOpenSolution;
-        VS.Events.SolutionEvents.OnAfterCloseSolution += SolutionEvents_OnAfterCloseSolution;
+        _solutionService = solutionService;
+
+        solutionService.SolutionOpened += SolutionEvents_OnAfterOpenSolution;
+        solutionService.SolutionClosed += SolutionEvents_OnAfterCloseSolution;
+
         Load();
     }
 
@@ -40,18 +45,18 @@ internal sealed partial class NuGetMonitorViewModel : INotifyPropertyChanged
 
     public static ICommand ShowDependencyTreeCommand => new DelegateCommand(ShowDependencyTree);
 
-    public static ICommand ShowNuGetPackageManagerCommand => new DelegateCommand(ShowNuGetPackageManager);
+    public ICommand ShowNuGetPackageManagerCommand => new DelegateCommand(() => _solutionService.ShowPackageManager());
 
     public ICommand CopyIssueDetailsCommand => new DelegateCommand(CanCopyIssueDetails, CopyIssueDetails);
 
     public ICommand NormalizePackageReferencesCommand => new DelegateCommand(NormalizePackageReferences);
 
-    private void SolutionEvents_OnAfterOpenSolution(Solution? obj)
+    private void SolutionEvents_OnAfterOpenSolution(object? sender, EventArgs e)
     {
         Load();
     }
 
-    private void SolutionEvents_OnAfterCloseSolution()
+    private void SolutionEvents_OnAfterCloseSolution(object? sender, EventArgs e)
     {
         Packages = null;
     }
@@ -64,11 +69,13 @@ internal sealed partial class NuGetMonitorViewModel : INotifyPropertyChanged
 
             Packages = null;
 
-            var packageReferences = await ProjectService.GetPackageReferences().ConfigureAwait(true);
+            var projectFolders = await _solutionService.GetProjectFolders();
+
+            var packageReferences = await ProjectService.GetPackageReferences(projectFolders);
 
             var packages = packageReferences
                 .GroupBy(item => item.Identity)
-                .Select(group => new PackageViewModel(group))
+                .Select(group => new PackageViewModel(group, _solutionService))
                 .ToArray();
 
             Packages = packages;
@@ -82,7 +89,7 @@ internal sealed partial class NuGetMonitorViewModel : INotifyPropertyChanged
         }
         catch (Exception ex)
         {
-            await LogAsync($"Loading package data failed: {ex}");
+            Log(LogLevel.Error, $"Loading package data failed: {ex}");
         }
         finally
         {
@@ -90,9 +97,9 @@ internal sealed partial class NuGetMonitorViewModel : INotifyPropertyChanged
         }
     }
 
-    private static void ShowNuGetPackageManager()
+    private void ShowNuGetPackageManager()
     {
-        VS.Commands.ExecuteAsync("Tools.ManageNuGetPackagesForSolution").FireAndForget();
+        _solutionService.ShowPackageManager();
     }
 
     private static void ShowDependencyTree()
@@ -184,15 +191,9 @@ internal sealed partial class NuGetMonitorViewModel : INotifyPropertyChanged
         await ShowInfoBar($"{numberOfUpdatedItems} package references normalized");
     }
 
-    private static async Task ShowInfoBar(string text)
+    private async Task ShowInfoBar(string text)
     {
-        var model = new InfoBarModel(text);
-        var infoBar = await VS.InfoBar.CreateAsync(NuGetMonitorToolWindow.Guid, model).ConfigureAwait(true) ?? throw new InvalidOperationException("Failed to create the info bar");
-        await infoBar.TryShowInfoBarUIAsync().ConfigureAwait(true);
-
-        await Task.Delay(TimeSpan.FromSeconds(5)).ConfigureAwait(true);
-
-        infoBar.Close();
+        await _solutionService.ShowInfoBar(text);
     }
 
     private bool CanCopyIssueDetails()

@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.Caching.Memory;
-using Microsoft.IO;
 using NuGet.Common;
 using NuGet.Frameworks;
 using NuGet.Packaging;
@@ -12,11 +11,11 @@ using PackageReference = NuGetMonitor.Models.PackageReference;
 
 namespace NuGetMonitor.Services;
 
-internal static class NuGetService
+public static class NuGetService
 {
     private static bool _shutdownInitiated;
 
-    private static NuGetSession _session = new();
+    private static NuGetSession _session = new(null);
 
     public static void Shutdown()
     {
@@ -24,12 +23,12 @@ internal static class NuGetService
         _session.Dispose();
     }
 
-    public static void ClearCache()
+    public static void Reset(string? solutionFolder)
     {
         if (_shutdownInitiated)
             return;
 
-        Interlocked.Exchange(ref _session, new NuGetSession()).Dispose();
+        Interlocked.Exchange(ref _session, new NuGetSession(solutionFolder)).Dispose();
     }
 
     public static async Task<ICollection<PackageReferenceInfo>> CheckPackageReferences(IEnumerable<PackageReferenceEntry> packageReferences)
@@ -130,9 +129,14 @@ internal static class NuGetService
                     .Where(item => !topLevelPackageIdentities.Contains(item))
                     .ToHashSet();
 
+#if NETFRAMEWORK
                 parentsByChild = parentsByChild
                     .Where(item => transitivePackageIdentities.Contains(item.Key.PackageIdentity))
                     .ToDictionary();
+#else
+                parentsByChild = new Dictionary<PackageInfo, HashSet<PackageInfo>>(parentsByChild
+                    .Where(item => transitivePackageIdentities.Contains(item.Key.PackageIdentity)));
+#endif
 
                 results.Add(new TransitiveDependencies(Path.GetFileName(project.FullPath), targetFramework, parentsByChild));
             }
@@ -232,7 +236,7 @@ internal static class NuGetService
 
     private static bool IsOutdated(PackageIdentity packageIdentity, IEnumerable<NuGetVersion> versions)
     {
-        var latestVersion = versions.FirstOrDefault(version => version.IsPrerelease == packageIdentity.Version.IsPrerelease);
+        var latestVersion = versions.FirstOrDefault(version => version.IsPrerelease == packageIdentity.Version.IsPrerelease) ?? new NuGetVersion(0, 0, 0);
 
         return latestVersion > packageIdentity.Version;
     }

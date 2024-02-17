@@ -1,5 +1,4 @@
-﻿using Community.VisualStudio.Toolkit;
-using NuGetMonitor.Services;
+﻿using NuGetMonitor.Services;
 using System.ComponentModel;
 using System.Windows.Data;
 using System.Windows.Input;
@@ -8,6 +7,7 @@ using NuGet.Frameworks;
 using NuGetMonitor.Models;
 using TomsToolbox.Wpf;
 using NuGet.Packaging.Core;
+using NuGetMonitor.Model.Abstractions;
 using PropertyChanged;
 using Throttle;
 using TomsToolbox.Essentials;
@@ -98,10 +98,15 @@ internal sealed partial class RootNode : INotifyPropertyChanged
 #pragma warning disable CA1812 // Avoid uninstantiated internal classes => used in xaml!
 internal sealed partial class DependencyTreeViewModel : INotifyPropertyChanged
 {
-    public DependencyTreeViewModel()
+    private readonly ISolutionService _solutionService;
+
+    public DependencyTreeViewModel(ISolutionService solutionService)
     {
-        VS.Events.SolutionEvents.OnAfterOpenSolution += SolutionEvents_OnAfterOpenSolution;
-        VS.Events.SolutionEvents.OnAfterCloseSolution += SolutionEvents_OnAfterCloseSolution;
+        _solutionService = solutionService;
+
+        solutionService.SolutionOpened += SolutionEvents_OnAfterOpenSolution;
+        solutionService.SolutionClosed += SolutionEvents_OnAfterCloseSolution;
+
         Load().FireAndForget();
     }
 
@@ -133,7 +138,9 @@ internal sealed partial class DependencyTreeViewModel : INotifyPropertyChanged
         {
             IsLoading = true;
 
-            var packageReferences = await ProjectService.GetPackageReferences().ConfigureAwait(true);
+            var projectFolders = await _solutionService.GetProjectFolders();
+
+            var packageReferences = await ProjectService.GetPackageReferences(projectFolders).ConfigureAwait(true);
 
             var topLevelPackages = await NuGetService.CheckPackageReferences(packageReferences).ConfigureAwait(true);
 
@@ -156,12 +163,12 @@ internal sealed partial class DependencyTreeViewModel : INotifyPropertyChanged
         }
     }
 
-    private void SolutionEvents_OnAfterOpenSolution(Solution? obj)
+    private void SolutionEvents_OnAfterOpenSolution(object? sender, EventArgs e)
     {
         Load().FireAndForget();
     }
 
-    private void SolutionEvents_OnAfterCloseSolution()
+    private void SolutionEvents_OnAfterCloseSolution(object? sender, EventArgs e)
     {
         TransitivePackages = null;
     }
