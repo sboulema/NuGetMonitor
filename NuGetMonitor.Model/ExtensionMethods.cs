@@ -16,7 +16,7 @@ public static class ExtensionMethods
                 return $"1 {singular}";
             default:
             {
-                var plural = (singular.EndsWith("y", StringComparison.CurrentCulture)) ? singular.Substring(0, singular.Length - 1) + "ies" : singular + "s";
+                var plural = singular.EndsWith("y", StringComparison.CurrentCulture) ? singular.Substring(0, singular.Length - 1) + "ies" : singular + "s";
 
                 return $"{count} {plural}";
             }

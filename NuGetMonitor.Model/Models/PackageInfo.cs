@@ -50,6 +50,8 @@ public sealed class PackageInfo
 
     public void AppendIssueDetails(StringBuilder text)
     {
+#pragma warning disable CA1305 // Specify IFormatProvider => Not available in NetFramework
+
         if (!HasIssues)
             return;
 
@@ -68,6 +70,7 @@ public sealed class PackageInfo
         {
             text.AppendLine($"""  - Severity: {vulnerability.Severity}, "{vulnerability.AdvisoryUrl}".""");
         }
+#pragma warning restore CA1305 // Specify IFormatProvider
     }
 
     public override string ToString()

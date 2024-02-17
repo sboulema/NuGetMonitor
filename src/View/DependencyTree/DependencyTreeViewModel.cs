@@ -18,22 +18,24 @@ namespace NuGetMonitor.View.DependencyTree;
 internal sealed partial class ChildNode : INotifyPropertyChanged
 {
     private readonly PackageInfo _packageInfo;
-    private readonly IReadOnlyDictionary<PackageInfo, HashSet<PackageInfo>> _parentsByChild;
+    private readonly TransitiveDependencies _transitiveDependencies;
+    private readonly ISolutionService _solutionService;
     private readonly HashSet<PackageInfo>? _dependsOn;
 
-    public ChildNode(PackageInfo packageInfo, IReadOnlyDictionary<PackageInfo, HashSet<PackageInfo>> parentsByChild)
+    public ChildNode(PackageInfo packageInfo, TransitiveDependencies transitiveDependencies, ISolutionService solutionService)
     {
         _packageInfo = packageInfo;
-        _parentsByChild = parentsByChild;
+        _transitiveDependencies = transitiveDependencies;
+        _solutionService = solutionService;
 
-        parentsByChild.TryGetValue(packageInfo, out _dependsOn);
+        transitiveDependencies.ParentsByChild.TryGetValue(packageInfo, out _dependsOn);
     }
 
     public PackageIdentity PackageIdentity => _packageInfo.PackageIdentity;
 
     public IEnumerable<ChildNode>? Children => _dependsOn?
         .OrderBy(item => item.PackageIdentity)
-        .Select(item => new ChildNode(item, _parentsByChild));
+        .Select(item => new ChildNode(item, _transitiveDependencies, _solutionService));
 
     public bool HasChildren => _dependsOn != null;
 
@@ -44,6 +46,7 @@ internal sealed partial class ChildNode : INotifyPropertyChanged
     private void CopyPackageReference()
     {
         Clipboard.SetText($"""<PackageReference Include="{PackageIdentity.Id}" Version="{PackageIdentity.Version}" />""");
+        _solutionService.OpenDocument(_transitiveDependencies.ProjectFullPath);
     }
 
     private string GetIssues()
@@ -73,13 +76,13 @@ internal sealed partial class RootNode : INotifyPropertyChanged
     private readonly TransitiveDependencies _transitiveDependencies;
     private readonly ListCollectionView _children;
 
-    public RootNode(TransitiveDependencies transitiveDependencies)
+    public RootNode(TransitiveDependencies transitiveDependencies, ISolutionService solutionService)
     {
         _transitiveDependencies = transitiveDependencies;
 
         var children = _transitiveDependencies.ParentsByChild
             .OrderBy(item => item.Key.PackageIdentity)
-            .Select(item => new ChildNode(item.Key, _transitiveDependencies.ParentsByChild))
+            .Select(item => new ChildNode(item.Key, _transitiveDependencies, solutionService))
             .ToArray();
 
         _children = new ListCollectionView(children);
@@ -160,7 +163,7 @@ internal sealed partial class DependencyTreeViewModel : INotifyPropertyChanged
             TransitivePackages = transitivePackages
                 .OrderBy(item => item.ProjectName)
                 .ThenBy(item => item.TargetFramework.ToString())
-                .Select(item => new RootNode(item))
+                .Select(item => new RootNode(item, _solutionService))
                 .ToArray();
 
             OnSearchTextChanged();

@@ -133,7 +133,7 @@ public static class NuGetService
                     .Where(item => transitivePackageIdentities.Contains(item.Key.PackageIdentity))
                     .ToDictionary();
 
-                results.Add(new TransitiveDependencies(Path.GetFileName(project.FullPath), targetFramework, parentsByChild));
+                results.Add(new TransitiveDependencies(Path.GetFileName(project.FullPath), project.FullPath, targetFramework, parentsByChild));
             }
         }
 

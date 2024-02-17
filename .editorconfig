@@ -119,14 +119,14 @@ dotnet_style_namespace_match_folder = true:suggestion
 # Diagnostic rules #
 #################### 
 
+# VSTHRD100: Avoid async void methods
+dotnet_diagnostic.VSTHRD100.severity = suggestion
+
 # VSTHRD200: Use "Async" suffix for async methods
 dotnet_diagnostic.VSTHRD200.severity = none
 
 # CA1031: Do not catch general exception types
 dotnet_diagnostic.CA1031.severity = suggestion
-
-# VSTHRD100: Avoid async void methods
-dotnet_diagnostic.VSTHRD100.severity = suggestion
 
 # CA1062: Validate arguments of public methods
 dotnet_diagnostic.CA1062.severity = suggestion
@@ -134,8 +134,11 @@ dotnet_diagnostic.CA1062.severity = suggestion
 # CA1724: Type names should not match namespaces
 dotnet_diagnostic.CA1724.severity = suggestion
 
-# NX0001: Find general usages of the NullForgiving operator
-dotnet_diagnostic.NX0001.severity = warning
-
 # CA2007: Consider calling ConfigureAwait on the awaited task (handled by Fody.ConfigureAwait)
 dotnet_diagnostic.CA2007.severity = silent
+
+# CA1845: Use span-based 'string.Concat' => Not available in NetFramework
+dotnet_diagnostic.CA1845.severity = silent
+
+# CA1867: Use char overload => Not available in NetFramework
+dotnet_diagnostic.CA1867.severity = silent

@@ -200,6 +200,7 @@ public static class ProjectService
             version = versionSource.GetVersion();
         }
 
+        // ! versionSource is checked above.
         return version is null
             ? null
             : new PackageReferenceEntry(id, version, versionSource!, projectItemInTargetFramework, projectItem.GetMetadataValue("Justification"));

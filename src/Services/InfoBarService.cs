@@ -131,7 +131,7 @@ internal static class InfoBarService
 
         foreach (var dependency in dependencies)
         {
-            var (projectName, targetFramework, packages) = dependency;
+            var (projectName, _, targetFramework, packages) = dependency;
 
             var vulnerablePackages = packages
                 .Select(item => item.Key)

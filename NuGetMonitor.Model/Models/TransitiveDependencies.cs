@@ -2,4 +2,4 @@
 
 namespace NuGetMonitor.Models;
 
-public sealed record TransitiveDependencies(string ProjectName, NuGetFramework TargetFramework, IReadOnlyDictionary<PackageInfo, HashSet<PackageInfo>> ParentsByChild);
+public sealed record TransitiveDependencies(string ProjectName, string ProjectFullPath, NuGetFramework TargetFramework, IReadOnlyDictionary<PackageInfo, HashSet<PackageInfo>> ParentsByChild);

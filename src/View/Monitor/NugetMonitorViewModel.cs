@@ -97,11 +97,6 @@ internal sealed partial class NuGetMonitorViewModel : INotifyPropertyChanged
         }
     }
 
-    private void ShowNuGetPackageManager()
-    {
-        _solutionService.ShowPackageManager();
-    }
-
     private static void ShowDependencyTree()
     {
         NuGetMonitorCommands.Instance?.ShowDependencyTreeToolWindow();
