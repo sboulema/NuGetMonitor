@@ -24,12 +24,23 @@
       <Style x:Key="CollapsedNodeStyle" TargetType="TreeViewItem">
         <Setter Property="IsExpanded" Value="False" />
       </Style>
+      <ContextMenu x:Key="PackageContextMenu"
+                   d:DataContext="{d:DesignInstance local:ChildNode}"
+                   Style="{DynamicResource {x:Static styles:ResourceKeys.ContextMenuStyle}}">
+        <MenuItem Header="Copy package reference"
+                  Command="{Binding CopyPackageReferenceCommand}">
+          <MenuItem.Icon>
+            <imaging:CrispImage Width="16" Height="16" Moniker="{x:Static imageCatalog:KnownMonikers.Copy}" />
+          </MenuItem.Icon>
+        </MenuItem>
+      </ContextMenu>
       <HierarchicalDataTemplate x:Key="NodeTemplate"
                                 DataType="{x:Type local:ChildNode}"
                                 ItemContainerStyle="{StaticResource ExpandedNodeStyle}"
                                 ItemsSource="{Binding Children}">
         <StackPanel Orientation="Horizontal"
-                    Margin="{StaticResource NodeMargin}">
+                    Margin="{StaticResource NodeMargin}"
+                    ContextMenu="{StaticResource PackageContextMenu}">
           <TextBlock x:Name="Identity"
                      Text="{Binding PackageIdentity}" />
           <TextBlock Text="{Binding Issues}"
@@ -47,7 +58,7 @@
                                 ItemsSource="{Binding Children}"
                                 ItemTemplate="{StaticResource NodeTemplate}">
         <StackPanel Orientation="Horizontal" Margin="{StaticResource NodeMargin}">
-          <Grid>
+          <Grid ContextMenu="{StaticResource PackageContextMenu}">
             <TextBlock x:Name="Plain"
                        Visibility="Hidden"
                        Text="{Binding PackageIdentity}" />

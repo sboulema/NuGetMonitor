@@ -1,5 +1,6 @@
 ﻿using NuGetMonitor.Services;
 using System.ComponentModel;
+using System.Windows;
 using System.Windows.Data;
 using System.Windows.Input;
 using Microsoft.VisualStudio.Shell;
@@ -37,6 +38,13 @@ internal sealed partial class ChildNode : INotifyPropertyChanged
     public bool HasChildren => _dependsOn != null;
 
     public string Issues => GetIssues();
+
+    public ICommand CopyPackageReferenceCommand => new DelegateCommand(CopyPackageReference);
+
+    private void CopyPackageReference()
+    {
+        Clipboard.SetText($"""<PackageReference Include="{PackageIdentity.Id}" Version="{PackageIdentity.Version}" />""");
+    }
 
     private string GetIssues()
     {
