@@ -26,7 +26,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Nullable.Extended.Analyzer" Version="1.10.4539" PrivateAssets="All" />
+    <PackageReference Include="Nullable.Extended.Analyzer" Version="1.15.6169" PrivateAssets="All" />
   </ItemGroup>
 
 </Project>

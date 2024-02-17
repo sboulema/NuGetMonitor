@@ -129,14 +129,9 @@ public static class NuGetService
                     .Where(item => !topLevelPackageIdentities.Contains(item))
                     .ToHashSet();
 
-#if NETFRAMEWORK
                 parentsByChild = parentsByChild
                     .Where(item => transitivePackageIdentities.Contains(item.Key.PackageIdentity))
                     .ToDictionary();
-#else
-                parentsByChild = new Dictionary<PackageInfo, HashSet<PackageInfo>>(parentsByChild
-                    .Where(item => transitivePackageIdentities.Contains(item.Key.PackageIdentity)));
-#endif
 
                 results.Add(new TransitiveDependencies(Path.GetFileName(project.FullPath), targetFramework, parentsByChild));
             }
