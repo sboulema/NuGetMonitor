@@ -106,6 +106,19 @@
           <imaging:CrispImage Width="16" Height="16" Moniker="{x:Static imageCatalog:KnownMonikers.QuickFind}" Margin="4,0" />
           <TextBox x:Name="SearchText" Width="200" Style="{DynamicResource {x:Static ToolBar.TextBoxStyleKey}}" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" />
         </StackPanel>
+        <Separator />
+        <Decorator Width="12px" />
+        <CheckBox Content="Show up-to-date"
+                  IsChecked="{Binding ShowUpToDate}"
+                  Style="{DynamicResource {x:Static styles:ResourceKeys.CheckBoxStyle}}" />
+        <Decorator Width="12px" />
+        <CheckBox Content="Show outdated"
+                  IsChecked="{Binding ShowOutdated}"
+                  Style="{DynamicResource {x:Static styles:ResourceKeys.CheckBoxStyle}}" />
+        <Decorator Width="12px" />
+        <CheckBox Content="Show vulnerable"
+                  IsChecked="{Binding ShowVulnerable}"
+                  Style="{DynamicResource {x:Static styles:ResourceKeys.CheckBoxStyle}}" />
       </ToolBar>
       <TreeView x:Name="TreeView"
                 BorderThickness="0 1 0 0"

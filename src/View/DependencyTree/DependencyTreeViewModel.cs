@@ -41,6 +41,10 @@ internal sealed partial class ChildNode : INotifyPropertyChanged
 
     public string Issues => GetIssues();
 
+    public bool IsOutdated => _packageInfo.IsOutdated;
+
+    public bool IsVulnerable => _packageInfo.IsVulnerable;
+
     public ICommand CopyPackageReferenceCommand => new DelegateCommand(CopyPackageReference);
 
     private void CopyPackageReference()
@@ -94,15 +98,26 @@ internal sealed partial class RootNode : INotifyPropertyChanged
 
     public ICollectionView Children => _children;
 
-    public void SetFilter(string? searchText)
+    public void SetFilter(string? searchText, bool showUpToDate, bool showOutdated, bool showVulnerable)
     {
-        if (searchText.IsNullOrWhiteSpace())
+        if (searchText.IsNullOrWhiteSpace() && showUpToDate && showOutdated && showVulnerable)
         {
             _children.Filter = null;
             return;
         }
 
-        _children.Filter = item => ((ChildNode)item).PackageIdentity.ToString().IndexOf(searchText, StringComparison.OrdinalIgnoreCase) >= 0;
+        _children.Filter = item =>
+        {
+            var childNode = (ChildNode)item;
+            var packageIdentity = childNode.PackageIdentity;
+            var isOutdated = childNode.IsOutdated;
+            var isVulnerable = childNode.IsVulnerable;
+
+            return (searchText.IsNullOrWhiteSpace() || packageIdentity.ToString().IndexOf(searchText, StringComparison.OrdinalIgnoreCase) >= 0)
+                && (showUpToDate || isOutdated || isVulnerable)
+                && (showOutdated || !isOutdated || isVulnerable)
+                && (showVulnerable || !isVulnerable);
+        };
     }
 }
 
@@ -123,6 +138,15 @@ internal sealed partial class DependencyTreeViewModel : INotifyPropertyChanged
 
     public bool IsLoading { get; set; } = true;
 
+    [OnChangedMethod(nameof(OnFilterChanged))]
+    public bool ShowUpToDate { get; set; } = true;
+
+    [OnChangedMethod(nameof(OnFilterChanged))]
+    public bool ShowOutdated { get; set; } = true;
+
+    [OnChangedMethod(nameof(OnFilterChanged))]
+    public bool ShowVulnerable { get; set; } = true;
+
     public ICollection<RootNode>? TransitivePackages { get; private set; }
 
     public ICommand RefreshCommand => new DelegateCommand(Refresh);
@@ -133,7 +157,12 @@ internal sealed partial class DependencyTreeViewModel : INotifyPropertyChanged
     [Throttled(typeof(TomsToolbox.Wpf.Throttle), 200)]
     private void OnSearchTextChanged()
     {
-        TransitivePackages?.ForEach(item => item.SetFilter(SearchText));
+        TransitivePackages?.ForEach(item => item.SetFilter(SearchText, ShowUpToDate, ShowOutdated, ShowVulnerable));
+    }
+
+    private void OnFilterChanged()
+    {
+        TransitivePackages?.ForEach(item => item.SetFilter(SearchText, ShowUpToDate, ShowOutdated, ShowVulnerable));
     }
 
     private void Refresh()
@@ -167,6 +196,7 @@ internal sealed partial class DependencyTreeViewModel : INotifyPropertyChanged
                 .ToArray();
 
             OnSearchTextChanged();
+            OnFilterChanged();
         }
         finally
         {
