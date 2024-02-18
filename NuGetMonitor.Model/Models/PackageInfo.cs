@@ -1,12 +1,12 @@
 ﻿using System.Text;
 using NuGet.Packaging.Core;
 using NuGet.Protocol;
-using NuGetMonitor.Services;
+using NuGetMonitor.Model;
 using TomsToolbox.Essentials;
 
 namespace NuGetMonitor.Models;
 
-internal sealed class PackageInfo
+public sealed class PackageInfo
 {
     public PackageInfo(PackageIdentity packageIdentity, Package package, NuGetSession session, ICollection<PackageVulnerabilityMetadata>? vulnerabilities, PackageDeprecationMetadata? deprecationMetadata, Uri projectUrl)
     {
@@ -50,6 +50,8 @@ internal sealed class PackageInfo
 
     public void AppendIssueDetails(StringBuilder text)
     {
+#pragma warning disable CA1305 // Specify IFormatProvider => Not available in NetFramework
+
         if (!HasIssues)
             return;
 
@@ -68,6 +70,7 @@ internal sealed class PackageInfo
         {
             text.AppendLine($"""  - Severity: {vulnerability.Severity}, "{vulnerability.AdvisoryUrl}".""");
         }
+#pragma warning restore CA1305 // Specify IFormatProvider
     }
 
     public override string ToString()

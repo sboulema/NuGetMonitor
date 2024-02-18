@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.Windows.Input;
 using NuGet.Versioning;
+using NuGetMonitor.Model.Abstractions;
 using NuGetMonitor.Models;
 using NuGetMonitor.Services;
 using PropertyChanged;
@@ -11,11 +12,11 @@ namespace NuGetMonitor.View
 {
     internal sealed partial class PackageViewModel : INotifyPropertyChanged
     {
-        public PackageViewModel(IGrouping<PackageReference, PackageReferenceEntry> items)
+        public PackageViewModel(IGrouping<PackageReference, PackageReferenceEntry> items, ISolutionService solutionService)
         {
             Items = items;
             PackageReference = items.Key;
-            Projects = items.GroupBy(item => item.ProjectItemInTargetFramework.ProjectItem.GetContainingProject()).Select(item => new ProjectViewModel(item.Key)).ToArray();
+            Projects = items.GroupBy(item => item.ProjectItemInTargetFramework.ProjectItem.GetContainingProject()).Select(item => new ProjectViewModel(item.Key, solutionService)).ToArray();
             ActiveVersion = NuGetVersion.TryParse(PackageReference.VersionRange.OriginalString, out var simpleVersion) ? simpleVersion : PackageReference.VersionRange;
             Justifications = string.Join(", ", Items.Select(reference => reference.Justification).Distinct());
         }
@@ -40,7 +41,8 @@ namespace NuGetMonitor.View
 
         public ICommand UpdateCommand => new DelegateCommand(() => IsUpdateAvailable, () => { NuGetMonitorViewModel.Update(this); });
 
-        public ICommand OpenProjectUrlCommand => new DelegateCommand(() => PackageInfo?.ProjectUrl != null, () => { Process.Start(PackageInfo!.ProjectUrl.AbsoluteUri); });
+        // ! ProjectUrl is checked in CanExecute
+        public ICommand OpenProjectUrlCommand => new DelegateCommand(() => PackageInfo?.ProjectUrl != null, () => Process.Start(PackageInfo!.ProjectUrl.AbsoluteUri));
 
         public PackageInfo? PackageInfo { get; private set; }
 

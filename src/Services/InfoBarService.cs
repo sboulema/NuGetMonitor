@@ -5,6 +5,7 @@ using Microsoft.VisualStudio.Imaging;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using NuGet.Versioning;
+using NuGetMonitor.Model;
 using NuGetMonitor.Models;
 using NuGetMonitor.Options;
 using TomsToolbox.Essentials;
@@ -63,7 +64,7 @@ internal static class InfoBarService
         }
 
         var packageInfo = string.Join("\r\n- ", vulnerablePackages.Select(package => package.PackageIdentity));
-        var message = $"{CountedDescription(vulnerablePackages, "vulnerability")} in transitive dependencies:\r\n- {packageInfo}\r\n";
+        var message = $"{vulnerablePackages.CountedDescription("vulnerability")} in transitive dependencies:\r\n- {packageInfo}\r\n";
 
         Log(message);
 
@@ -85,16 +86,16 @@ internal static class InfoBarService
     {
         var model = new InfoBarModel(textSpans, KnownMonikers.NuGet, isCloseButtonVisible: true);
 
-        var infoBar = await VS.InfoBar.CreateAsync(ToolWindowGuids80.SolutionExplorer, model).ConfigureAwait(true) ?? throw new InvalidOperationException("Failed to create the info bar");
+        var infoBar = await VS.InfoBar.CreateAsync(ToolWindowGuids80.SolutionExplorer, model) ?? throw new InvalidOperationException("Failed to create the info bar");
         infoBar.ActionItemClicked += InfoBar_ActionItemClicked;
 
         _infoBars.Add(infoBar);
 
-        await infoBar.TryShowInfoBarUIAsync().ConfigureAwait(true);
+        await infoBar.TryShowInfoBarUIAsync();
 
         if (timeOut.HasValue)
         {
-            await Task.Delay(timeOut.Value).ConfigureAwait(true);
+            await Task.Delay(timeOut.Value);
             infoBar.Close();
             _infoBars.Remove(infoBar);
         }
@@ -130,7 +131,7 @@ internal static class InfoBarService
 
         foreach (var dependency in dependencies)
         {
-            var (projectName, targetFramework, packages) = dependency;
+            var (projectName, _, targetFramework, packages) = dependency;
 
             var vulnerablePackages = packages
                 .Select(item => item.Key)
@@ -201,29 +202,8 @@ internal static class InfoBarService
             .Select(item => item.PackageInfo)
             .ToArray();
 
-        yield return CountedDescription(topLevelPackages, "update", item => item.IsOutdated);
-        yield return CountedDescription(topLevelPackages, "deprecation", item => item.IsDeprecated);
-        yield return CountedDescription(topLevelPackages, "vulnerability", item => item.IsVulnerable);
-    }
-
-    public static string? CountedDescription<T>(this IEnumerable<T> items, string singular, Func<T, bool>? selector = null)
-    {
-        selector ??= _ => true;
-
-        var count = items.Count(selector);
-
-        switch (count)
-        {
-            case <= 0:
-                return null;
-            case 1:
-                return $"1 {singular}";
-            default:
-                {
-                    var plural = (singular.EndsWith("y", StringComparison.CurrentCulture)) ? singular.Substring(0, singular.Length - 1) + "ies" : singular + "s";
-
-                    return $"{count} {plural}";
-                }
-        }
+        yield return topLevelPackages.CountedDescription("update", item => item.IsOutdated);
+        yield return topLevelPackages.CountedDescription("deprecation", item => item.IsDeprecated);
+        yield return topLevelPackages.CountedDescription("vulnerability", item => item.IsVulnerable);
     }
 }

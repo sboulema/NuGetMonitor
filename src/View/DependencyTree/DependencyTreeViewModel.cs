@@ -1,6 +1,6 @@
-﻿using Community.VisualStudio.Toolkit;
-using NuGetMonitor.Services;
+﻿using NuGetMonitor.Services;
 using System.ComponentModel;
+using System.Windows;
 using System.Windows.Data;
 using System.Windows.Input;
 using Microsoft.VisualStudio.Shell;
@@ -8,6 +8,7 @@ using NuGet.Frameworks;
 using NuGetMonitor.Models;
 using TomsToolbox.Wpf;
 using NuGet.Packaging.Core;
+using NuGetMonitor.Model.Abstractions;
 using PropertyChanged;
 using Throttle;
 using TomsToolbox.Essentials;
@@ -17,26 +18,40 @@ namespace NuGetMonitor.View.DependencyTree;
 internal sealed partial class ChildNode : INotifyPropertyChanged
 {
     private readonly PackageInfo _packageInfo;
-    private readonly IReadOnlyDictionary<PackageInfo, HashSet<PackageInfo>> _parentsByChild;
+    private readonly TransitiveDependencies _transitiveDependencies;
+    private readonly ISolutionService _solutionService;
     private readonly HashSet<PackageInfo>? _dependsOn;
 
-    public ChildNode(PackageInfo packageInfo, IReadOnlyDictionary<PackageInfo, HashSet<PackageInfo>> parentsByChild)
+    public ChildNode(PackageInfo packageInfo, TransitiveDependencies transitiveDependencies, ISolutionService solutionService)
     {
         _packageInfo = packageInfo;
-        _parentsByChild = parentsByChild;
+        _transitiveDependencies = transitiveDependencies;
+        _solutionService = solutionService;
 
-        parentsByChild.TryGetValue(packageInfo, out _dependsOn);
+        transitiveDependencies.ParentsByChild.TryGetValue(packageInfo, out _dependsOn);
     }
 
     public PackageIdentity PackageIdentity => _packageInfo.PackageIdentity;
 
     public IEnumerable<ChildNode>? Children => _dependsOn?
         .OrderBy(item => item.PackageIdentity)
-        .Select(item => new ChildNode(item, _parentsByChild));
+        .Select(item => new ChildNode(item, _transitiveDependencies, _solutionService));
 
     public bool HasChildren => _dependsOn != null;
 
     public string Issues => GetIssues();
+
+    public bool IsOutdated => _packageInfo.IsOutdated;
+
+    public bool IsVulnerable => _packageInfo.IsVulnerable;
+
+    public ICommand CopyPackageReferenceCommand => new DelegateCommand(CopyPackageReference);
+
+    private void CopyPackageReference()
+    {
+        Clipboard.SetText($"""<PackageReference Include="{PackageIdentity.Id}" Version="{PackageIdentity.Version}" />""");
+        _solutionService.OpenDocument(_transitiveDependencies.ProjectFullPath);
+    }
 
     private string GetIssues()
     {
@@ -65,13 +80,13 @@ internal sealed partial class RootNode : INotifyPropertyChanged
     private readonly TransitiveDependencies _transitiveDependencies;
     private readonly ListCollectionView _children;
 
-    public RootNode(TransitiveDependencies transitiveDependencies)
+    public RootNode(TransitiveDependencies transitiveDependencies, ISolutionService solutionService)
     {
         _transitiveDependencies = transitiveDependencies;
 
         var children = _transitiveDependencies.ParentsByChild
             .OrderBy(item => item.Key.PackageIdentity)
-            .Select(item => new ChildNode(item.Key, _transitiveDependencies.ParentsByChild))
+            .Select(item => new ChildNode(item.Key, _transitiveDependencies, solutionService))
             .ToArray();
 
         _children = new ListCollectionView(children);
@@ -83,29 +98,54 @@ internal sealed partial class RootNode : INotifyPropertyChanged
 
     public ICollectionView Children => _children;
 
-    public void SetFilter(string? searchText)
+    public void SetFilter(string? searchText, bool showUpToDate, bool showOutdated, bool showVulnerable)
     {
-        if (searchText.IsNullOrWhiteSpace())
+        if (searchText.IsNullOrWhiteSpace() && showUpToDate && showOutdated && showVulnerable)
         {
             _children.Filter = null;
             return;
         }
 
-        _children.Filter = item => ((ChildNode)item).PackageIdentity.ToString().IndexOf(searchText, StringComparison.OrdinalIgnoreCase) >= 0;
+        _children.Filter = item =>
+        {
+            var childNode = (ChildNode)item;
+            var packageIdentity = childNode.PackageIdentity;
+            var isOutdated = childNode.IsOutdated;
+            var isVulnerable = childNode.IsVulnerable;
+
+            return (searchText.IsNullOrWhiteSpace() || packageIdentity.ToString().IndexOf(searchText, StringComparison.OrdinalIgnoreCase) >= 0)
+                && (showUpToDate || isOutdated || isVulnerable)
+                && (showOutdated || !isOutdated || isVulnerable)
+                && (showVulnerable || !isVulnerable);
+        };
     }
 }
 
 #pragma warning disable CA1812 // Avoid uninstantiated internal classes => used in xaml!
 internal sealed partial class DependencyTreeViewModel : INotifyPropertyChanged
 {
-    public DependencyTreeViewModel()
+    private readonly ISolutionService _solutionService;
+
+    public DependencyTreeViewModel(ISolutionService solutionService)
     {
-        VS.Events.SolutionEvents.OnAfterOpenSolution += SolutionEvents_OnAfterOpenSolution;
-        VS.Events.SolutionEvents.OnAfterCloseSolution += SolutionEvents_OnAfterCloseSolution;
+        _solutionService = solutionService;
+
+        solutionService.SolutionOpened += SolutionEvents_OnAfterOpenSolution;
+        solutionService.SolutionClosed += SolutionEvents_OnAfterCloseSolution;
+
         Load().FireAndForget();
     }
 
     public bool IsLoading { get; set; } = true;
+
+    [OnChangedMethod(nameof(OnFilterChanged))]
+    public bool ShowUpToDate { get; set; } = true;
+
+    [OnChangedMethod(nameof(OnFilterChanged))]
+    public bool ShowOutdated { get; set; } = true;
+
+    [OnChangedMethod(nameof(OnFilterChanged))]
+    public bool ShowVulnerable { get; set; } = true;
 
     public ICollection<RootNode>? TransitivePackages { get; private set; }
 
@@ -117,7 +157,12 @@ internal sealed partial class DependencyTreeViewModel : INotifyPropertyChanged
     [Throttled(typeof(TomsToolbox.Wpf.Throttle), 200)]
     private void OnSearchTextChanged()
     {
-        TransitivePackages?.ForEach(item => item.SetFilter(SearchText));
+        TransitivePackages?.ForEach(item => item.SetFilter(SearchText, ShowUpToDate, ShowOutdated, ShowVulnerable));
+    }
+
+    private void OnFilterChanged()
+    {
+        TransitivePackages?.ForEach(item => item.SetFilter(SearchText, ShowUpToDate, ShowOutdated, ShowVulnerable));
     }
 
     private void Refresh()
@@ -133,7 +178,9 @@ internal sealed partial class DependencyTreeViewModel : INotifyPropertyChanged
         {
             IsLoading = true;
 
-            var packageReferences = await ProjectService.GetPackageReferences().ConfigureAwait(true);
+            var projectFolders = await _solutionService.GetProjectFolders();
+
+            var packageReferences = await ProjectService.GetPackageReferences(projectFolders).ConfigureAwait(true);
 
             var topLevelPackages = await NuGetService.CheckPackageReferences(packageReferences).ConfigureAwait(true);
 
@@ -145,10 +192,11 @@ internal sealed partial class DependencyTreeViewModel : INotifyPropertyChanged
             TransitivePackages = transitivePackages
                 .OrderBy(item => item.ProjectName)
                 .ThenBy(item => item.TargetFramework.ToString())
-                .Select(item => new RootNode(item))
+                .Select(item => new RootNode(item, _solutionService))
                 .ToArray();
 
             OnSearchTextChanged();
+            OnFilterChanged();
         }
         finally
         {
@@ -156,12 +204,12 @@ internal sealed partial class DependencyTreeViewModel : INotifyPropertyChanged
         }
     }
 
-    private void SolutionEvents_OnAfterOpenSolution(Solution? obj)
+    private void SolutionEvents_OnAfterOpenSolution(object? sender, EventArgs e)
     {
         Load().FireAndForget();
     }
 
-    private void SolutionEvents_OnAfterCloseSolution()
+    private void SolutionEvents_OnAfterCloseSolution(object? sender, EventArgs e)
     {
         TransitivePackages = null;
     }

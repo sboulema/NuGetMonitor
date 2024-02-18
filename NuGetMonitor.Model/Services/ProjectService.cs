@@ -1,10 +1,9 @@
-﻿using System.Collections.ObjectModel;
-using System.IO;
-using Community.VisualStudio.Toolkit;
-using Microsoft.Build.Construction;
+﻿using Microsoft.Build.Construction;
 using Microsoft.Build.Evaluation;
 using NuGet.Frameworks;
 using NuGet.Versioning;
+using NuGetMonitor.Model.Models;
+using NuGetMonitor.Model.Services;
 using NuGetMonitor.Models;
 using TomsToolbox.Essentials;
 using Project = Microsoft.Build.Evaluation.Project;
@@ -12,82 +11,24 @@ using ProjectItem = Microsoft.Build.Evaluation.ProjectItem;
 
 namespace NuGetMonitor.Services;
 
-internal sealed class ProjectItemInTargetFramework
-{
-    public ProjectItemInTargetFramework(ProjectItem projectItem, ProjectInTargetFramework project)
-    {
-        ProjectItem = projectItem;
-        Project = project;
-    }
-
-    public ProjectItem ProjectItem { get; init; }
-
-    public ProjectInTargetFramework Project { get; }
-}
-
-internal sealed class ProjectInTargetFramework
-{
-    private static readonly ReadOnlyDictionary<string, ProjectItem> _emptyVersionMap = new(new Dictionary<string, ProjectItem>());
-    private static readonly DelegateEqualityComparer<ProjectItem> _itemIncludeComparer = new(item => item?.EvaluatedInclude.ToUpperInvariant());
-
-    public ProjectInTargetFramework(Project project, NuGetFramework targetFramework)
-    {
-        Project = project;
-        TargetFramework = targetFramework;
-        CentralVersionMap = GetCentralVersionMap(project);
-    }
-
-    public Project Project { get; init; }
-
-    public NuGetFramework TargetFramework { get; init; }
-
-    public ReadOnlyDictionary<string, ProjectItem> CentralVersionMap { get; }
-
-    private static ReadOnlyDictionary<string, ProjectItem> GetCentralVersionMap(Project project)
-    {
-        var useCentralPackageManagement = project.GetProperty("ManagePackageVersionsCentrally").IsTrue();
-
-        if (!useCentralPackageManagement)
-            return _emptyVersionMap;
-
-        var versionMap = project
-            .GetItems("PackageVersion")
-            .Distinct(_itemIncludeComparer)
-            .ToDictionary(item => item.EvaluatedInclude, item => item);
-
-        return new ReadOnlyDictionary<string, ProjectItem>(versionMap);
-    }
-}
-
-internal static class ProjectService
+public static class ProjectService
 {
     private static readonly string[] _allAssets = new[] { "runtime", "build", "native", "contentfiles", "analyzers", "buildtransitive" }.OrderBy(i => i).ToArray();
 
-    private static ProjectCollection _projectCollection = new();
-
-    static ProjectService()
-    {
-        VS.Events.SolutionEvents.OnAfterCloseSolution += ClearCache;
-    }
+    static ProjectCollection _projectCollection = new();
 
     public static void ClearCache()
     {
         Interlocked.Exchange(ref _projectCollection, new ProjectCollection()).Dispose();
     }
 
-    public static async Task<IReadOnlyCollection<PackageReferenceEntry>> GetPackageReferences()
+    public static async Task<IReadOnlyCollection<PackageReferenceEntry>> GetPackageReferences(ICollection<string> projectFolders)
     {
         var projectCollection = _projectCollection;
 
-        var projects = await VS.Solutions.GetAllProjectsAsync();
-
-        var projectPaths = projects.Select(project => project.FullPath)
-            .ExceptNullItems()
-            .ToArray();
-
         return await Task.Run(() =>
         {
-            var references = projectPaths.Select(path => GetPackageReferences(projectCollection, path));
+            var references = projectFolders.Select(path => GetPackageReferences(projectCollection, path));
 
             return references
                 .SelectMany(items => items)
@@ -226,7 +167,7 @@ internal static class ProjectService
         }
         catch (Exception ex)
         {
-            Log($"Get package reference item failed: {ex}");
+            Log(LogLevel.Error, $"Get package reference item failed: {ex}");
 
             return Enumerable.Empty<ProjectItemInTargetFramework>();
         }
@@ -259,9 +200,10 @@ internal static class ProjectService
             version = versionSource.GetVersion();
         }
 
+        // ! versionSource is checked above.
         return version is null
             ? null
-            : new PackageReferenceEntry(id, version, versionSource, projectItemInTargetFramework, projectItem.GetMetadataValue("Justification"));
+            : new PackageReferenceEntry(id, version, versionSource!, projectItemInTargetFramework, projectItem.GetMetadataValue("Justification"));
     }
 
     internal static bool IsTrue(this ProjectProperty? property)
@@ -287,7 +229,7 @@ internal static class ProjectService
         return VersionRange.TryParse(versionValue, out var version) ? version : null;
     }
 
-    internal static ProjectRootElement GetContainingProject(this ProjectItem projectItem)
+    public static ProjectRootElement GetContainingProject(this ProjectItem projectItem)
     {
         return projectItem.Xml.ContainingProject;
     }

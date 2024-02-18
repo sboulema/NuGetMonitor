@@ -2,26 +2,28 @@
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
+using NuGetMonitor.Model.Abstractions;
+using NuGetMonitor.Model.Services;
 
 namespace NuGetMonitor.Services;
 
-internal static class LoggingService
+internal sealed class OutputWindowLoggingSink : ILoggerSink
 {
     private static Guid _outputPaneGuid = new("{5B951352-356E-45A9-8F73-80DF1C57FED4}");
 
     private static IVsOutputWindowPane? _outputWindowPane;
 
-    public static void Log(string message)
+    public void Log(LogLevel logLevel, string message)
     {
-        LogAsync(message).FireAndForget();
+        LogAsync(logLevel, message).FireAndForget();
     }
 
-    public static async Task LogAsync(string message)
+    private static async Task LogAsync(LogLevel logLevel, string message)
     {
         await JoinableTaskFactory.SwitchToMainThreadAsync();
 
         _outputWindowPane ??= GetOutputWindowPane();
-        _outputWindowPane?.OutputStringThreadSafe($"[{DateTime.Now:T}] {message}\r\n");
+        _outputWindowPane?.OutputStringThreadSafe($"[{DateTime.Now:T}, {logLevel}] {message}\r\n");
     }
 
     private static IVsOutputWindowPane? GetOutputWindowPane()

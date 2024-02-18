@@ -1,4 +1,6 @@
-﻿namespace NuGetMonitor.View.DependencyTree
+﻿using NuGetMonitor.Services;
+
+namespace NuGetMonitor.View.DependencyTree
 {
     /// <summary>
     /// Interaction logic for DependencyTreeControl.xaml
@@ -8,6 +10,8 @@
         public DependencyTreeControl()
         {
             InitializeComponent();
+
+            DataContext = new DependencyTreeViewModel(SolutionService.Instance);
         }
     }
 }

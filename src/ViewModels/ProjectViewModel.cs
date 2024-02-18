@@ -1,9 +1,8 @@
 ﻿using System.ComponentModel;
 using System.Windows.Input;
-using Community.VisualStudio.Toolkit;
 using Microsoft.Build.Construction;
 using Microsoft.IO;
-using Microsoft.VisualStudio.Shell;
+using NuGetMonitor.Model.Abstractions;
 using TomsToolbox.Wpf;
 
 namespace NuGetMonitor.View
@@ -11,10 +10,12 @@ namespace NuGetMonitor.View
     internal sealed partial class ProjectViewModel : INotifyPropertyChanged
     {
         private readonly ProjectRootElement _project;
+        private readonly ISolutionService _solutionService;
 
-        public ProjectViewModel(ProjectRootElement project)
+        public ProjectViewModel(ProjectRootElement project, ISolutionService solutionService)
         {
             _project = project;
+            _solutionService = solutionService;
         }
 
         public string Name => Path.GetFileName(_project.FullPath);
@@ -23,7 +24,7 @@ namespace NuGetMonitor.View
 
         private void OpenProject()
         {
-            VS.Documents.OpenAsync(_project.FullPath).FireAndForget();
+            _solutionService.OpenDocument(_project.FullPath);
         }
     }
 }

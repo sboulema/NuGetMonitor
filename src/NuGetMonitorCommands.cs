@@ -33,7 +33,7 @@ internal sealed class NuGetMonitorCommands
     {
         await JoinableTaskFactory.SwitchToMainThreadAsync(package.DisposalToken);
 
-        var commandService = await package.GetServiceAsync(typeof(IMenuCommandService)).ConfigureAwait(true) as OleMenuCommandService ?? throw new InvalidOperationException("Failed to get menu command service");
+        var commandService = await package.GetServiceAsync(typeof(IMenuCommandService)) as OleMenuCommandService ?? throw new InvalidOperationException("Failed to get menu command service");
 
         Instance = new NuGetMonitorCommands(package, commandService);
     }

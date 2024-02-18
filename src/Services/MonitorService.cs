@@ -1,5 +1,6 @@
 ﻿using Community.VisualStudio.Toolkit;
 using Microsoft.VisualStudio.Shell;
+using TomsToolbox.Essentials;
 
 namespace NuGetMonitor.Services;
 
@@ -25,7 +26,7 @@ internal static class MonitorService
     private static void Reset()
     {
         InfoBarService.CloseInfoBars();
-        NuGetService.ClearCache();
+        NuGetService.Reset(VS.Solutions.GetCurrentSolution()?.FullPath);
         ProjectService.ClearCache();
     }
 
@@ -37,35 +38,41 @@ internal static class MonitorService
         {
             Reset();
 
-            var solution = await VS.Solutions.GetCurrentSolutionAsync().ConfigureAwait(true);
+            var solution = await VS.Solutions.GetCurrentSolutionAsync();
 
             if (solution is null)
                 return;
 
-            await LogAsync($"Solution: {solution.Name}").ConfigureAwait(true);
+            Log($"Solution: {solution.Name}");
 
-            await LogAsync("Check top level packages").ConfigureAwait(true);
+            Log("Check top level packages");
 
-            var packageReferences = await ProjectService.GetPackageReferences().ConfigureAwait(true);
+            var projects = await VS.Solutions.GetAllProjectsAsync();
 
-            var topLevelPackages = await NuGetService.CheckPackageReferences(packageReferences).ConfigureAwait(true);
+            var projectFolders = projects.Select(project => project.FullPath)
+                .ExceptNullItems()
+                .ToArray();
 
-            await LogAsync($"{topLevelPackages.Count} packages found").ConfigureAwait(true);
+            var packageReferences = await ProjectService.GetPackageReferences(projectFolders);
+
+            var topLevelPackages = await NuGetService.CheckPackageReferences(packageReferences);
+
+            Log($"{topLevelPackages.Count} packages found");
 
             if (topLevelPackages.Count == 0)
                 return;
 
             InfoBarService.ShowTopLevelPackageIssues(topLevelPackages);
 
-            await LogAsync("Check transitive packages").ConfigureAwait(true);
+            Log("Check transitive packages");
 
-            var transitiveDependencies = await NuGetService.GetTransitivePackages(packageReferences, topLevelPackages).ConfigureAwait(true);
+            var transitiveDependencies = await NuGetService.GetTransitivePackages(packageReferences, topLevelPackages);
 
             InfoBarService.ShowTransitivePackageIssues(transitiveDependencies);
         }
         catch (Exception ex) when (ex is not (OperationCanceledException or ObjectDisposedException))
         {
-            await LogAsync($"Check for updates failed: {ex}");
+            Log($"Check for updates failed: {ex}");
         }
     }
 }

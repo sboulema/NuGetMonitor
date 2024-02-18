@@ -2,6 +2,7 @@
 using Community.VisualStudio.Toolkit;
 using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Shell;
+using NuGetMonitor.Model.Services;
 using NuGetMonitor.Options;
 using NuGetMonitor.Services;
 using NuGetMonitor.View.DependencyTree;
@@ -23,6 +24,8 @@ public sealed class NuGetMonitorPackage : ToolkitPackage
 
     protected override async Task InitializeAsync(CancellationToken cancellationToken, IProgress<ServiceProgressData> progress)
     {
+        LoggerService.AddSink(new OutputWindowLoggingSink());
+
         await JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
 
         MonitorService.RegisterEventHandler();
