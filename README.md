@@ -48,6 +48,14 @@ Shared package references, e.g. in the `Directory.Build.props` file, are handled
 
 ![ToolWindow](art/ToolWindow.png)
 
+### Dependency Tree
+
+This view allows to investigate how transitive depdencies are introduced into the projects.
+
+It lists all transitive dependencies per project, and shows their ancestor tree, where the terminal bold entry is the package reference used in the project.
+
+![DependencyTree](art/DependencyTree.png)
+
 ## Thanks
 
 ### AnushaG2201
