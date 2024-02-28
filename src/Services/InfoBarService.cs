@@ -122,7 +122,10 @@ internal static class InfoBarService
                 break;
         }
 
-        (sender as InfoBar)?.Close();
+        if (GeneralOptions.Instance.CloseInfoBar)
+        {
+            (sender as InfoBar)?.Close();
+        }
     }
 
     private static void PrintDependencyTree(IEnumerable<TransitiveDependencies> dependencies)
