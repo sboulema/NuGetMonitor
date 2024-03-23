@@ -187,7 +187,7 @@ internal sealed partial class DependencyTreeViewModel : INotifyPropertyChanged
             if (topLevelPackages.Count == 0)
                 return;
 
-            var transitivePackages = await NuGetService.GetTransitivePackages(packageReferences, topLevelPackages).ConfigureAwait(true);
+            var transitivePackages = await NuGetService.GetTransitivePackages(topLevelPackages).ConfigureAwait(true);
 
             TransitivePackages = transitivePackages
                 .OrderBy(item => item.ProjectName)

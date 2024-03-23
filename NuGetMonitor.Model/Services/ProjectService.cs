@@ -36,9 +36,16 @@ public static class ProjectService
         });
     }
 
-    public static IReadOnlyCollection<ProjectInTargetFrameworkWithReferenceEntries> GetProjects(string projectFilePath)
+    public static async Task<IReadOnlyCollection<ProjectInTargetFrameworkWithReferenceEntries>> GetProjects(ICollection<string> projectFilePaths)
     {
-        return GetProjects(_projectCollection, projectFilePath).ToArray();
+        var projectCollection = _projectCollection;
+
+        return await Task.Run(() =>
+        {
+            var references = projectFilePaths.SelectMany(path => GetProjects(projectCollection, path));
+
+            return references.ToArray();
+        });
     }
 
     public static int NormalizePackageReferences(IEnumerable<ProjectItem> projectItems)

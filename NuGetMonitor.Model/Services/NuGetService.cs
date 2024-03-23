@@ -72,58 +72,56 @@ public static class NuGetService
         return packageInfo;
     }
 
-    public static async Task<ICollection<TransitiveDependencies>> GetTransitivePackages(IEnumerable<PackageReferenceEntry> packageReferences, ICollection<PackageReferenceInfo> topLevelPackages)
+    public static async Task<ICollection<TransitiveDependencies>> GetTransitivePackages(ICollection<PackageReferenceInfo> topLevelPackages)
     {
         var results = new List<TransitiveDependencies>();
 
-        var projectItemsByTargetFramework = packageReferences.GroupBy(item => item.ProjectItemInTargetFramework.Project.TargetFramework);
+        var packageReferences = topLevelPackages.SelectMany(item => item.PackageReferenceEntries).ToArray();
 
-        foreach (var projectItemsInTargetFramework in projectItemsByTargetFramework)
+        var packageReferencesByProject = packageReferences.GroupBy(item => item.ProjectItemInTargetFramework.Project);
+
+        foreach (var packageReferencesInProject in packageReferencesByProject)
         {
-            var targetFramework = projectItemsInTargetFramework.Key;
+            var projectInTargetFramework = packageReferencesInProject.Key;
+            var targetFramework = projectInTargetFramework.TargetFramework;
 
-            var packagesReferencesByProject = projectItemsInTargetFramework.GroupBy(item => item.ProjectItemInTargetFramework.ProjectItem.Project);
+            var topLevelPackagesInProject = topLevelPackages
+                .Where(package => package.PackageReferenceEntries.Any(item => item.ProjectItemInTargetFramework.Project.Equals(projectInTargetFramework)))
+                .Select(item => item.PackageInfo)
+                .ToArray();
 
-            foreach (var projectPackageReferences in packagesReferencesByProject)
+            var topLevelPackageIds = topLevelPackagesInProject
+                .Select(item => item.PackageIdentity.Id)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            var inputQueue = new Queue<PackageInfo>(topLevelPackagesInProject);
+            var parentsByChild = new Dictionary<PackageInfo, HashSet<PackageInfo>>();
+
+            while (inputQueue.Count > 0)
             {
-                var project = projectPackageReferences.Key;
+                var packageReferenceInfo = inputQueue.Dequeue();
 
-                var topLevelPackagesInProject = topLevelPackages
-                    .Where(package => projectPackageReferences.Any(item => package.PackageReferenceEntries.Contains(item)))
-                    .Select(item => item.PackageInfo)
-                    .ToArray();
+                var dependencies = await packageReferenceInfo.GetPackageDependenciesInFramework(targetFramework);
 
-                var topLevelPackageIds = topLevelPackagesInProject.Select(item => item.PackageIdentity.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
-
-                var inputQueue = new Queue<PackageInfo>(topLevelPackagesInProject);
-                var parentsByChild = new Dictionary<PackageInfo, HashSet<PackageInfo>>();
-
-                while (inputQueue.Count > 0)
+                foreach (var dependency in dependencies)
                 {
-                    var packageReferenceInfo = inputQueue.Dequeue();
+                    if (topLevelPackageIds.Contains(dependency.PackageIdentity.Id))
+                        continue;
 
-                    var dependencies = await packageReferenceInfo.GetPackageDependenciesInFramework(targetFramework);
+                    parentsByChild
+                        .ForceValue(dependency, _ => new HashSet<PackageInfo>())
+                        .Add(packageReferenceInfo);
 
-                    foreach (var dependency in dependencies)
-                    {
-                        if (topLevelPackageIds.Contains(dependency.PackageIdentity.Id))
-                            continue;
-
-                        parentsByChild
-                            .ForceValue(dependency, _ => new HashSet<PackageInfo>())
-                            .Add(packageReferenceInfo);
-
-                        inputQueue.Enqueue(dependency);
-                    }
+                    inputQueue.Enqueue(dependency);
                 }
-
-                parentsByChild = parentsByChild
-                   .GroupBy(item => item.Key.PackageIdentity.Id)
-                   .Select(group => group.OrderByDescending(item => item.Key.PackageIdentity.Version).First())
-                   .ToDictionary(item => item.Key, item => item.Value);
-
-                results.Add(new TransitiveDependencies(new ProjectInTargetFramework(project, targetFramework), parentsByChild));
             }
+
+            parentsByChild = parentsByChild
+               .GroupBy(item => item.Key.PackageIdentity.Id)
+               .Select(group => group.OrderByDescending(item => item.Key.PackageIdentity.Version).First())
+               .ToDictionary(item => item.Key, item => item.Value);
+
+            results.Add(new TransitiveDependencies(projectInTargetFramework, parentsByChild));
         }
 
         return results;
