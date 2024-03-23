@@ -76,13 +76,16 @@ public static class NuGetService
     {
         var results = new List<TransitiveDependencies>();
 
-        var packageReferences = topLevelPackages.SelectMany(item => item.PackageReferenceEntries).ToArray();
+        var packageReferences = topLevelPackages
+            .SelectMany(item => item.PackageReferenceEntries)
+            .ToArray();
 
-        var packageReferencesByProject = packageReferences.GroupBy(item => item.ProjectItemInTargetFramework.Project);
+        var projectsInTargetFramework = packageReferences
+            .GroupBy(item => item.ProjectItemInTargetFramework.Project)
+            .Select(item => item.Key);
 
-        foreach (var packageReferencesInProject in packageReferencesByProject)
+        foreach (var projectInTargetFramework in projectsInTargetFramework)
         {
-            var projectInTargetFramework = packageReferencesInProject.Key;
             var targetFramework = projectInTargetFramework.TargetFramework;
 
             var topLevelPackagesInProject = topLevelPackages
