@@ -1,19 +1,18 @@
-﻿namespace NuGetMonitor.Model.Abstractions
+﻿namespace NuGetMonitor.Abstractions;
+
+public interface ISolutionService
 {
-    public interface ISolutionService
-    {
-        Task<string?> GetSolutionFolder();
+    Task<string?> GetSolutionFolder();
 
-        Task<ICollection<string>> GetProjectFolders();
+    Task<ICollection<string>> GetProjectFilePaths();
 
-        event EventHandler SolutionOpened;
+    event EventHandler SolutionOpened;
 
-        event EventHandler SolutionClosed;
+    event EventHandler SolutionClosed;
 
-        void ShowPackageManager();
+    void ShowPackageManager();
 
-        Task ShowInfoBar(string message);
+    Task ShowInfoBar(string message);
 
-        void OpenDocument(string path);
-    }
+    void OpenDocument(string path);
 }

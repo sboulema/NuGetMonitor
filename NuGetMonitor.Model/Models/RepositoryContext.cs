@@ -2,7 +2,7 @@
 using NuGetMonitor.Model.Services;
 using TomsToolbox.Essentials;
 
-namespace NuGetMonitor.Models;
+namespace NuGetMonitor.Model.Models;
 
 public sealed class RepositoryContext
 {

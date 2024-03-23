@@ -1,4 +1,4 @@
-﻿namespace NuGetMonitor;
+﻿namespace NuGetMonitor.Model;
 
 public static class GlobalConstants
 {

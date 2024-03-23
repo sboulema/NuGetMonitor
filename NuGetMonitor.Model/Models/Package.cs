@@ -1,6 +1,6 @@
 ﻿using NuGet.Versioning;
 
-namespace NuGetMonitor.Models;
+namespace NuGetMonitor.Model.Models;
 
 public sealed record Package(string Id, ICollection<NuGetVersion> Versions, RepositoryContext RepositoryContext)
 {

@@ -1,10 +1,9 @@
 ﻿using System.Text;
 using NuGet.Packaging.Core;
 using NuGet.Protocol;
-using NuGetMonitor.Model;
 using TomsToolbox.Essentials;
 
-namespace NuGetMonitor.Models;
+namespace NuGetMonitor.Model.Models;
 
 public sealed class PackageInfo
 {

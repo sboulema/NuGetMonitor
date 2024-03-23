@@ -1,14 +1,14 @@
-﻿using NuGetMonitor.Services;
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.Windows;
 using System.Windows.Data;
 using System.Windows.Input;
 using Microsoft.VisualStudio.Shell;
 using NuGet.Frameworks;
-using NuGetMonitor.Models;
 using TomsToolbox.Wpf;
 using NuGet.Packaging.Core;
-using NuGetMonitor.Model.Abstractions;
+using NuGetMonitor.Abstractions;
+using NuGetMonitor.Model.Models;
+using NuGetMonitor.Model.Services;
 using PropertyChanged;
 using Throttle;
 using TomsToolbox.Essentials;
@@ -178,9 +178,9 @@ internal sealed partial class DependencyTreeViewModel : INotifyPropertyChanged
         {
             IsLoading = true;
 
-            var projectFolders = await _solutionService.GetProjectFolders();
+            var projectFilePaths = await _solutionService.GetProjectFilePaths();
 
-            var packageReferences = await ProjectService.GetPackageReferences(projectFolders).ConfigureAwait(true);
+            var packageReferences = await ProjectService.GetPackageReferences(projectFilePaths).ConfigureAwait(true);
 
             var topLevelPackages = await NuGetService.CheckPackageReferences(packageReferences).ConfigureAwait(true);
 

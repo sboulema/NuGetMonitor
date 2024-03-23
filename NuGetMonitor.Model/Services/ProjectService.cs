@@ -3,13 +3,11 @@ using Microsoft.Build.Evaluation;
 using NuGet.Frameworks;
 using NuGet.Versioning;
 using NuGetMonitor.Model.Models;
-using NuGetMonitor.Model.Services;
-using NuGetMonitor.Models;
 using TomsToolbox.Essentials;
 using Project = Microsoft.Build.Evaluation.Project;
 using ProjectItem = Microsoft.Build.Evaluation.ProjectItem;
 
-namespace NuGetMonitor.Services;
+namespace NuGetMonitor.Model.Services;
 
 public static class ProjectService
 {
@@ -22,20 +20,25 @@ public static class ProjectService
         Interlocked.Exchange(ref _projectCollection, new ProjectCollection()).Dispose();
     }
 
-    public static async Task<IReadOnlyCollection<PackageReferenceEntry>> GetPackageReferences(ICollection<string> projectFolders)
+    public static async Task<IReadOnlyCollection<PackageReferenceEntry>> GetPackageReferences(ICollection<string> projectFilePaths)
     {
         var projectCollection = _projectCollection;
 
         return await Task.Run(() =>
         {
-            var references = projectFolders.Select(path => GetPackageReferences(projectCollection, path));
+            var references = projectFilePaths.Select(path => GetProjects(projectCollection, path));
 
             return references
-                .SelectMany(items => items)
+                .SelectMany(items => items.SelectMany(i => i.PackageReferences))
                 .OrderBy(item => item.Identity.Id)
                 .ThenBy(item => Path.GetFileName(item.VersionSource.GetContainingProject().FullPath))
                 .ToArray();
         });
+    }
+
+    public static IReadOnlyCollection<ProjectInTargetFrameworkWithReferenceEntries> GetProjects(string projectFilePath)
+    {
+        return GetProjects(_projectCollection, projectFilePath).ToArray();
     }
 
     public static int NormalizePackageReferences(IEnumerable<ProjectItem> projectItems)
@@ -104,7 +107,7 @@ public static class ProjectService
         includeAssetsElement.Value = string.Empty;
     }
 
-    public static ProjectInTargetFramework[] GetProjectsInTargetFramework(this Project project)
+    private static ProjectInTargetFramework[] GetProjectsInTargetFramework(this Project project)
     {
         var frameworkNames = (project.GetProperty("TargetFrameworks") ?? project.GetProperty("TargetFramework"))
             ?.EvaluatedValue
@@ -142,18 +145,7 @@ public static class ProjectService
         return new ProjectInTargetFramework(specificProject, framework);
     }
 
-    private static IEnumerable<PackageReferenceEntry> GetPackageReferences(ProjectCollection projectCollection, string projectPath)
-    {
-        var items = GetPackageReferenceItems(projectCollection, projectPath);
-
-        var packageReferences = items
-            .Select(CreateEntry)
-            .ExceptNullItems();
-
-        return packageReferences;
-    }
-
-    private static IEnumerable<ProjectItemInTargetFramework> GetPackageReferenceItems(ProjectCollection projectCollection, string projectPath)
+    private static IEnumerable<ProjectInTargetFrameworkWithReferenceEntries> GetProjects(ProjectCollection projectCollection, string projectPath)
     {
         try
         {
@@ -161,16 +153,24 @@ public static class ProjectService
 
             var frameworkSpecificProjects = project.GetProjectsInTargetFramework();
 
-            var allItems = frameworkSpecificProjects.SelectMany(GetPackageReferenceItems);
-
-            return allItems;
+            return frameworkSpecificProjects.Select(CreateProjectWithPackageReferences);
         }
         catch (Exception ex)
         {
             Log(LogLevel.Error, $"Get package reference item failed: {ex}");
 
-            return Enumerable.Empty<ProjectItemInTargetFramework>();
+            return Enumerable.Empty<ProjectInTargetFrameworkWithReferenceEntries>();
         }
+    }
+
+    private static ProjectInTargetFrameworkWithReferenceEntries CreateProjectWithPackageReferences(ProjectInTargetFramework projectInTargetFramework)
+    {
+        var references = GetPackageReferenceItems(projectInTargetFramework)
+            .Select(CreatePackageReferenceEntry)
+            .ExceptNullItems()
+            .ToArray();
+
+        return new ProjectInTargetFrameworkWithReferenceEntries(projectInTargetFramework, references);
     }
 
     private static IEnumerable<ProjectItemInTargetFramework> GetPackageReferenceItems(ProjectInTargetFramework frameworkSpecificProject)
@@ -181,7 +181,7 @@ public static class ProjectService
             .Select(item => new ProjectItemInTargetFramework(item, frameworkSpecificProject));
     }
 
-    private static PackageReferenceEntry? CreateEntry(ProjectItemInTargetFramework projectItemInTargetFramework)
+    private static PackageReferenceEntry? CreatePackageReferenceEntry(ProjectItemInTargetFramework projectItemInTargetFramework)
     {
         var projectItem = projectItemInTargetFramework.ProjectItem;
         var versionSource = projectItem;
@@ -203,7 +203,7 @@ public static class ProjectService
         // ! versionSource is checked above.
         return version is null
             ? null
-            : new PackageReferenceEntry(id, version, versionSource!, projectItemInTargetFramework, projectItem.GetMetadataValue("Justification"));
+            : new PackageReferenceEntry(id, version, versionSource!, projectItemInTargetFramework, projectItem.GetMetadataValue("Justification"), projectItem.GetIsPrivateAsset());
     }
 
     internal static bool IsTrue(this ProjectProperty? property)
@@ -227,6 +227,13 @@ public static class ProjectService
             return null;
 
         return VersionRange.TryParse(versionValue, out var version) ? version : null;
+    }
+
+    internal static bool GetIsPrivateAsset(this ProjectItem projectItem)
+    {
+        var value = projectItem.GetMetadata("PrivateAssets")?.EvaluatedValue;
+
+        return string.Equals(value, "all", StringComparison.OrdinalIgnoreCase);
     }
 
     public static ProjectRootElement GetContainingProject(this ProjectItem projectItem)

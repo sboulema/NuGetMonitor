@@ -3,7 +3,7 @@ using NuGet.Configuration;
 using NuGet.Protocol.Core.Types;
 using Settings = NuGet.Configuration.Settings;
 
-namespace NuGetMonitor.Models;
+namespace NuGetMonitor.Model.Models;
 
 public sealed class NuGetSession : IDisposable
 {

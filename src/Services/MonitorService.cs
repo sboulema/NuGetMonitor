@@ -1,5 +1,6 @@
 ﻿using Community.VisualStudio.Toolkit;
 using Microsoft.VisualStudio.Shell;
+using NuGetMonitor.Model.Services;
 using TomsToolbox.Essentials;
 
 namespace NuGetMonitor.Services;

@@ -1,7 +1,7 @@
 ﻿using NuGet.Packaging.Core;
 using NuGet.Versioning;
 
-namespace NuGetMonitor.Models;
+namespace NuGetMonitor.Model.Models;
 
 public sealed record PackageReference(string Id, VersionRange VersionRange)
 {

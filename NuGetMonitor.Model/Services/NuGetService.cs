@@ -5,11 +5,11 @@ using NuGet.Packaging;
 using NuGet.Packaging.Core;
 using NuGet.Protocol.Core.Types;
 using NuGet.Versioning;
-using NuGetMonitor.Models;
+using NuGetMonitor.Model.Models;
 using TomsToolbox.Essentials;
-using PackageReference = NuGetMonitor.Models.PackageReference;
+using PackageReference = NuGetMonitor.Model.Models.PackageReference;
 
-namespace NuGetMonitor.Services;
+namespace NuGetMonitor.Model.Services;
 
 public static class NuGetService
 {
@@ -93,47 +93,36 @@ public static class NuGetService
                     .Select(item => item.PackageInfo)
                     .ToArray();
 
-                var topLevelPackageIdentities = topLevelPackagesInProject
-                    .Select(item => item.PackageIdentity)
-                    .ToHashSet();
+                var topLevelPackageIds = topLevelPackagesInProject.Select(item => item.PackageIdentity.Id).ToHashSet(StringComparer.OrdinalIgnoreCase);
 
                 var inputQueue = new Queue<PackageInfo>(topLevelPackagesInProject);
                 var parentsByChild = new Dictionary<PackageInfo, HashSet<PackageInfo>>();
-                var processedItemsByPackageId = new Dictionary<string, PackageInfo>();
 
                 while (inputQueue.Count > 0)
                 {
-                    var packageInfo = inputQueue.Dequeue();
+                    var packageReferenceInfo = inputQueue.Dequeue();
 
-                    var packageIdentity = packageInfo.PackageIdentity;
-
-                    if (processedItemsByPackageId.TryGetValue(packageIdentity.Id, out var existing) && existing.PackageIdentity.Version >= packageIdentity.Version)
-                        continue;
-
-                    processedItemsByPackageId[packageIdentity.Id] = packageInfo;
-
-                    var dependencies = await packageInfo.GetPackageDependenciesInFramework(targetFramework);
+                    var dependencies = await packageReferenceInfo.GetPackageDependenciesInFramework(targetFramework);
 
                     foreach (var dependency in dependencies)
                     {
+                        if (topLevelPackageIds.Contains(dependency.PackageIdentity.Id))
+                            continue;
+
                         parentsByChild
                             .ForceValue(dependency, _ => new HashSet<PackageInfo>())
-                            .Add(packageInfo);
+                            .Add(packageReferenceInfo);
 
                         inputQueue.Enqueue(dependency);
                     }
                 }
 
-                var transitivePackageIdentities = processedItemsByPackageId.Values
-                    .Select(item => item.PackageIdentity)
-                    .Where(item => !topLevelPackageIdentities.Contains(item))
-                    .ToHashSet();
-
                 parentsByChild = parentsByChild
-                    .Where(item => transitivePackageIdentities.Contains(item.Key.PackageIdentity))
-                    .ToDictionary();
+                   .GroupBy(item => item.Key.PackageIdentity.Id)
+                   .Select(group => group.OrderByDescending(item => item.Key.PackageIdentity.Version).First())
+                   .ToDictionary(item => item.Key, item => item.Value);
 
-                results.Add(new TransitiveDependencies(Path.GetFileName(project.FullPath), project.FullPath, targetFramework, parentsByChild));
+                results.Add(new TransitiveDependencies(new ProjectInTargetFramework(project, targetFramework), parentsByChild));
             }
         }
 
