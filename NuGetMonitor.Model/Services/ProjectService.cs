@@ -173,8 +173,17 @@ public static class ProjectService
     {
         var project = frameworkSpecificProject.Project;
 
-        return project.GetItems("PackageReference")
-            .Select(item => new ProjectItemInTargetFramework(item, frameworkSpecificProject));
+        var references = project.GetItems("PackageReference").AsEnumerable();
+
+        if (frameworkSpecificProject.IsCentralVersionManagementEnabled)
+        {
+            references = references.Concat(project.GetItems("GlobalPackageReference"));
+        }
+
+        // ignore synthetic references, e.g. generated from GlobalPackageReference
+        references = references.Where(item => item.Xml.Include == item.EvaluatedInclude);
+
+        return references.Select(item => new ProjectItemInTargetFramework(item, frameworkSpecificProject));
     }
 
     private static PackageReferenceEntry? CreatePackageReferenceEntry(ProjectItemInTargetFramework projectItemInTargetFramework)
