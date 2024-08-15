@@ -15,6 +15,12 @@ using TomsToolbox.Essentials;
 
 namespace NuGetMonitor.View.DependencyTree;
 
+internal enum PackageNode
+{
+    PackageReference,
+    PackageVersion
+}
+
 internal sealed partial class ChildNode : INotifyPropertyChanged
 {
     private readonly PackageInfo _packageInfo;
@@ -47,11 +53,11 @@ internal sealed partial class ChildNode : INotifyPropertyChanged
 
     public bool IsPinned => _packageInfo.IsPinned;
 
-    public ICommand CopyPackageReferenceCommand => new DelegateCommand(() => CopyPackageDefinition("PackageReference"));
+    public ICommand CopyPackageReferenceCommand => new DelegateCommand(() => CopyNode(PackageNode.PackageReference));
 
-    public ICommand CopyPackageVersionCommand => new DelegateCommand(() => CopyPackageDefinition("PackageVersion"));
+    public ICommand CopyPackageVersionCommand => new DelegateCommand(() => CopyNode(PackageNode.PackageVersion));
 
-    private void CopyPackageDefinition(string key)
+    private void CopyNode(PackageNode node)
     {
         var currentVersion = PackageIdentity.Version;
 
@@ -60,8 +66,12 @@ internal sealed partial class ChildNode : INotifyPropertyChanged
             .DefaultIfEmpty(currentVersion)
             .Max();
 
-        Clipboard.SetText($"""<{key} Include="{PackageIdentity.Id}" Version="{latestVersion}" />""");
-        _solutionService.OpenDocument(_transitiveDependencies.ProjectFullPath);
+        Clipboard.SetText($"""<{node} Include="{PackageIdentity.Id}" Version="{latestVersion}" />""");
+
+        if (node == PackageNode.PackageReference)
+        {
+            _solutionService.OpenDocument(_transitiveDependencies.ProjectFullPath);
+        }
     }
 
     private string GetIssues()
