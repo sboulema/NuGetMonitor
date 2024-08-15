@@ -47,11 +47,20 @@ internal sealed partial class ChildNode : INotifyPropertyChanged
 
     public bool IsPinned => _packageInfo.IsPinned;
 
-    public ICommand CopyPackageReferenceCommand => new DelegateCommand(CopyPackageReference);
+    public ICommand CopyPackageReferenceCommand => new DelegateCommand(() => CopyPackageDefinition("PackageReference"));
 
-    private void CopyPackageReference()
+    public ICommand CopyPackageVersionCommand => new DelegateCommand(() => CopyPackageDefinition("PackageVersion"));
+
+    private void CopyPackageDefinition(string key)
     {
-        Clipboard.SetText($"""<PackageReference Include="{PackageIdentity.Id}" Version="{PackageIdentity.Version}" />""");
+        var currentVersion = PackageIdentity.Version;
+
+        var latestVersion = _packageInfo.Package.Versions
+            .Where(v => v.IsPrerelease == currentVersion.IsPrerelease)
+            .DefaultIfEmpty(currentVersion)
+            .Max();
+
+        Clipboard.SetText($"""<{key} Include="{PackageIdentity.Id}" Version="{latestVersion}" />""");
         _solutionService.OpenDocument(_transitiveDependencies.ProjectFullPath);
     }
 
