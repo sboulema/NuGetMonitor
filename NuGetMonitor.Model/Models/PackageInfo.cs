@@ -1,10 +1,9 @@
 ﻿using System.Text;
 using NuGet.Packaging.Core;
 using NuGet.Protocol;
-using NuGetMonitor.Model;
 using TomsToolbox.Essentials;
 
-namespace NuGetMonitor.Models;
+namespace NuGetMonitor.Model.Models;
 
 public sealed class PackageInfo
 {
@@ -39,6 +38,8 @@ public sealed class PackageInfo
     public bool HasIssues => IsDeprecated || IsVulnerable;
 
     public Uri ProjectUrl { get; }
+
+    public bool IsPinned { get; set; }
 
     private IEnumerable<string?> GetIssues()
     {

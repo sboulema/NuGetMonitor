@@ -1,6 +1,6 @@
 ﻿using NuGetMonitor.Services;
 
-namespace NuGetMonitor.View;
+namespace NuGetMonitor.View.Monitor;
 
 /// <summary>
 /// Interaction logic for NugetMonitorControl.xaml

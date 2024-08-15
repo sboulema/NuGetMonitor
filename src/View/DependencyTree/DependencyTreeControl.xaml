@@ -33,6 +33,12 @@
             <imaging:CrispImage Width="16" Height="16" Moniker="{x:Static imageCatalog:KnownMonikers.Copy}" />
           </MenuItem.Icon>
         </MenuItem>
+        <MenuItem Header="Copy package version"
+                  Command="{Binding CopyPackageVersionCommand}">
+          <MenuItem.Icon>
+            <imaging:CrispImage Width="16" Height="16" Moniker="{x:Static imageCatalog:KnownMonikers.Copy}" />
+          </MenuItem.Icon>
+        </MenuItem>
       </ContextMenu>
       <HierarchicalDataTemplate x:Key="NodeTemplate"
                                 DataType="{x:Type local:ChildNode}"
@@ -43,6 +49,7 @@
                     ContextMenu="{StaticResource PackageContextMenu}">
           <TextBlock x:Name="Identity"
                      Text="{Binding PackageIdentity}" />
+          <TextBlock FontWeight="Bold" Text=" *" Visibility="{Binding IsPinned, Converter={toms:BooleanToVisibilityConverter}}" />
           <TextBlock Text="{Binding Issues}"
                      Foreground="{DynamicResource {x:Static SystemColors.ControlDarkDarkBrushKey}}" />
         </StackPanel>
@@ -67,6 +74,7 @@
                                         SearchText="{Binding ElementName=SearchText, Path=Text}"
                                         HighLightBrush="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}" />
           </Grid>
+          <TextBlock FontWeight="Bold" Text=" *" Visibility="{Binding IsPinned, Converter={toms:BooleanToVisibilityConverter}}" />
           <TextBlock Text="{Binding Issues}"
                      Foreground="{DynamicResource {x:Static SystemColors.ControlDarkDarkBrushKey}}" />
         </StackPanel>

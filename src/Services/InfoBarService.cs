@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.IO;
+using System.Text;
 using System.Windows;
 using Community.VisualStudio.Toolkit;
 using Microsoft.VisualStudio.Imaging;
@@ -6,7 +7,7 @@ using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using NuGet.Versioning;
 using NuGetMonitor.Model;
-using NuGetMonitor.Models;
+using NuGetMonitor.Model.Models;
 using NuGetMonitor.Options;
 using TomsToolbox.Essentials;
 
@@ -134,7 +135,10 @@ internal static class InfoBarService
 
         foreach (var dependency in dependencies)
         {
-            var (projectName, _, targetFramework, packages) = dependency;
+            var (_, packages) = dependency;
+
+            var projectName = dependency.ProjectName;
+            var targetFramework = dependency.TargetFramework;
 
             var vulnerablePackages = packages
                 .Select(item => item.Key)

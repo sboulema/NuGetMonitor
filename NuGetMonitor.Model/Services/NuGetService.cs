@@ -5,11 +5,11 @@ using NuGet.Packaging;
 using NuGet.Packaging.Core;
 using NuGet.Protocol.Core.Types;
 using NuGet.Versioning;
-using NuGetMonitor.Models;
+using NuGetMonitor.Model.Models;
 using TomsToolbox.Essentials;
-using PackageReference = NuGetMonitor.Models.PackageReference;
+using PackageReference = NuGetMonitor.Model.Models.PackageReference;
 
-namespace NuGetMonitor.Services;
+namespace NuGetMonitor.Model.Services;
 
 public static class NuGetService
 {
@@ -28,7 +28,7 @@ public static class NuGetService
         if (_shutdownInitiated)
             return;
 
-        Interlocked.Exchange(ref _session, new NuGetSession(solutionFolder)).Dispose();
+        Interlocked.Exchange(ref _session, new(solutionFolder)).Dispose();
     }
 
     public static async Task<ICollection<PackageReferenceInfo>> CheckPackageReferences(IEnumerable<PackageReferenceEntry> packageReferences)
@@ -72,72 +72,80 @@ public static class NuGetService
         return packageInfo;
     }
 
-    public static async Task<ICollection<TransitiveDependencies>> GetTransitivePackages(IEnumerable<PackageReferenceEntry> packageReferences, ICollection<PackageReferenceInfo> topLevelPackages)
+    public static async Task<ICollection<TransitiveDependencies>> GetTransitivePackages(ICollection<PackageReferenceInfo> allTopLevelPackages)
     {
-        var results = new List<TransitiveDependencies>();
+        var topLevelPackagesByProject = allTopLevelPackages
+            .SelectMany(item => item.PackageReferenceEntries.Select(entry => new { entry.ProjectItemInTargetFramework.Project, item.PackageInfo }))
+            .GroupBy(item => item.Project)
+            .ToDictionary(item => item.Key, item => item.Select(entry => entry.PackageInfo).ToArray());
 
-        var projectItemsByTargetFramework = packageReferences.GroupBy(item => item.ProjectItemInTargetFramework.Project.TargetFramework);
+        return await Task.WhenAll(topLevelPackagesByProject.Select(item => GetTransitiveDependencies(item.Key, item.Value)));
+    }
 
-        foreach (var projectItemsInTargetFramework in projectItemsByTargetFramework)
+    public static async Task<TransitiveDependencies> GetTransitiveDependencies(ProjectInTargetFramework project, ICollection<PackageInfo> topLevelPackages)
+    {
+        var targetFramework = project.TargetFramework;
+
+        var inputQueue = new Queue<PackageInfo>(topLevelPackages);
+        var parentsByChild = new Dictionary<PackageInfo, HashSet<PackageInfo>>();
+        var processedItemsByPackageId = new Dictionary<string, PackageInfo>(StringComparer.OrdinalIgnoreCase);
+
+        while (inputQueue.Count > 0)
         {
-            var targetFramework = projectItemsInTargetFramework.Key;
+            var packageReferenceInfo = inputQueue.Dequeue();
 
-            var packagesReferencesByProject = projectItemsInTargetFramework.GroupBy(item => item.ProjectItemInTargetFramework.ProjectItem.Project);
+            var session = packageReferenceInfo.Session;
 
-            foreach (var projectPackageReferences in packagesReferencesByProject)
+            session.ThrowIfCancellationRequested();
+
+            var packageIdentity = packageReferenceInfo.PackageIdentity;
+
+            if (processedItemsByPackageId.TryGetValue(packageIdentity.Id, out var existing) && existing.PackageIdentity.Version >= packageIdentity.Version)
+                continue;
+
+            processedItemsByPackageId[packageIdentity.Id] = packageReferenceInfo;
+
+            var dependencies = await packageReferenceInfo.GetPackageDependenciesInFramework(targetFramework);
+
+            foreach (var dependency in dependencies)
             {
-                var project = projectPackageReferences.Key;
+                var package = dependency;
+                var identity = package.PackageIdentity;
 
-                var topLevelPackagesInProject = topLevelPackages
-                    .Where(package => projectPackageReferences.Any(item => package.PackageReferenceEntries.Contains(item)))
-                    .Select(item => item.PackageInfo)
-                    .ToArray();
+                session.ThrowIfCancellationRequested();
 
-                var topLevelPackageIdentities = topLevelPackagesInProject
-                    .Select(item => item.PackageIdentity)
-                    .ToHashSet();
-
-                var inputQueue = new Queue<PackageInfo>(topLevelPackagesInProject);
-                var parentsByChild = new Dictionary<PackageInfo, HashSet<PackageInfo>>();
-                var processedItemsByPackageId = new Dictionary<string, PackageInfo>();
-
-                while (inputQueue.Count > 0)
+                if (project.IsTransitivePinningEnabled && project.CentralVersionMap.TryGetValue(identity.Id, out var versionSource))
                 {
-                    var packageInfo = inputQueue.Dequeue();
-
-                    var packageIdentity = packageInfo.PackageIdentity;
-
-                    if (processedItemsByPackageId.TryGetValue(packageIdentity.Id, out var existing) && existing.PackageIdentity.Version >= packageIdentity.Version)
-                        continue;
-
-                    processedItemsByPackageId[packageIdentity.Id] = packageInfo;
-
-                    var dependencies = await packageInfo.GetPackageDependenciesInFramework(targetFramework);
-
-                    foreach (var dependency in dependencies)
+                    var version = versionSource.GetVersion();
+                    if (version is not null && NuGetVersion.TryParse(version.OriginalString, out var parsedVersion) && parsedVersion > identity.Version)
                     {
-                        parentsByChild
-                            .ForceValue(dependency, _ => new HashSet<PackageInfo>())
-                            .Add(packageInfo);
-
-                        inputQueue.Enqueue(dependency);
+                        var pinned = await GetPackageInfoCacheEntry(new(identity.Id, parsedVersion), session).GetValue();
+                        if (pinned is not null)
+                        {
+                            package = pinned;
+                            package.IsPinned = true;
+                        }
                     }
                 }
 
-                var transitivePackageIdentities = processedItemsByPackageId.Values
-                    .Select(item => item.PackageIdentity)
-                    .Where(item => !topLevelPackageIdentities.Contains(item))
-                    .ToHashSet();
+                parentsByChild
+                    .ForceValue(package, _ => new())
+                    .Add(packageReferenceInfo);
 
-                parentsByChild = parentsByChild
-                    .Where(item => transitivePackageIdentities.Contains(item.Key.PackageIdentity))
-                    .ToDictionary();
-
-                results.Add(new TransitiveDependencies(Path.GetFileName(project.FullPath), project.FullPath, targetFramework, parentsByChild));
+                inputQueue.Enqueue(package);
             }
         }
 
-        return results;
+        var transitivePackageIdentities = processedItemsByPackageId.Values
+            .Where(item => !topLevelPackages.Contains(item))
+            .Select(item => item.PackageIdentity)
+            .ToHashSet();
+
+        parentsByChild = parentsByChild
+            .Where(item => transitivePackageIdentities.Contains(item.Key.PackageIdentity))
+            .ToDictionary();
+
+        return new(project, parentsByChild);
     }
 
     private static async Task<PackageReferenceInfo?> FindPackageInfo(PackageReference item, HashSet<PackageReferenceEntry> packageReferenceEntries, NuGetSession session)
@@ -163,7 +171,7 @@ public static class NuGetService
         {
             cacheEntry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(30);
 
-            return new PackageCacheEntry(packageId, session);
+            return new(packageId, session);
         }
 
         lock (session)
@@ -179,7 +187,7 @@ public static class NuGetService
         {
             cacheEntry.AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24);
 
-            return new PackageInfoCacheEntry(packageIdentity, session);
+            return new(packageIdentity, session);
         }
 
         lock (session)
@@ -201,7 +209,7 @@ public static class NuGetService
         {
             cacheEntry.AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24);
 
-            return new PackageDependenciesCacheEntry(packageIdentity, repository, session);
+            return new(packageIdentity, repository, session);
         }
 
         lock (session)
@@ -217,15 +225,15 @@ public static class NuGetService
         {
             cacheEntry.AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24);
 
-            return new PackageDependenciesInFrameworkCacheEntry(packageInfo, targetFramework);
+            return new(packageInfo, targetFramework);
         }
 
-        _session.ThrowIfCancellationRequested();
+        var session = packageInfo.Session;
 
-        lock (_session)
+        lock (session)
         {
-            return _session.Cache.GetOrCreate(new PackageDependenciesInFrameworkCacheEntryKey(packageInfo.PackageIdentity, targetFramework), Factory) ??
-                   throw new InvalidOperationException("Failed to get package dependency in framework from cache");
+            return session.Cache.GetOrCreate(new PackageDependenciesInFrameworkCacheEntryKey(packageInfo.PackageIdentity, targetFramework), Factory)
+                   ?? throw new InvalidOperationException("Failed to get package dependency in framework from cache");
         }
     }
 
@@ -238,7 +246,7 @@ public static class NuGetService
 
     private static NuGetFramework ToPlatformVersionIndependent(NuGetFramework framework)
     {
-        return new NuGetFramework(framework.Framework, framework.Version, framework.Platform, FrameworkConstants.EmptyVersion);
+        return new(framework.Framework, framework.Version, framework.Platform, FrameworkConstants.EmptyVersion);
     }
 
     private static T? GetNearestFramework<T>(ICollection<T> items, NuGetFramework framework)
@@ -295,7 +303,7 @@ public static class NuGetService
                     continue;
 
                 var versions = unsortedVersions.OrderByDescending(item => item).ToArray();
-                return new Package(packageId, versions, repositoryContext);
+                return new(packageId, versions, repositoryContext);
             }
 
             return null;
@@ -368,7 +376,7 @@ public static class NuGetService
 
             var deprecationMetadata = await metadata.GetDeprecationMetadataAsync();
 
-            return new PackageInfo(packageIdentity, package, session, metadata.Vulnerabilities?.ToArray(), deprecationMetadata, metadata.ProjectUrl)
+            return new(packageIdentity, package, session, metadata.Vulnerabilities?.ToArray(), deprecationMetadata, metadata.ProjectUrl)
             {
                 IsOutdated = IsOutdated(packageIdentity, versions)
             };
@@ -431,7 +439,7 @@ public static class NuGetService
 
                 var dependencyVersion = packageDependency.VersionRange.FindBestMatch(package.Versions);
 
-                var info = await GetPackageInfoCacheEntry(new PackageIdentity(package.Id, dependencyVersion), session).GetValue();
+                var info = await GetPackageInfoCacheEntry(new(package.Id, dependencyVersion), session).GetValue();
 
                 return info;
             }

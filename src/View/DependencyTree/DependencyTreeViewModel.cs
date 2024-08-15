@@ -1,19 +1,25 @@
-﻿using NuGetMonitor.Services;
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.Windows;
 using System.Windows.Data;
 using System.Windows.Input;
 using Microsoft.VisualStudio.Shell;
 using NuGet.Frameworks;
-using NuGetMonitor.Models;
 using TomsToolbox.Wpf;
 using NuGet.Packaging.Core;
-using NuGetMonitor.Model.Abstractions;
+using NuGetMonitor.Abstractions;
+using NuGetMonitor.Model.Models;
+using NuGetMonitor.Model.Services;
 using PropertyChanged;
 using Throttle;
 using TomsToolbox.Essentials;
 
 namespace NuGetMonitor.View.DependencyTree;
+
+internal enum PackageNode
+{
+    PackageReference,
+    PackageVersion
+}
 
 internal sealed partial class ChildNode : INotifyPropertyChanged
 {
@@ -45,12 +51,27 @@ internal sealed partial class ChildNode : INotifyPropertyChanged
 
     public bool IsVulnerable => _packageInfo.IsVulnerable;
 
-    public ICommand CopyPackageReferenceCommand => new DelegateCommand(CopyPackageReference);
+    public bool IsPinned => _packageInfo.IsPinned;
 
-    private void CopyPackageReference()
+    public ICommand CopyPackageReferenceCommand => new DelegateCommand(() => CopyNode(PackageNode.PackageReference));
+
+    public ICommand CopyPackageVersionCommand => new DelegateCommand(() => CopyNode(PackageNode.PackageVersion));
+
+    private void CopyNode(PackageNode node)
     {
-        Clipboard.SetText($"""<PackageReference Include="{PackageIdentity.Id}" Version="{PackageIdentity.Version}" />""");
-        _solutionService.OpenDocument(_transitiveDependencies.ProjectFullPath);
+        var currentVersion = PackageIdentity.Version;
+
+        var latestVersion = _packageInfo.Package.Versions
+            .Where(v => v.IsPrerelease == currentVersion.IsPrerelease)
+            .DefaultIfEmpty(currentVersion)
+            .Max();
+
+        Clipboard.SetText($"""<{node} Include="{PackageIdentity.Id}" Version="{latestVersion}" />""");
+
+        if (node == PackageNode.PackageReference)
+        {
+            _solutionService.OpenDocument(_transitiveDependencies.ProjectFullPath);
+        }
     }
 
     private string GetIssues()
@@ -178,16 +199,16 @@ internal sealed partial class DependencyTreeViewModel : INotifyPropertyChanged
         {
             IsLoading = true;
 
-            var projectFolders = await _solutionService.GetProjectFolders();
+            var projectFilePaths = await _solutionService.GetProjectFilePaths();
 
-            var packageReferences = await ProjectService.GetPackageReferences(projectFolders).ConfigureAwait(true);
+            var packageReferences = await ProjectService.GetPackageReferences(projectFilePaths).ConfigureAwait(true);
 
             var topLevelPackages = await NuGetService.CheckPackageReferences(packageReferences).ConfigureAwait(true);
 
             if (topLevelPackages.Count == 0)
                 return;
 
-            var transitivePackages = await NuGetService.GetTransitivePackages(packageReferences, topLevelPackages).ConfigureAwait(true);
+            var transitivePackages = await NuGetService.GetTransitivePackages(topLevelPackages).ConfigureAwait(true);
 
             TransitivePackages = transitivePackages
                 .OrderBy(item => item.ProjectName)

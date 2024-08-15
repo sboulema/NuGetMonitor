@@ -8,13 +8,14 @@ using DataGridExtensions;
 using Microsoft.Build.Construction;
 using Microsoft.Build.Evaluation;
 using Microsoft.VisualStudio.Shell;
-using NuGetMonitor.Model.Abstractions;
+using NuGetMonitor.Abstractions;
 using NuGetMonitor.Model.Services;
 using NuGetMonitor.Services;
+using NuGetMonitor.ViewModels;
 using TomsToolbox.Essentials;
 using TomsToolbox.Wpf;
 
-namespace NuGetMonitor.View;
+namespace NuGetMonitor.View.Monitor;
 
 #pragma warning disable CA1812 // Avoid uninstantiated internal classes => used in xaml!
 internal sealed partial class NuGetMonitorViewModel : INotifyPropertyChanged
@@ -69,7 +70,7 @@ internal sealed partial class NuGetMonitorViewModel : INotifyPropertyChanged
 
             Packages = null;
 
-            var projectFolders = await _solutionService.GetProjectFolders();
+            var projectFolders = await _solutionService.GetProjectFilePaths();
 
             var packageReferences = await ProjectService.GetPackageReferences(projectFolders);
 
