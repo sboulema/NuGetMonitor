@@ -39,6 +39,8 @@ public sealed class PackageInfo
 
     public Uri ProjectUrl { get; }
 
+    public bool IsPinned { get; set; }
+
     private IEnumerable<string?> GetIssues()
     {
         if (IsDeprecated)

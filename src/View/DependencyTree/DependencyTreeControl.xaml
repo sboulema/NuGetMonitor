@@ -43,6 +43,7 @@
                     ContextMenu="{StaticResource PackageContextMenu}">
           <TextBlock x:Name="Identity"
                      Text="{Binding PackageIdentity}" />
+          <TextBlock FontWeight="Bold" Text=" *" Visibility="{Binding IsPinned, Converter={toms:BooleanToVisibilityConverter}}" />
           <TextBlock Text="{Binding Issues}"
                      Foreground="{DynamicResource {x:Static SystemColors.ControlDarkDarkBrushKey}}" />
         </StackPanel>
@@ -67,6 +68,7 @@
                                         SearchText="{Binding ElementName=SearchText, Path=Text}"
                                         HighLightBrush="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}" />
           </Grid>
+          <TextBlock FontWeight="Bold" Text=" *" Visibility="{Binding IsPinned, Converter={toms:BooleanToVisibilityConverter}}" />
           <TextBlock Text="{Binding Issues}"
                      Foreground="{DynamicResource {x:Static SystemColors.ControlDarkDarkBrushKey}}" />
         </StackPanel>

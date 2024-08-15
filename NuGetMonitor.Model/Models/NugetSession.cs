@@ -22,7 +22,7 @@ public sealed class NuGetSession : IDisposable
         var sourceRepositories = sourceRepositoryProvider.GetRepositories();
 
         SourceRepositories = sourceRepositories.Select(item => new RepositoryContext(item)).ToArray();
-        PackageDownloadContext = new PackageDownloadContext(SourceCacheContext);
+        PackageDownloadContext = new(SourceCacheContext);
     }
 
     public MemoryCache Cache { get; } = new(new MemoryCacheOptions());

@@ -50,11 +50,11 @@ internal static class MonitorService
 
             var projects = await VS.Solutions.GetAllProjectsAsync();
 
-            var projectFolders = projects.Select(project => project.FullPath)
+            var projectPaths = projects.Select(project => project.FullPath)
                 .ExceptNullItems()
                 .ToArray();
 
-            var packageReferences = await ProjectService.GetPackageReferences(projectFolders);
+            var packageReferences = await ProjectService.GetPackageReferences(projectPaths);
 
             var topLevelPackages = await NuGetService.CheckPackageReferences(packageReferences);
 

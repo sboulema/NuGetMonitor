@@ -17,34 +17,22 @@ public static class ProjectService
 
     public static void ClearCache()
     {
-        Interlocked.Exchange(ref _projectCollection, new ProjectCollection()).Dispose();
+        Interlocked.Exchange(ref _projectCollection, new()).Dispose();
     }
 
-    public static async Task<IReadOnlyCollection<PackageReferenceEntry>> GetPackageReferences(ICollection<string> projectFilePaths)
+    public static async Task<IReadOnlyCollection<PackageReferenceEntry>> GetPackageReferences(ICollection<string> projectFolders)
     {
         var projectCollection = _projectCollection;
 
         return await Task.Run(() =>
         {
-            var references = projectFilePaths.Select(path => GetProjects(projectCollection, path));
+            var references = projectFolders.Select(projectPath => GetPackageReferences(projectCollection, projectPath));
 
             return references
-                .SelectMany(items => items.SelectMany(i => i.PackageReferences))
+                .SelectMany(items => items)
                 .OrderBy(item => item.Identity.Id)
                 .ThenBy(item => Path.GetFileName(item.VersionSource.GetContainingProject().FullPath))
                 .ToArray();
-        });
-    }
-
-    public static async Task<IReadOnlyCollection<ProjectInTargetFrameworkWithReferenceEntries>> GetProjects(ICollection<string> projectFilePaths)
-    {
-        var projectCollection = _projectCollection;
-
-        return await Task.Run(() =>
-        {
-            var references = projectFilePaths.SelectMany(path => GetProjects(projectCollection, path));
-
-            return references.ToArray();
         });
     }
 
@@ -149,10 +137,21 @@ public static class ProjectService
 
         var specificProject = projectCollection.LoadProject(project.FullPath, properties, null);
 
-        return new ProjectInTargetFramework(specificProject, framework);
+        return new(specificProject, framework);
     }
 
-    private static IEnumerable<ProjectInTargetFrameworkWithReferenceEntries> GetProjects(ProjectCollection projectCollection, string projectPath)
+    private static IEnumerable<PackageReferenceEntry> GetPackageReferences(ProjectCollection projectCollection, string projectPath)
+    {
+        var items = GetPackageReferenceItems(projectCollection, projectPath);
+
+        var packageReferences = items
+            .Select(CreatePackageReferenceEntry)
+            .ExceptNullItems();
+
+        return packageReferences;
+    }
+
+    private static IEnumerable<ProjectItemInTargetFramework> GetPackageReferenceItems(ProjectCollection projectCollection, string projectPath)
     {
         try
         {
@@ -160,24 +159,14 @@ public static class ProjectService
 
             var frameworkSpecificProjects = project.GetProjectsInTargetFramework();
 
-            return frameworkSpecificProjects.Select(CreateProjectWithPackageReferences);
+            return frameworkSpecificProjects.SelectMany(GetPackageReferenceItems);
         }
         catch (Exception ex)
         {
             Log(LogLevel.Error, $"Get package reference item failed: {ex}");
 
-            return Enumerable.Empty<ProjectInTargetFrameworkWithReferenceEntries>();
+            return Enumerable.Empty<ProjectItemInTargetFramework>();
         }
-    }
-
-    private static ProjectInTargetFrameworkWithReferenceEntries CreateProjectWithPackageReferences(ProjectInTargetFramework projectInTargetFramework)
-    {
-        var references = GetPackageReferenceItems(projectInTargetFramework)
-            .Select(CreatePackageReferenceEntry)
-            .ExceptNullItems()
-            .ToArray();
-
-        return new ProjectInTargetFrameworkWithReferenceEntries(projectInTargetFramework, references);
     }
 
     private static IEnumerable<ProjectItemInTargetFramework> GetPackageReferenceItems(ProjectInTargetFramework frameworkSpecificProject)

@@ -18,6 +18,7 @@ public sealed class ProjectInTargetFramework
         Project = project;
         TargetFramework = targetFramework;
         CentralVersionMap = GetCentralVersionMap(project);
+        IsTransitivePinningEnabled = IsCentralVersionManagementEnabled && project.GetProperty("CentralPackageTransitivePinningEnabled").IsTrue();
     }
 
     public Project Project { get; init; }
@@ -26,9 +27,13 @@ public sealed class ProjectInTargetFramework
 
     public ReadOnlyDictionary<string, ProjectItem> CentralVersionMap { get; }
 
+    public bool IsCentralVersionManagementEnabled => CentralVersionMap.Count > 0;
+
+    public bool IsTransitivePinningEnabled { get; }
+
     public string Name => Path.GetFileName(Project.FullPath);
 
-    public IEnumerable<ProjectInTargetFrameworkWithReferenceEntries> GetReferencedProjects(IEnumerable<ProjectInTargetFrameworkWithReferenceEntries> allProjects)
+    public IEnumerable<ProjectInTargetFramework> GetReferencedProjects(IEnumerable<ProjectInTargetFramework> allProjects)
     {
         return Project.GetItems("ProjectReference")
             .Select(item => item.EvaluatedInclude)
@@ -49,22 +54,20 @@ public sealed class ProjectInTargetFramework
             .Distinct(_itemIncludeComparer)
             .ToDictionary(item => item.EvaluatedInclude, item => item);
 
-        return new ReadOnlyDictionary<string, ProjectItem>(versionMap);
+        return new(versionMap);
     }
 
-    private ProjectInTargetFrameworkWithReferenceEntries? GetBestMatch(IEnumerable<ProjectInTargetFrameworkWithReferenceEntries> projects, string projectPath)
+    private ProjectInTargetFramework? GetBestMatch(IEnumerable<ProjectInTargetFramework> projects, string projectPath)
     {
         var candidates = projects
-            .Where(project => string.Equals(project.Project.Project.FullPath, projectPath, StringComparison.OrdinalIgnoreCase))
+            .Where(project => string.Equals(project.Project.FullPath, projectPath, StringComparison.OrdinalIgnoreCase))
             .ToArray();
 
         return candidates.Length switch
         {
             0 => null,
             1 => candidates[0],
-            _ => NuGetFrameworkUtility.GetNearest(candidates, TargetFramework, item => item.Project.TargetFramework) ?? candidates[0]
+            _ => NuGetFrameworkUtility.GetNearest(candidates, TargetFramework, item => item.TargetFramework) ?? candidates[0]
         };
     }
 }
-
-public record ProjectInTargetFrameworkWithReferenceEntries(ProjectInTargetFramework Project, IReadOnlyCollection<PackageReferenceEntry> PackageReferences);

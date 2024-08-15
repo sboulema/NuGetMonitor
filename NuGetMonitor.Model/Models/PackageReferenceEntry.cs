@@ -11,7 +11,7 @@ public sealed record PackageReferenceEntry
         ProjectItemInTargetFramework = projectItemInTargetFramework;
         Justification = justification;
         IsPrivateAsset = isPrivateAsset;
-        Identity = new PackageReference(id, versionRange);
+        Identity = new(id, versionRange);
     }
 
     public PackageReference Identity { get; }
