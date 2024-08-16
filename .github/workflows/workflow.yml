@@ -68,7 +68,7 @@ jobs:
           skipIfReleaseExists: true
           
       - name: Publish to Marketplace
-        uses: cezarypiatek/VsixPublisherAction@1.0
+        uses: cezarypiatek/VsixPublisherAction@1.1
         with:
           extension-file: ${{ env.vsixPath }}
           publish-manifest-file: NuGetMonitor/src/publish-manifest.json
