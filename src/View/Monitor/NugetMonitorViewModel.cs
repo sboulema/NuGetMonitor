@@ -1,4 +1,5 @@
-﻿using System.Collections.ObjectModel;
+﻿using System;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Text;
 using System.Windows;
@@ -8,7 +9,9 @@ using DataGridExtensions;
 using Microsoft.Build.Construction;
 using Microsoft.Build.Evaluation;
 using Microsoft.VisualStudio.Shell;
+using NuGet.Versioning;
 using NuGetMonitor.Abstractions;
+using NuGetMonitor.Model.Models;
 using NuGetMonitor.Model.Services;
 using NuGetMonitor.Services;
 using NuGetMonitor.ViewModels;
@@ -76,14 +79,28 @@ internal sealed partial class NuGetMonitorViewModel : INotifyPropertyChanged
 
             var packages = packageReferences
                 .GroupBy(item => item.Identity)
-                .Select(group => new PackageViewModel(group, _solutionService))
+                .Select(group => new PackageViewModel(group, PackageItemType.PackageReference, _solutionService))
                 .ToArray();
 
-            Packages = packages;
+            var packageIds = packages
+                .Select(item => item.PackageReference.Id)
+                .ToHashSet();
+
+            var transitivePins = packages
+                .SelectMany(item => item.Items)
+                .Select(item => item.ProjectItemInTargetFramework)
+                .Where(item => item.Project.IsTransitivePinningEnabled)
+                .SelectMany(project => project.Project.CentralVersionMap.Values.Select(item => new PackageReferenceEntry(item.EvaluatedInclude, item.GetVersion() ?? VersionRange.None, item, project, string.Empty, false)))
+                .Where(item => !packageIds.Contains(item.Identity.Id))
+                .GroupBy(item => item.Identity)
+                .Select(item => new PackageViewModel(item, PackageItemType.PackageVersion, _solutionService))
+                .ToArray();
+
+            Packages = packages.Concat(transitivePins).ToArray();
 
             IsLoading = false;
 
-            var loadVersionTasks = packages.Select(item => item.Load());
+            var loadVersionTasks = Packages.Select(item => item.Load());
 
             await Task.WhenAll(loadVersionTasks);
 
@@ -128,7 +145,7 @@ internal sealed partial class NuGetMonitorViewModel : INotifyPropertyChanged
 
         var packageReferencesByProject = packageViewModels
             .Where(viewModel => viewModel.IsUpdateAvailable)
-            .SelectMany(viewModel => viewModel.Items.Select(item => new { item.Identity, item.VersionSource, item.VersionSource.GetContainingProject().FullPath, viewModel.SelectedVersion }))
+            .SelectMany(viewModel => viewModel.Items.Select(item => new { item.Identity.Id, item.VersionSource, viewModel.ActiveVersion, item.VersionSource.GetContainingProject().FullPath, viewModel.SelectedVersion }))
             .GroupBy(item => item.FullPath);
 
         foreach (var packageReferenceEntries in packageReferencesByProject)
@@ -141,18 +158,24 @@ internal sealed partial class NuGetMonitorViewModel : INotifyPropertyChanged
 
             foreach (var packageReferenceEntry in packageReferenceEntries)
             {
-                var identity = packageReferenceEntry.Identity;
+                var id = packageReferenceEntry.Id;
                 var selectedVersion = packageReferenceEntry.SelectedVersion;
                 var versionSource = packageReferenceEntry.VersionSource;
+                var currentVersion = packageReferenceEntry.ActiveVersion switch
+                {
+                    NuGetVersion version => version.OriginalVersion,
+                    VersionRange versionRange => versionRange.OriginalString,
+                    _ => null
+                };
 
-                if (selectedVersion == null)
+                if (selectedVersion == null || currentVersion == null)
                     continue;
 
                 var metadataItems = projectItems
                     .Where(item => item.ItemType == versionSource.ItemType)
-                    .Where(item => string.Equals(item.Include, identity.Id, StringComparison.OrdinalIgnoreCase))
+                    .Where(item => string.Equals(item.Include, id, StringComparison.OrdinalIgnoreCase))
                     .Select(item => item.Metadata.FirstOrDefault(metadata => _versionMetadataNames.Any(name => string.Equals(metadata.Name, name, StringComparison.OrdinalIgnoreCase))
-                                                                          && string.Equals(metadata.Value, identity.VersionRange.OriginalString, StringComparison.OrdinalIgnoreCase)))
+                                                                          && string.Equals(metadata.Value, currentVersion, StringComparison.OrdinalIgnoreCase)))
                     .ExceptNullItems();
 
                 foreach (var metadata in metadataItems)

@@ -216,7 +216,7 @@ public static class ProjectService
         return "true".Equals(property?.EvaluatedValue, StringComparison.OrdinalIgnoreCase);
     }
 
-    internal static VersionRange? GetVersion(this ProjectItem projectItem)
+    public static VersionRange? GetVersion(this ProjectItem projectItem)
     {
         var versionValue = projectItem.GetMetadata("Version")?.EvaluatedValue;
         if (versionValue.IsNullOrEmpty())
