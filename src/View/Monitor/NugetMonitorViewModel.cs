@@ -8,7 +8,9 @@ using DataGridExtensions;
 using Microsoft.Build.Construction;
 using Microsoft.Build.Evaluation;
 using Microsoft.VisualStudio.Shell;
+using NuGet.Versioning;
 using NuGetMonitor.Abstractions;
+using NuGetMonitor.Model.Models;
 using NuGetMonitor.Model.Services;
 using NuGetMonitor.Services;
 using NuGetMonitor.ViewModels;
@@ -76,14 +78,28 @@ internal sealed partial class NuGetMonitorViewModel : INotifyPropertyChanged
 
             var packages = packageReferences
                 .GroupBy(item => item.Identity)
-                .Select(group => new PackageViewModel(group, _solutionService))
+                .Select(group => new PackageViewModel(group, PackageItemType.PackageReference, _solutionService))
                 .ToArray();
 
-            Packages = packages;
+            var packageIds = packages
+                .Select(item => item.PackageReference.Id)
+                .ToHashSet();
+
+            var transitivePins = packages
+                .SelectMany(item => item.Items)
+                .Select(item => item.ProjectItemInTargetFramework)
+                .Where(item => item.Project.IsTransitivePinningEnabled)
+                .SelectMany(project => project.Project.CentralVersionMap.Values.Select(item => new PackageReferenceEntry(item.EvaluatedInclude, item.GetVersion() ?? VersionRange.None, item, project, string.Empty, false)))
+                .Where(item => !packageIds.Contains(item.Identity.Id))
+                .GroupBy(item => item.Identity)
+                .Select(item => new PackageViewModel(item, PackageItemType.PackageVersion, _solutionService))
+                .ToArray();
+
+            Packages = packages.Concat(transitivePins).ToArray();
 
             IsLoading = false;
 
-            var loadVersionTasks = packages.Select(item => item.Load());
+            var loadVersionTasks = Packages.Select(item => item.Load());
 
             await Task.WhenAll(loadVersionTasks);
 

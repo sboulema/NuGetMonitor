@@ -11,8 +11,9 @@ public sealed class NuGetSession : IDisposable
 
     public NuGetSession(string? solutionPath)
     {
-        var solutionDirectory = Path.GetDirectoryName(solutionPath);
+        CancellationToken = _cancellationTokenSource.Token;
 
+        var solutionDirectory = Path.GetDirectoryName(solutionPath);
         var settings = Settings.LoadDefaultSettings(solutionDirectory);
 
         GlobalPackagesFolder = SettingsUtility.GetGlobalPackagesFolder(settings);
@@ -31,7 +32,7 @@ public sealed class NuGetSession : IDisposable
 
     public PackageDownloadContext PackageDownloadContext { get; }
 
-    public CancellationToken CancellationToken => _cancellationTokenSource.Token;
+    public CancellationToken CancellationToken { get; }
 
     public ICollection<RepositoryContext> SourceRepositories { get; }
 

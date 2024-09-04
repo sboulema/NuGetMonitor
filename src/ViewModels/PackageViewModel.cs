@@ -13,11 +13,11 @@ namespace NuGetMonitor.ViewModels;
 
 internal sealed partial class PackageViewModel : INotifyPropertyChanged
 {
-    public PackageViewModel(IGrouping<PackageReference, PackageReferenceEntry> items, ISolutionService solutionService)
+    public PackageViewModel(IGrouping<PackageReference, PackageReferenceEntry> items, PackageItemType itemType, ISolutionService solutionService)
     {
         Items = items;
         PackageReference = items.Key;
-        Projects = items.GroupBy(item => item.ProjectItemInTargetFramework.ProjectItem.GetContainingProject()).Select(item => new ProjectViewModel(item.Key, solutionService)).ToArray();
+        Projects = items.GroupBy(item => (itemType == PackageItemType.PackageVersion ? item.VersionSource : item.ProjectItemInTargetFramework.ProjectItem).GetContainingProject()).Select(item => new ProjectViewModel(item.Key, solutionService)).ToArray();
         ActiveVersion = NuGetVersion.TryParse(PackageReference.VersionRange.OriginalString, out var simpleVersion) ? simpleVersion : PackageReference.VersionRange;
         Justifications = string.Join(", ", Items.Select(reference => reference.Justification).Distinct());
     }
