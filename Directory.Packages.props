@@ -7,7 +7,7 @@
     <PackageVersion Include="Community.VisualStudio.Toolkit.17" Version="17.0.522" />
     <PackageVersion Include="ConfigureAwait.Fody" Version="3.3.2" />
     <PackageVersion Include="DataGridExtensions" Version="2.6.0" />
-    <PackageVersion Include="Fody" Version="6.8.1" />
+    <PackageVersion Include="Fody" Version="6.8.2" />
     <PackageVersion Include="Microsoft.Build" Version="[17.4.0]" />
     <PackageVersion Include="Microsoft.Build.Utilities.Core" Version="[17.4.0]" />
     <PackageVersion Include="Microsoft.Extensions.Caching.Memory" Version="8.0.0" />
@@ -19,10 +19,5 @@
     <PackageVersion Include="TomsToolbox.Essentials" Version="2.18.1" />
     <PackageVersion Include="TomsToolbox.Wpf.Styles" Version="2.18.1" />
     <PackageVersion Include="VSIX-SdkProjectAdapter" Version="3.0.0" />
-  </ItemGroup>
-  <ItemGroup Label="Transitive fixes">
-    <PackageVersion Include="Microsoft.IO.Redist" Version="6.0.1" />
-    <PackageVersion Include="System.Formats.Asn1" Version="8.0.1" />
-    <PackageVersion Include="System.Text.Json" Version="8.0.4" />
   </ItemGroup>
 </Project>
