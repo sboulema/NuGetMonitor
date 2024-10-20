@@ -34,6 +34,7 @@ for the installed NuGet packages in the current solution.
 
 Dependent on the size of the solution it may take some time until the info bars appear. 
 
+---
 ### Package Manager
 
 The package manager can be opened via the entry in the `Tools` menu.
@@ -44,15 +45,29 @@ The package manager shows all installed packages of the current solution. Updati
 
 Compared to the original NuGet Package Manager updating packages is very fast, because the package version is instantly updated without validation against other packages - however version conflicts may show up only at the next build and have to be resolved manually.
 
-Shared package references, e.g. in the `Directory.Build.props` file, are handled gracefully, and will not be replaced by `Update` entries in every project.
-
 ![ToolWindow](art/ToolWindow.png)
 
+Shared package references, e.g. in the `Directory.Build.props` file, are handled gracefully, and will not be replaced by `Update` entries in every project.
+
+CentralPackageManagement (`PackageVersion` entries) are supported as well.
+
+A justification property can be added to `PackageReference` or `PackageVersion` entries, to e.g. document why a reference is pinned and can't be updated
+```xml
+<PackageReference Include="Newtonsoft.Json" Version="[13.0.1]" Justification="Can't update due to Visual Studio extension limitations">
+```
+
+A mitigation element can be added to suppress warnings for transitive dependencies that can't be updated due to project limitations but have been evaluated to not affect the product security.
+```xml
+<PackageMitigation Include="Newtonsoft.Json" Version="13.0.1" Justification="Can't update due to Visual Studio extension limitations">
+```
+---
 ### Dependency Tree
 
-This view allows to investigate how transitive depdencies are introduced into the projects.
+This view allows to investigate how transitive dependencies are introduced into the projects.
 
 It lists all transitive dependencies per project, and shows their ancestor tree, where the terminal bold entry is the package reference used in the project.
+
+The context menu for every entry offers to copy ready made XML snippets for `PackageReference`, `PackageVersion` or `PackageMitigation` that can be directly inserted into the project file to fix transitive dependencies.
 
 ![DependencyTree](art/DependencyTree.png)
 
