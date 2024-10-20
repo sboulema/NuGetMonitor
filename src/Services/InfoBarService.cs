@@ -56,7 +56,7 @@ internal static class InfoBarService
 
         Log($"{transitivePackages.Length} transitive packages found");
 
-        var vulnerablePackages = transitivePackages.Where(item => item.IsVulnerable).ToArray();
+        var vulnerablePackages = transitivePackages.Where(item => item.IsVulnerable && item.VulnerabilityMitigation.IsNullOrEmpty()).ToArray();
 
         if (vulnerablePackages.Length <= 0)
         {
@@ -142,7 +142,7 @@ internal static class InfoBarService
 
             var vulnerablePackages = packages
                 .Select(item => item.Key)
-                .Where(item => item.IsVulnerable)
+                .Where(item => item.IsVulnerable && item.VulnerabilityMitigation.IsNullOrEmpty())
                 .ToArray();
 
             if (vulnerablePackages.Length == 0)
@@ -211,6 +211,6 @@ internal static class InfoBarService
 
         yield return topLevelPackages.CountedDescription("update", item => item.IsOutdated);
         yield return topLevelPackages.CountedDescription("deprecation", item => item.IsDeprecated);
-        yield return topLevelPackages.CountedDescription("vulnerability", item => item.IsVulnerable);
+        yield return topLevelPackages.CountedDescription("vulnerability", item => item.IsVulnerable && item.VulnerabilityMitigation.IsNullOrEmpty());
     }
 }

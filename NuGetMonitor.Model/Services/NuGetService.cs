@@ -128,6 +128,8 @@ public static class NuGetService
                     }
                 }
 
+                package.VulnerabilityMitigation = project.PackageMitigations.GetValueOrDefault(identity);
+
                 parentsByChild
                     .ForceValue(package, _ => new())
                     .Add(packageReferenceInfo);

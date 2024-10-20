@@ -2,6 +2,8 @@
 using System.Diagnostics;
 using Microsoft.Build.Evaluation;
 using NuGet.Frameworks;
+using NuGet.Packaging.Core;
+using NuGet.Versioning;
 using NuGetMonitor.Model.Services;
 using TomsToolbox.Essentials;
 
@@ -19,13 +21,16 @@ public sealed class ProjectInTargetFramework
         TargetFramework = targetFramework;
         CentralVersionMap = GetCentralVersionMap(project);
         IsTransitivePinningEnabled = IsCentralVersionManagementEnabled && project.GetProperty("CentralPackageTransitivePinningEnabled").IsTrue();
+        PackageMitigations = GetPackageMitigations(project);
     }
 
     public Project Project { get; init; }
 
     public NuGetFramework TargetFramework { get; init; }
 
-    public ReadOnlyDictionary<string, ProjectItem> CentralVersionMap { get; }
+    public IReadOnlyDictionary<string, ProjectItem> CentralVersionMap { get; }
+
+    public IReadOnlyDictionary<PackageIdentity, string> PackageMitigations { get; }
 
     public bool IsCentralVersionManagementEnabled => CentralVersionMap.Count > 0;
 
@@ -55,6 +60,23 @@ public sealed class ProjectInTargetFramework
             .ToDictionary(item => item.EvaluatedInclude, item => item);
 
         return new(versionMap);
+    }
+
+    private static ReadOnlyDictionary<PackageIdentity, string> GetPackageMitigations(Project project)
+    {
+        var projectItems = project
+            .GetItems("PackageMitigation");
+
+        var mitigations = projectItems
+            .Select(item => new
+            {
+                Identity = new PackageIdentity(item.EvaluatedInclude, NuGetVersion.Parse(item.GetMetadataValue("Version"))),
+                Justification = item.GetMetadataValue("Justification")
+            }
+            )
+            .ToDictionary(item => item.Identity, item => item.Justification);
+
+        return new(mitigations);
     }
 
     private ProjectInTargetFramework? GetBestMatch(IEnumerable<ProjectInTargetFramework> projects, string projectPath)

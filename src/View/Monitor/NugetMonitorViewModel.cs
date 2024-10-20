@@ -90,7 +90,7 @@ internal sealed partial class NuGetMonitorViewModel : INotifyPropertyChanged
                 .SelectMany(item => item.Items)
                 .Select(item => item.ProjectItemInTargetFramework)
                 .Where(item => item.Project.IsTransitivePinningEnabled)
-                .SelectMany(project => project.Project.CentralVersionMap.Values.Select(item => new PackageReferenceEntry(item.EvaluatedInclude, item.GetVersion() ?? VersionRange.None, item, project, string.Empty, false)))
+                .SelectMany(project => project.Project.CentralVersionMap.Values.Select(item => new PackageReferenceEntry(item.EvaluatedInclude, item.GetVersion() ?? VersionRange.None, item, project, item.GetMetadataValue("Justification"), false)))
                 .Where(item => !packageIds.Contains(item.Identity.Id))
                 .GroupBy(item => item.Identity)
                 .Select(item => new PackageViewModel(item, PackageItemType.PackageVersion, _solutionService))
