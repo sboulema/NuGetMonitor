@@ -13,7 +13,6 @@
     <PackageVersion Include="Microsoft.Extensions.Caching.Memory" Version="8.0.1" />
     <PackageVersion Include="Microsoft.VSSDK.BuildTools" Version="17.12.2069" />
     <PackageVersion Include="NuGet.Protocol" Version="[6.5.1]" Justification="VSIX limitation (Newtonsoft.Json 13.0.1)" />
-    <PackageVersion Include="Nullable.Extended.Analyzer" Version="1.15.6169" />
     <PackageVersion Include="PropertyChanged.Fody" Version="4.1.0" />
     <PackageVersion Include="Throttle.Fody" Version="1.7.0" />
     <PackageVersion Include="TomsToolbox.Essentials" Version="2.20.0" />

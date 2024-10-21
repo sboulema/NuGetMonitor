@@ -25,15 +25,15 @@
     <PackageReference Include="VSIX-SdkProjectAdapter" PrivateAssets="all" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="..\LICENSE">
+    <Content Include="..\..\LICENSE">
       <Link>Resources\LICENSE</Link>
       <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
-    <Content Include="..\art\Screenshot.png">
+    <Content Include="..\..\art\Screenshot.png">
       <Link>Resources\Screenshot.png</Link>
       <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
-    <Content Include="..\art\NugetMonitor_90x90.png">
+    <Content Include="..\..\art\NugetMonitor_90x90.png">
       <Link>Resources\NugetMonitor_90x90.png</Link>
       <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
