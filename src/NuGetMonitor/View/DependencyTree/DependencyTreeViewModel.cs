@@ -18,7 +18,8 @@ namespace NuGetMonitor.View.DependencyTree;
 internal enum PackageNode
 {
     PackageReference,
-    PackageVersion
+    PackageVersion,
+    PackageMitigation
 }
 
 internal sealed partial class ChildNode : INotifyPropertyChanged
@@ -57,16 +58,24 @@ internal sealed partial class ChildNode : INotifyPropertyChanged
 
     public ICommand CopyPackageVersionCommand => new DelegateCommand(() => CopyNode(PackageNode.PackageVersion));
 
+    public ICommand CopyPackageMitigationCommand => new DelegateCommand(() => CopyNode(PackageNode.PackageMitigation));
+
     private void CopyNode(PackageNode node)
     {
         var currentVersion = PackageIdentity.Version;
 
-        var latestVersion = _packageInfo.Package.Versions
-            .Where(v => v.IsPrerelease == currentVersion.IsPrerelease)
-            .DefaultIfEmpty(currentVersion)
-            .Max();
+        var version = node == PackageNode.PackageMitigation
+            // mitigation is always for the current version
+            ? currentVersion
+            // for the other nodes we want the latest version of the same kind (pre-release or not)
+            : _packageInfo.Package.Versions
+                .Where(v => v.IsPrerelease == currentVersion.IsPrerelease)
+                .DefaultIfEmpty(currentVersion)
+                .Max();
 
-        Clipboard.SetText($"""<{node} Include="{PackageIdentity.Id}" Version="{latestVersion}" />""");
+        var justification = node == PackageNode.PackageMitigation ? "Justification=\"TODO\" " : string.Empty;
+
+        Clipboard.SetText($"""<{node} Include="{PackageIdentity.Id}" Version="{version}" {justification}/>""");
 
         if (node == PackageNode.PackageReference)
         {
@@ -92,7 +101,7 @@ internal sealed partial class ChildNode : INotifyPropertyChanged
             yield return "Outdated";
 
         if (_packageInfo.IsVulnerable)
-            yield return "Vulnerable";
+            yield return _packageInfo.VulnerabilityMitigation.IsNullOrEmpty() ? "Vulnerable" : $"Vulnerable ({_packageInfo.VulnerabilityMitigation})";
     }
 }
 

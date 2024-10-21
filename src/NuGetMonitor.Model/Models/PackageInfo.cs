@@ -33,9 +33,11 @@ public sealed class PackageInfo
 
     public bool IsOutdated { get; init; }
 
+    public string? VulnerabilityMitigation { get; set; }
+
     public string Issues => string.Join(", ", GetIssues().ExceptNullItems());
 
-    public bool HasIssues => IsDeprecated || IsVulnerable;
+    public bool HasIssues => IsDeprecated || (IsVulnerable && VulnerabilityMitigation.IsNullOrEmpty());
 
     public Uri ProjectUrl { get; }
 

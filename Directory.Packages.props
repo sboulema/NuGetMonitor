@@ -4,20 +4,28 @@
     <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
   </PropertyGroup>
   <ItemGroup>
-    <PackageVersion Include="Community.VisualStudio.Toolkit.17" Version="17.0.522" />
+    <PackageVersion Include="Community.VisualStudio.Toolkit.17" Version="17.0.527" />
     <PackageVersion Include="ConfigureAwait.Fody" Version="3.3.2" />
     <PackageVersion Include="DataGridExtensions" Version="2.6.0" />
     <PackageVersion Include="Fody" Version="6.8.2" />
-    <PackageVersion Include="Microsoft.Build" Version="[17.4.0]" />
-    <PackageVersion Include="Microsoft.Build.Utilities.Core" Version="[17.4.0]" />
-    <PackageVersion Include="Microsoft.Extensions.Caching.Memory" Version="8.0.0" />
-    <PackageVersion Include="Microsoft.VSSDK.BuildTools" Version="17.11.435" />
-    <PackageVersion Include="NuGet.Protocol" Version="6.11.0" />
-    <PackageVersion Include="Nullable.Extended.Analyzer" Version="1.15.6169" />
+    <PackageVersion Include="Microsoft.Build" Version="[17.4.0]" Justification="VSIX limitation"/>
+    <PackageVersion Include="Microsoft.Build.Utilities.Core" Version="[17.4.0]" Justification="VSIX limitation"/>
+    <PackageVersion Include="Microsoft.Extensions.Caching.Memory" Version="8.0.1" />
+    <PackageVersion Include="Microsoft.VSSDK.BuildTools" Version="17.12.2069" />
+    <PackageVersion Include="NuGet.Protocol" Version="[6.5.1]" Justification="VSIX limitation (Newtonsoft.Json 13.0.1)" />
     <PackageVersion Include="PropertyChanged.Fody" Version="4.1.0" />
     <PackageVersion Include="Throttle.Fody" Version="1.7.0" />
-    <PackageVersion Include="TomsToolbox.Essentials" Version="2.18.1" />
-    <PackageVersion Include="TomsToolbox.Wpf.Styles" Version="2.18.1" />
+    <PackageVersion Include="TomsToolbox.Essentials" Version="2.20.0" />
+    <PackageVersion Include="TomsToolbox.Wpf.Styles" Version="2.20.0" />
     <PackageVersion Include="VSIX-SdkProjectAdapter" Version="3.0.0" />
+  </ItemGroup>
+
+  <ItemGroup Label="Transitive fixes">
+    <PackageVersion Include="System.Text.Json" Version="8.0.5" />
+  </ItemGroup>
+
+  <ItemGroup Label="Mitigations">
+    <PackageMitigation Include="MessagePack" Version="2.2.85" Justification="VSIX limitation" />
+    <PackageMitigation Include="Microsoft.IO.Redist" Version="6.0.0" Justification="VSIX limitation" />
   </ItemGroup>
 </Project>

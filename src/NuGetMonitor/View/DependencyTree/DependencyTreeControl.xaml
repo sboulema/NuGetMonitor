@@ -27,14 +27,20 @@
       <ContextMenu x:Key="PackageContextMenu"
                    d:DataContext="{d:DesignInstance local:ChildNode}"
                    Style="{DynamicResource {x:Static styles:ResourceKeys.ContextMenuStyle}}">
-        <MenuItem Header="Copy package reference"
+        <MenuItem Header="Copy PackageReference"
                   Command="{Binding CopyPackageReferenceCommand}">
           <MenuItem.Icon>
             <imaging:CrispImage Width="16" Height="16" Moniker="{x:Static imageCatalog:KnownMonikers.Copy}" />
           </MenuItem.Icon>
         </MenuItem>
-        <MenuItem Header="Copy package version"
+        <MenuItem Header="Copy PackageVersion"
                   Command="{Binding CopyPackageVersionCommand}">
+          <MenuItem.Icon>
+            <imaging:CrispImage Width="16" Height="16" Moniker="{x:Static imageCatalog:KnownMonikers.Copy}" />
+          </MenuItem.Icon>
+        </MenuItem>
+        <MenuItem Header="Copy PackageMitigation"
+                  Command="{Binding CopyPackageMitigationCommand}">
           <MenuItem.Icon>
             <imaging:CrispImage Width="16" Height="16" Moniker="{x:Static imageCatalog:KnownMonikers.Copy}" />
           </MenuItem.Icon>
