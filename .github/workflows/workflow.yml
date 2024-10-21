@@ -11,7 +11,7 @@ env:
   version: '1.6.${{ github.run_number }}'
   repoUrl: ${{ github.server_url }}/${{ github.repository }}
   vsixPath: ${{ github.workspace }}/NuGetMonitor/src/NuGetMonitor/bin/release/net48/win/NuGetMonitor.vsix
-  publishManifestPath: ${{ github.workspace }}/NuGetMonitor/src/NuGetMonitor/publish-manifest.json
+  publishManifestPath: NuGetMonitor/publish-manifest.json
 
 jobs:
   build:
@@ -39,7 +39,7 @@ jobs:
           name: NuGetMonitor
           path: |
             **/*.vsix
-            src/publish-manifest.json
+            publish-manifest.json
             readme.md
 
   release:
