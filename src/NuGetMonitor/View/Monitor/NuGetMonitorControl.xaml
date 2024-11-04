@@ -18,7 +18,8 @@
   </UserControl.Resources>
   <Grid FocusManager.FocusedElement="{Binding ElementName=DataGrid}">
     <DockPanel>
-      <ToolBar DockPanel.Dock="Top" Style="{DynamicResource {x:Static styles:ResourceKeys.ToolBarStyle}}">
+      <ToolBar DockPanel.Dock="Top" Style="{DynamicResource {x:Static styles:ResourceKeys.ToolBarStyle}}"
+               Background="{StaticResource CommandBarToolBarBorderBrush}">
         <Button Command="{Binding UpdateSelectedCommand}"
                 ToolTip="Update Selected Items">
           <Grid Width="16" Height="16"

@@ -60,4 +60,7 @@
   <SolidColorBrush x:Key="{x:Static styles:ResourceKeys.DisabledBrush}"
                    Color="{DynamicResource {x:Static vsfx:VsColors.ComboBoxDisabledBackgroundKey}}" />
 
+  <SolidColorBrush x:Key="CommandBarToolBarBorderBrush"
+                   Color="{DynamicResource {x:Static vsfx:VsColors.CommandBarToolBarBorderKey}}" />
+  
 </ResourceDictionary>
