@@ -18,8 +18,7 @@
   </UserControl.Resources>
   <Grid FocusManager.FocusedElement="{Binding ElementName=DataGrid}">
     <DockPanel>
-      <ToolBar DockPanel.Dock="Top" Style="{DynamicResource {x:Static styles:ResourceKeys.ToolBarStyle}}"
-               Background="{StaticResource CommandBarToolBarBorderBrush}">
+      <ToolBar DockPanel.Dock="Top">
         <Button Command="{Binding UpdateSelectedCommand}"
                 ToolTip="Update Selected Items">
           <Grid Width="16" Height="16"
@@ -235,7 +234,6 @@
                               dgx:DataGridFilterColumn.IsFilterVisible="False" />
         </DataGrid.Columns>
       </DataGrid>
-
     </DockPanel>
     <toms:LoadingIndicator IsActive="{Binding IsLoading}" Header="Loading..." d:IsHidden="True"/>
   </Grid>
