@@ -25,8 +25,7 @@
         <Setter Property="IsExpanded" Value="False" />
       </Style>
       <ContextMenu x:Key="PackageContextMenu"
-                   d:DataContext="{d:DesignInstance local:ChildNode}"
-                   Style="{DynamicResource {x:Static styles:ResourceKeys.ContextMenuStyle}}">
+                   d:DataContext="{d:DesignInstance local:ChildNode}">
         <MenuItem Header="Copy PackageReference"
                   Command="{Binding CopyPackageReferenceCommand}">
           <MenuItem.Icon>
@@ -110,8 +109,7 @@
   </UserControl.Resources>
   <Grid FocusManager.FocusedElement="{Binding ElementName=TreeView}">
     <DockPanel>
-      <ToolBar DockPanel.Dock="Top"
-               Style="{DynamicResource {x:Static styles:ResourceKeys.ToolBarStyle}}">
+      <ToolBar DockPanel.Dock="Top">
         <Button Command="{Binding RefreshCommand}" ToolTip="Refresh">
           <imaging:CrispImage Width="16" Height="16" Moniker="{x:Static imageCatalog:KnownMonikers.Refresh}" />
         </Button>
