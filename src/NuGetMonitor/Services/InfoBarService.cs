@@ -115,7 +115,7 @@ internal static class InfoBarService
         switch (e.ActionItem.ActionContext)
         {
             case Actions.Manage:
-                NuGetMonitorCommands.Instance?.ShowMonitorToolWindow();
+                OpenNuGetPackageManager();
                 break;
 
             case ICollection<TransitiveDependencies> transitiveDependencies:
@@ -126,6 +126,18 @@ internal static class InfoBarService
         if (GeneralOptions.Instance.CloseInfoBar)
         {
             (sender as InfoBar)?.Close();
+        }
+    }
+
+    private static void OpenNuGetPackageManager()
+    {
+        if (GeneralOptions.Instance.OpenNuGetPackageManager)
+        {
+            VS.Commands.ExecuteAsync("Tools.ManageNuGetPackagesForSolution").FireAndForget();
+        }
+        else
+        {
+            NuGetMonitorCommands.Instance?.ShowMonitorToolWindow();
         }
     }
 

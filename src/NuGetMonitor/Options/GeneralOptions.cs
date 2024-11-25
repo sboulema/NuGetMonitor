@@ -20,5 +20,11 @@ public sealed class GeneralOptions : BaseOptionModel<GeneralOptions>
     [Description("Show a notification detailing vulnerable transitive packages.")]
     [DefaultValue(true)]
     public bool ShowTransitivePackagesIssues { get; set; } = true;
+
+    [Category("Notifications")]
+    [DisplayName("Open NuGet Package Manager")]
+    [Description("Open the built-in NuGet Package Manager instead of the NuGet Monitor Package Manager.")]
+    [DefaultValue(true)]
+    public bool OpenNuGetPackageManager { get; set; } = false;
 }
 
