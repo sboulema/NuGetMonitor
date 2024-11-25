@@ -15,11 +15,11 @@ env:
 
 jobs:
   build:
-    name: Build
+    name: 🛠️ Build
     runs-on: windows-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4   
+        uses: actions/checkout@v4
 
       - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v2
@@ -29,7 +29,7 @@ jobs:
 
       - name: Build VSIX
         run: msbuild NuGetMonitor.sln /t:Rebuild /p:Configuration=Release
-        env: 
+        env:
           DeployExtension: False
           Version: ${{ env.version }}
 
@@ -44,7 +44,7 @@ jobs:
 
   release:
     if: github.ref_name == 'main'
-    name: Release
+    name: 🔖 Tag & Release
     needs: build
     runs-on: windows-latest
     environment: Release
@@ -67,7 +67,17 @@ jobs:
           body: ${{ steps.tag_release.outputs.changelog }}
           artifacts: "**/*.vsix"
           skipIfReleaseExists: true
-          
+
+  publishMarketplace:
+    if: github.ref_name == 'main'
+    name: 🚀 Publish to Marketplace
+    needs: build
+    runs-on: windows-latest
+    environment: Release
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+
       - name: Publish to Marketplace
         uses: cezarypiatek/VsixPublisherAction@1.1
         with:
@@ -75,6 +85,16 @@ jobs:
           publish-manifest-file: ${{ env.publishManifestPath }}
           personal-access-code: ${{ secrets.VS_PUBLISHER_ACCESS_TOKEN }}
 
+  publishOpenVSIXGallery:
+    if: github.ref_name == 'main'
+    name: 🚀 Publish to Open VSIX Gallery
+    needs: build
+    runs-on: windows-latest
+    environment: Release
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+
       - name: Publish to Open VSIX Gallery
         run: |
-           curl -L 'https://www.vsixgallery.com/api/upload?repo=${{ env.repoUrl }}&issuetracker=${{ env.repoUrl }}/issues' -F 'file=@"${{ env.vsixPath }}"'
+            curl -L 'https://www.vsixgallery.com/api/upload?repo=${{ env.repoUrl }}&issuetracker=${{ env.repoUrl }}/issues' -F 'file=@"${{ env.vsixPath }}"'
