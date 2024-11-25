@@ -15,202 +15,204 @@ namespace NuGetMonitor.Services;
 
 internal static class InfoBarService
 {
-    private static readonly List<InfoBar> _infoBars = new();
+	private static readonly List<InfoBar> _infoBars = new();
 
-    private enum Actions
-    {
-        Manage
-    }
+	private enum Actions
+	{
+		Manage
+	}
 
-    public static void ShowTopLevelPackageIssues(IEnumerable<PackageReferenceInfo> topLevelPackages)
-    {
-        var message = string.Join(", ", GetInfoTexts(topLevelPackages).ExceptNullItems());
+	public static void ShowTopLevelPackageIssues(IEnumerable<PackageReferenceInfo> topLevelPackages)
+	{
+		var message = string.Join(", ", GetInfoTexts(topLevelPackages).ExceptNullItems());
 
-        if (string.IsNullOrEmpty(message))
-        {
-            Log("No issues found");
-            return;
-        }
+		if (string.IsNullOrEmpty(message))
+		{
+			Log("No issues found");
+			return;
+		}
 
-        Log(message);
+		Log(message);
 
-        var textSpans = new[]
-        {
-            new InfoBarTextSpan($"{message}. "),
-            new InfoBarHyperlink("Manage", Actions.Manage),
-            new InfoBarTextSpan(" packages.")
-        };
+		var textSpans = new[]
+		{
+			new InfoBarTextSpan($"{message}. "),
+			new InfoBarHyperlink("Manage", Actions.Manage),
+			new InfoBarTextSpan(" packages.")
+		};
 
-        ShowInfoBar(textSpans).FireAndForget();
-    }
+		ShowInfoBar(textSpans).FireAndForget();
+	}
 
-    public static void ShowTransitivePackageIssues(ICollection<TransitiveDependencies> transitiveDependencies)
-    {
-        if (!GeneralOptions.Instance.ShowTransitivePackagesIssues)
-            return;
+	public static void ShowTransitivePackageIssues(ICollection<TransitiveDependencies> transitiveDependencies)
+	{
+		if (!GeneralOptions.Instance.ShowTransitivePackagesIssues)
+			return;
 
-        var transitivePackages = transitiveDependencies
-            .SelectMany(dependency => dependency.ParentsByChild.Keys)
-            .Distinct()
-            .ToArray();
+		var transitivePackages = transitiveDependencies
+			.SelectMany(dependency => dependency.ParentsByChild.Keys)
+			.Distinct()
+			.ToArray();
 
-        Log($"{transitivePackages.Length} transitive packages found");
+		Log($"{transitivePackages.Length} transitive packages found");
 
-        var vulnerablePackages = transitivePackages.Where(item => item.IsVulnerable && item.VulnerabilityMitigation.IsNullOrEmpty()).ToArray();
+		var vulnerablePackages = transitivePackages.Where(item => item.IsVulnerable && item.VulnerabilityMitigation.IsNullOrEmpty()).ToArray();
 
-        if (vulnerablePackages.Length <= 0)
-        {
-            Log("No issues found");
-            return;
-        }
+		if (vulnerablePackages.Length <= 0)
+		{
+			Log("No issues found");
+			return;
+		}
 
-        var packageInfo = string.Join("\r\n- ", vulnerablePackages.Select(package => package.PackageIdentity));
-        var message = $"{vulnerablePackages.CountedDescription("vulnerability")} in transitive dependencies:\r\n- {packageInfo}\r\n";
+		var packageInfo = string.Join("\r\n- ", vulnerablePackages.Select(package => package.PackageIdentity));
+		var message = $"{vulnerablePackages.CountedDescription("vulnerability")} in transitive dependencies:\r\n- {packageInfo}\r\n";
 
-        Log(message);
+		Log(message);
 
-        var textSpans = new[]
-        {
-            new InfoBarTextSpan(message),
-            new InfoBarHyperlink("Copy details", transitiveDependencies)
-        };
+		var textSpans = new[]
+		{
+			new InfoBarTextSpan(message),
+			new InfoBarHyperlink("Copy details", transitiveDependencies)
+		};
 
-        ShowInfoBar(textSpans).FireAndForget();
-    }
+		ShowInfoBar(textSpans).FireAndForget();
+	}
 
-    private static void ShowInfoBar(string text, TimeSpan? timeOut = default)
-    {
-        ShowInfoBar(new[] { new InfoBarTextSpan(text) }, timeOut).FireAndForget();
-    }
+	private static void ShowInfoBar(string text, TimeSpan? timeOut = default)
+	{
+		ShowInfoBar(new[] { new InfoBarTextSpan(text) }, timeOut).FireAndForget();
+	}
 
-    private static async Task ShowInfoBar(IEnumerable<InfoBarTextSpan> textSpans, TimeSpan? timeOut = default)
-    {
-        var model = new InfoBarModel(textSpans, KnownMonikers.NuGet, isCloseButtonVisible: true);
+	private static async Task ShowInfoBar(IEnumerable<InfoBarTextSpan> textSpans, TimeSpan? timeOut = default)
+	{
+		var model = new InfoBarModel(textSpans, KnownMonikers.NuGet, isCloseButtonVisible: true);
 
-        var infoBar = await VS.InfoBar.CreateAsync(ToolWindowGuids80.SolutionExplorer, model) ?? throw new InvalidOperationException("Failed to create the info bar");
-        infoBar.ActionItemClicked += InfoBar_ActionItemClicked;
+		var infoBar = await VS.InfoBar.CreateAsync(ToolWindowGuids80.SolutionExplorer, model) ?? throw new InvalidOperationException("Failed to create the info bar");
+		infoBar.ActionItemClicked += InfoBar_ActionItemClicked;
 
-        _infoBars.Add(infoBar);
+		_infoBars.Add(infoBar);
 
-        await infoBar.TryShowInfoBarUIAsync();
+		await infoBar.TryShowInfoBarUIAsync();
 
-        if (timeOut.HasValue)
-        {
-            await Task.Delay(timeOut.Value);
-            infoBar.Close();
-            _infoBars.Remove(infoBar);
-        }
-    }
+		if (timeOut.HasValue)
+		{
+			await Task.Delay(timeOut.Value);
+			infoBar.Close();
+			_infoBars.Remove(infoBar);
+		}
+	}
 
-    public static void CloseInfoBars()
-    {
-        _infoBars.ForEach(item => item.Close());
-        _infoBars.Clear();
-    }
+	public static void CloseInfoBars()
+	{
+		_infoBars.ForEach(item => item.Close());
+		_infoBars.Clear();
+	}
 
-    private static void InfoBar_ActionItemClicked(object sender, InfoBarActionItemEventArgs e)
-    {
-        ThrowIfNotOnUIThread();
+	private static void InfoBar_ActionItemClicked(object sender, InfoBarActionItemEventArgs e)
+	{
+		ThrowIfNotOnUIThread();
 
-        switch (e.ActionItem.ActionContext)
-        {
-            case Actions.Manage:
-                NuGetMonitorCommands.Instance?.ShowMonitorToolWindow();
-                break;
+		switch (e.ActionItem.ActionContext)
+		{
+			case Actions.Manage:
+				GeneralOptions.Instance.OpenNuGetPackageManager
+					? VS.Commands.ExecuteAsync("Tools.ManageNuGetPackagesForSolution").FireAndForget()
+					: NuGetMonitorCommands.Instance?.ShowMonitorToolWindow();
+				break;
 
-            case ICollection<TransitiveDependencies> transitiveDependencies:
-                PrintDependencyTree(transitiveDependencies);
-                break;
-        }
+			case ICollection<TransitiveDependencies> transitiveDependencies:
+				PrintDependencyTree(transitiveDependencies);
+				break;
+		}
 
-        if (GeneralOptions.Instance.CloseInfoBar)
-        {
-            (sender as InfoBar)?.Close();
-        }
-    }
+		if (GeneralOptions.Instance.CloseInfoBar)
+		{
+			(sender as InfoBar)?.Close();
+		}
+	}
 
-    private static void PrintDependencyTree(IEnumerable<TransitiveDependencies> dependencies)
-    {
-        var text = new StringBuilder();
+	private static void PrintDependencyTree(IEnumerable<TransitiveDependencies> dependencies)
+	{
+		var text = new StringBuilder();
 
-        foreach (var dependency in dependencies)
-        {
-            var (_, packages) = dependency;
+		foreach (var dependency in dependencies)
+		{
+			var (_, packages) = dependency;
 
-            var projectName = dependency.ProjectName;
-            var targetFramework = dependency.TargetFramework;
+			var projectName = dependency.ProjectName;
+			var targetFramework = dependency.TargetFramework;
 
-            var vulnerablePackages = packages
-                .Select(item => item.Key)
-                .Where(item => item.IsVulnerable && item.VulnerabilityMitigation.IsNullOrEmpty())
-                .ToArray();
+			var vulnerablePackages = packages
+				.Select(item => item.Key)
+				.Where(item => item.IsVulnerable && item.VulnerabilityMitigation.IsNullOrEmpty())
+				.ToArray();
 
-            if (vulnerablePackages.Length == 0)
-                continue;
+			if (vulnerablePackages.Length == 0)
+				continue;
 
-            var header = $"{projectName}, {targetFramework}";
+			var header = $"{projectName}, {targetFramework}";
 
-            text.AppendLine(header)
-                .AppendLine(new string('-', header.Length));
+			text.AppendLine(header)
+				.AppendLine(new string('-', header.Length));
 
-            foreach (var vulnerablePackage in vulnerablePackages)
-            {
-                PrintDependencyTree(text, vulnerablePackage, packages, 0);
-            }
+			foreach (var vulnerablePackage in vulnerablePackages)
+			{
+				PrintDependencyTree(text, vulnerablePackage, packages, 0);
+			}
 
-            text.AppendLine().AppendLine();
-        }
+			text.AppendLine().AppendLine();
+		}
 
-        Clipboard.SetText(text.ToString());
+		Clipboard.SetText(text.ToString());
 
-        ShowInfoBar("Dependency tree copied to clipboard", TimeSpan.FromSeconds(10));
-    }
+		ShowInfoBar("Dependency tree copied to clipboard", TimeSpan.FromSeconds(10));
+	}
 
-    private static void PrintDependencyTree(StringBuilder text, PackageInfo package, IReadOnlyDictionary<PackageInfo, HashSet<PackageInfo>> parentsByChild, int nesting)
-    {
-        var indent = new string(' ', nesting * 4);
+	private static void PrintDependencyTree(StringBuilder text, PackageInfo package, IReadOnlyDictionary<PackageInfo, HashSet<PackageInfo>> parentsByChild, int nesting)
+	{
+		var indent = new string(' ', nesting * 4);
 
-        text.Append(indent);
-        text.Append(package.PackageIdentity);
+		text.Append(indent);
+		text.Append(package.PackageIdentity);
 
-        if (package.IsDeprecated)
-            text.Append(" - Deprecated");
+		if (package.IsDeprecated)
+			text.Append(" - Deprecated");
 
-        if (package.IsOutdated)
-            text.Append(" - Outdated");
+		if (package.IsOutdated)
+			text.Append(" - Outdated");
 
-        if (package.Vulnerabilities?.Count > 0)
-        {
-            text.Append(" - Vulnerable:");
-            foreach (var item in package.Vulnerabilities)
-            {
-                text.Append($" [ Severity: {item.Severity}, {item.AdvisoryUrl} ]");
-            }
-        }
+		if (package.Vulnerabilities?.Count > 0)
+		{
+			text.Append(" - Vulnerable:");
+			foreach (var item in package.Vulnerabilities)
+			{
+				text.Append($" [ Severity: {item.Severity}, {item.AdvisoryUrl} ]");
+			}
+		}
 
-        text.AppendLine();
+		text.AppendLine();
 
-        if (!parentsByChild.TryGetValue(package, out var dependsOn))
-            return;
+		if (!parentsByChild.TryGetValue(package, out var dependsOn))
+			return;
 
-        foreach (var item in dependsOn)
-        {
-            PrintDependencyTree(text, item, parentsByChild, nesting + 1);
-        }
-    }
+		foreach (var item in dependsOn)
+		{
+			PrintDependencyTree(text, item, parentsByChild, nesting + 1);
+		}
+	}
 
-    private static IEnumerable<string?> GetInfoTexts(IEnumerable<PackageReferenceInfo> topLevelPackageInfos)
-    {
-        // Idea for showing counts, not sure if unicode icons in a InfoBar feel native
-        // new InfoBarTextSpan($"NuGet update: 🔼 {outdatedCount} ⚠ {deprecatedCount} 💀 {vulnerableCount}. "),
+	private static IEnumerable<string?> GetInfoTexts(IEnumerable<PackageReferenceInfo> topLevelPackageInfos)
+	{
+		// Idea for showing counts, not sure if unicode icons in a InfoBar feel native
+		// new InfoBarTextSpan($"NuGet update: 🔼 {outdatedCount} ⚠ {deprecatedCount} 💀 {vulnerableCount}. "),
 
-        var topLevelPackages = topLevelPackageInfos
-            .Where(item => item.PackageReferenceEntries.Any(entry => NuGetVersion.TryParse(entry.Identity.VersionRange.OriginalString, out _)))
-            .Select(item => item.PackageInfo)
-            .ToArray();
+		var topLevelPackages = topLevelPackageInfos
+			.Where(item => item.PackageReferenceEntries.Any(entry => NuGetVersion.TryParse(entry.Identity.VersionRange.OriginalString, out _)))
+			.Select(item => item.PackageInfo)
+			.ToArray();
 
-        yield return topLevelPackages.CountedDescription("update", item => item.IsOutdated);
-        yield return topLevelPackages.CountedDescription("deprecation", item => item.IsDeprecated);
-        yield return topLevelPackages.CountedDescription("vulnerability", item => item.IsVulnerable && item.VulnerabilityMitigation.IsNullOrEmpty());
-    }
+		yield return topLevelPackages.CountedDescription("update", item => item.IsOutdated);
+		yield return topLevelPackages.CountedDescription("deprecation", item => item.IsDeprecated);
+		yield return topLevelPackages.CountedDescription("vulnerability", item => item.IsVulnerable && item.VulnerabilityMitigation.IsNullOrEmpty());
+	}
 }
