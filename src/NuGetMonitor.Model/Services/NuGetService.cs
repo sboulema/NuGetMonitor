@@ -1,7 +1,6 @@
 ﻿using Microsoft.Extensions.Caching.Memory;
 using NuGet.Common;
 using NuGet.Frameworks;
-using NuGet.Packaging;
 using NuGet.Packaging.Core;
 using NuGet.Protocol.Core.Types;
 using NuGet.Versioning;
@@ -179,7 +178,7 @@ public static class NuGetService
         return new(framework.Framework, framework.Version, framework.Platform, FrameworkConstants.EmptyVersion);
     }
 
-    private static T? GetNearestFramework<T>(ICollection<T> items, NuGetFramework framework)
+    private static T? GetNearestFramework<T>(IReadOnlyCollection<T> items, NuGetFramework framework)
         where T : class, IFrameworkSpecific
     {
         return NuGetFrameworkUtility.GetNearest(items, framework)
@@ -331,34 +330,36 @@ public static class NuGetService
         }
     }
 
-    private sealed class PackageDependenciesCacheEntry : CacheEntry<PackageDependencyGroup[]>
+    private sealed class PackageDetailsCacheEntry : CacheEntry<PackageDetails>
     {
-        private PackageDependenciesCacheEntry(PackageIdentity packageIdentity, SourceRepository repository, NuGetSession session)
-            : base(() => GetDirectDependencies(packageIdentity, repository, session))
+        private PackageDetailsCacheEntry(PackageIdentity packageIdentity, SourceRepository repository, NuGetSession session)
+            : base(() => GetDetails(packageIdentity, repository, session))
         {
         }
 
-        public static PackageDependenciesCacheEntry Get(PackageIdentity packageIdentity, SourceRepository repository, NuGetSession session)
+        public static PackageDetailsCacheEntry Get(PackageIdentity packageIdentity, SourceRepository repository, NuGetSession session)
         {
-            return GetOrCreate(session, new CacheEntryKey(packageIdentity), _ => new PackageDependenciesCacheEntry(packageIdentity, repository, session));
+            return GetOrCreate(session, new CacheEntryKey(packageIdentity), _ => new PackageDetailsCacheEntry(packageIdentity, repository, session));
         }
 
-        private static async Task<PackageDependencyGroup[]?> GetDirectDependencies(PackageIdentity packageIdentity, SourceRepository repository, NuGetSession session)
+        private static async Task<PackageDetails?> GetDetails(PackageIdentity packageIdentity, SourceRepository repository, NuGetSession session)
         {
             // Don't scan packages with pseudo-references, they don't get physically included, but cause vulnerability warnings.
             if (string.Equals(packageIdentity.Id, NetStandardPackageId, StringComparison.OrdinalIgnoreCase))
-                return Array.Empty<PackageDependencyGroup>();
+                return new([], []);
 
             var resource = await repository.GetResourceAsync<DownloadResource>(session.CancellationToken);
 
             using var downloadResult = await resource.GetDownloadResourceResultAsync(packageIdentity, session.PackageDownloadContext, session.GlobalPackagesFolder, NullLogger.Instance, session.CancellationToken);
 
             if (downloadResult.Status != DownloadResourceResultStatus.Available)
-                return Array.Empty<PackageDependencyGroup>();
+                return new([], []);
 
             var dependencyGroups = await downloadResult.PackageReader.GetPackageDependenciesAsync(session.CancellationToken);
 
-            return dependencyGroups.ToArray();
+            var supportedFrameworks = downloadResult.PackageReader.GetSupportedFrameworks();
+
+            return new(dependencyGroups.ToArray(), supportedFrameworks.ToArray());
         }
 
         // ReSharper disable once NotAccessedPositionalProperty.Local
@@ -382,10 +383,12 @@ public static class NuGetService
             var session = packageInfo.Session;
             var sourceRepository = packageInfo.Package.RepositoryContext.SourceRepository;
 
-            var dependencyGroups = await PackageDependenciesCacheEntry.Get(packageInfo.PackageIdentity, sourceRepository, session).GetValue();
+            var packageDetails = await PackageDetailsCacheEntry.Get(packageInfo.PackageIdentity, sourceRepository, session).GetValue();
 
-            if (dependencyGroups == null || dependencyGroups.Length < 1)
-                return Array.Empty<PackageInfo>();
+            var dependencyGroups = packageDetails?.DependencyGroups;
+
+            if (dependencyGroups is not { Count: > 0 })
+                return [];
 
             var dependentPackages = GetNearestFramework(dependencyGroups, targetFramework)?.Packages
                                     // fallback to all when GetNearestFramework fails, better have some false positives than to miss one
