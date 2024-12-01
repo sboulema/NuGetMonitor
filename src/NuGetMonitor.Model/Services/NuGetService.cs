@@ -53,7 +53,7 @@ public static class NuGetService
     {
         var session = _session;
 
-        var package = await PackageCacheEntry.Get(packageId, session).GetValue();
+        var package = await PackageCacheEntry.Get(packageId, session);
 
         session.ThrowIfCancellationRequested();
 
@@ -67,7 +67,7 @@ public static class NuGetService
 
         var session = _session;
 
-        var packageInfo = await PackageInfoCacheEntry.Get(packageIdentity, session).GetValue();
+        var packageInfo = await PackageInfoCacheEntry.Get(packageIdentity, session);
 
         session.ThrowIfCancellationRequested();
 
@@ -76,7 +76,7 @@ public static class NuGetService
 
     public static async Task<PackageDetails?> GetPackageDetails(PackageInfo packageInfo)
     {
-        return await PackageDetailsCacheEntry.Get(packageInfo.PackageIdentity, packageInfo.Package.RepositoryContext.SourceRepository, packageInfo.Session).GetValue();
+        return await PackageDetailsCacheEntry.Get(packageInfo.PackageIdentity, packageInfo.Package.RepositoryContext.SourceRepository, packageInfo.Session);
     }
 
     public static async Task<PackageDetails?> GetPackageDetails(PackageIdentity packageIdentity)
@@ -136,7 +136,7 @@ public static class NuGetService
                     var version = versionSource.GetVersion();
                     if (version is not null && NuGetVersion.TryParse(version.OriginalString, out var parsedVersion) && parsedVersion > identity.Version)
                     {
-                        var pinned = await PackageInfoCacheEntry.Get(new(identity.Id, parsedVersion), session).GetValue();
+                        var pinned = await PackageInfoCacheEntry.Get(new(identity.Id, parsedVersion), session);
                         if (pinned is not null)
                         {
                             package = pinned;
@@ -169,19 +169,19 @@ public static class NuGetService
 
     private static async Task<PackageReferenceInfo?> FindPackageInfo(PackageReference item, HashSet<PackageReferenceEntry> packageReferenceEntries, NuGetSession session)
     {
-        var package = await PackageCacheEntry.Get(item.Id, session).GetValue();
+        var package = await PackageCacheEntry.Get(item.Id, session);
 
         var identity = item.FindBestMatch(package?.Versions);
         if (identity is null)
             return null;
 
-        var packageInfo = await PackageInfoCacheEntry.Get(identity, session).GetValue();
+        var packageInfo = await PackageInfoCacheEntry.Get(identity, session);
         return packageInfo is null ? null : new PackageReferenceInfo(packageInfo, packageReferenceEntries);
     }
 
     private static async Task<PackageInfo[]> GetPackageDependenciesInFramework(this PackageInfo packageInfo, NuGetFramework targetFramework)
     {
-        return await PackageDependenciesInFrameworkCacheEntry.Get(packageInfo, targetFramework).GetValue() ?? Array.Empty<PackageInfo>();
+        return await PackageDependenciesInFrameworkCacheEntry.Get(packageInfo, targetFramework) ?? Array.Empty<PackageInfo>();
     }
 
     private static bool IsOutdated(PackageIdentity packageIdentity, IEnumerable<NuGetVersion> versions)
@@ -218,7 +218,7 @@ public static class NuGetService
             Load(generator);
         }
 
-        public Task<T?> GetValue()
+        protected Task<T?> GetValue()
         {
             return _taskCompletionSource.Task;
         }
@@ -237,11 +237,11 @@ public static class NuGetService
             }
         }
 
-        protected static TEntry GetOrCreate<TEntry>(NuGetSession session, object key, Func<ICacheEntry, TEntry> factory)
+        protected static TEntry GetOrCreate<TEntry>(NuGetSession session, object key, Func<TEntry> factory)
         {
             lock (session)
             {
-                return session.Cache.GetOrCreate(key, factory) ?? throw new InvalidOperationException("Failed to get item from cache");
+                return session.Cache.GetOrCreate(key, _ => factory()) ?? throw new InvalidOperationException("Failed to get item from cache");
             }
         }
     }
@@ -253,9 +253,9 @@ public static class NuGetService
         {
         }
 
-        public static PackageCacheEntry Get(string packageId, NuGetSession session)
+        public static Task<Package?> Get(string packageId, NuGetSession session)
         {
-            return GetOrCreate(session, packageId, _ => new PackageCacheEntry(packageId, session));
+            return GetOrCreate(session, packageId, () => new PackageCacheEntry(packageId, session)).GetValue();
         }
 
         private static async Task<Package?> GetPackage(string packageId, NuGetSession session)
@@ -322,14 +322,14 @@ public static class NuGetService
         {
         }
 
-        public static PackageInfoCacheEntry Get(PackageIdentity packageIdentity, NuGetSession session)
+        public static Task<PackageInfo?> Get(PackageIdentity packageIdentity, NuGetSession session)
         {
-            return GetOrCreate(session, packageIdentity, _ => new PackageInfoCacheEntry(packageIdentity, session));
+            return GetOrCreate(session, packageIdentity, () => new PackageInfoCacheEntry(packageIdentity, session)).GetValue();
         }
 
         private static async Task<PackageInfo?> GetPackageInfo(PackageIdentity packageIdentity, NuGetSession session)
         {
-            var package = await PackageCacheEntry.Get(packageIdentity.Id, session).GetValue();
+            var package = await PackageCacheEntry.Get(packageIdentity.Id, session);
             if (package is null)
                 return null;
 
@@ -360,9 +360,9 @@ public static class NuGetService
         {
         }
 
-        public static PackageDetailsCacheEntry Get(PackageIdentity packageIdentity, SourceRepository repository, NuGetSession session)
+        public static Task<PackageDetails?> Get(PackageIdentity packageIdentity, SourceRepository repository, NuGetSession session)
         {
-            return GetOrCreate(session, new CacheEntryKey(packageIdentity), _ => new PackageDetailsCacheEntry(packageIdentity, repository, session));
+            return GetOrCreate(session, new CacheEntryKey(packageIdentity), () => new PackageDetailsCacheEntry(packageIdentity, repository, session)).GetValue();
         }
 
         private static async Task<PackageDetails?> GetDetails(PackageIdentity packageIdentity, SourceRepository repository, NuGetSession session)
@@ -396,9 +396,9 @@ public static class NuGetService
         {
         }
 
-        public static PackageDependenciesInFrameworkCacheEntry Get(PackageInfo packageInfo, NuGetFramework targetFramework)
+        public static Task<PackageInfo[]?> Get(PackageInfo packageInfo, NuGetFramework targetFramework)
         {
-            return GetOrCreate(packageInfo.Session, new CacheEntryKey(packageInfo.PackageIdentity, targetFramework), _ => new PackageDependenciesInFrameworkCacheEntry(packageInfo, targetFramework));
+            return GetOrCreate(packageInfo.Session, new CacheEntryKey(packageInfo.PackageIdentity, targetFramework), () => new PackageDependenciesInFrameworkCacheEntry(packageInfo, targetFramework)).GetValue();
         }
 
         private static async Task<PackageInfo[]?> GetDirectDependencies(PackageInfo packageInfo, NuGetFramework targetFramework)
@@ -406,7 +406,7 @@ public static class NuGetService
             var session = packageInfo.Session;
             var sourceRepository = packageInfo.Package.RepositoryContext.SourceRepository;
 
-            var packageDetails = await PackageDetailsCacheEntry.Get(packageInfo.PackageIdentity, sourceRepository, session).GetValue();
+            var packageDetails = await PackageDetailsCacheEntry.Get(packageInfo.PackageIdentity, sourceRepository, session);
 
             var dependencyGroups = packageDetails?.DependencyGroups;
 
@@ -419,14 +419,14 @@ public static class NuGetService
 
             async Task<PackageInfo?> ToPackageInfo(PackageDependency packageDependency)
             {
-                var package = await PackageCacheEntry.Get(packageDependency.Id, session).GetValue();
+                var package = await PackageCacheEntry.Get(packageDependency.Id, session);
 
                 if (package is null)
                     return null;
 
                 var dependencyVersion = packageDependency.VersionRange.FindBestMatch(package.Versions);
 
-                var info = await PackageInfoCacheEntry.Get(new(package.Id, dependencyVersion), session).GetValue();
+                var info = await PackageInfoCacheEntry.Get(new(package.Id, dependencyVersion), session);
 
                 return info;
             }
