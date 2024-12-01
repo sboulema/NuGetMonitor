@@ -19,7 +19,8 @@ internal static class InfoBarService
 
     private enum Actions
     {
-        Manage
+        Manage,
+        ShowDependencyTree
     }
 
     public static void ShowTopLevelPackageIssues(IEnumerable<PackageReferenceInfo> topLevelPackages)
@@ -72,15 +73,10 @@ internal static class InfoBarService
         var textSpans = new[]
         {
             new InfoBarTextSpan(message),
-            new InfoBarHyperlink("Copy details", transitiveDependencies)
+            new InfoBarHyperlink("Open dependency tree", Actions.ShowDependencyTree)
         };
 
         ShowInfoBar(textSpans).FireAndForget();
-    }
-
-    private static void ShowInfoBar(string text, TimeSpan? timeOut = default)
-    {
-        ShowInfoBar(new[] { new InfoBarTextSpan(text) }, timeOut).FireAndForget();
     }
 
     private static async Task ShowInfoBar(IEnumerable<InfoBarTextSpan> textSpans, TimeSpan? timeOut = default)
@@ -118,8 +114,8 @@ internal static class InfoBarService
                 OpenNuGetPackageManager();
                 break;
 
-            case ICollection<TransitiveDependencies> transitiveDependencies:
-                PrintDependencyTree(transitiveDependencies);
+            case Actions.ShowDependencyTree:
+                OpenDependencyTree();
                 break;
         }
 
@@ -141,74 +137,9 @@ internal static class InfoBarService
         }
     }
 
-    private static void PrintDependencyTree(IEnumerable<TransitiveDependencies> dependencies)
+    private static void OpenDependencyTree()
     {
-        var text = new StringBuilder();
-
-        foreach (var dependency in dependencies)
-        {
-            var (_, packages) = dependency;
-
-            var projectName = dependency.ProjectName;
-            var targetFramework = dependency.TargetFramework;
-
-            var vulnerablePackages = packages
-                .Select(item => item.Key)
-                .Where(item => item.IsVulnerable && item.VulnerabilityMitigation.IsNullOrEmpty())
-                .ToArray();
-
-            if (vulnerablePackages.Length == 0)
-                continue;
-
-            var header = $"{projectName}, {targetFramework}";
-
-            text.AppendLine(header)
-                .AppendLine(new string('-', header.Length));
-
-            foreach (var vulnerablePackage in vulnerablePackages)
-            {
-                PrintDependencyTree(text, vulnerablePackage, packages, 0);
-            }
-
-            text.AppendLine().AppendLine();
-        }
-
-        Clipboard.SetText(text.ToString());
-
-        ShowInfoBar("Dependency tree copied to clipboard", TimeSpan.FromSeconds(10));
-    }
-
-    private static void PrintDependencyTree(StringBuilder text, PackageInfo package, IReadOnlyDictionary<PackageInfo, HashSet<PackageInfo>> parentsByChild, int nesting)
-    {
-        var indent = new string(' ', nesting * 4);
-
-        text.Append(indent);
-        text.Append(package.PackageIdentity);
-
-        if (package.IsDeprecated)
-            text.Append(" - Deprecated");
-
-        if (package.IsOutdated)
-            text.Append(" - Outdated");
-
-        if (package.Vulnerabilities?.Count > 0)
-        {
-            text.Append(" - Vulnerable:");
-            foreach (var item in package.Vulnerabilities)
-            {
-                text.Append($" [ Severity: {item.Severity}, {item.AdvisoryUrl} ]");
-            }
-        }
-
-        text.AppendLine();
-
-        if (!parentsByChild.TryGetValue(package, out var dependsOn))
-            return;
-
-        foreach (var item in dependsOn)
-        {
-            PrintDependencyTree(text, item, parentsByChild, nesting + 1);
-        }
+        NuGetMonitorCommands.Instance?.ShowDependencyTreeToolWindow();
     }
 
     private static IEnumerable<string?> GetInfoTexts(IEnumerable<PackageReferenceInfo> topLevelPackageInfos)
