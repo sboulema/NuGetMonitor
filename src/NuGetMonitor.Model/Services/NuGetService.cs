@@ -60,8 +60,11 @@ public static class NuGetService
         return package;
     }
 
-    public static async Task<PackageInfo?> GetPackageInfo(PackageIdentity packageIdentity)
+    public static async Task<PackageInfo?> GetPackageInfo(PackageIdentity? packageIdentity)
     {
+        if (packageIdentity is null)
+            return null;
+
         var session = _session;
 
         var packageInfo = await PackageInfoCacheEntry.Get(packageIdentity, session).GetValue();
@@ -69,6 +72,21 @@ public static class NuGetService
         session.ThrowIfCancellationRequested();
 
         return packageInfo;
+    }
+
+    public static async Task<PackageDetails?> GetPackageDetails(PackageInfo packageInfo)
+    {
+        return await PackageDetailsCacheEntry.Get(packageInfo.PackageIdentity, packageInfo.Package.RepositoryContext.SourceRepository, packageInfo.Session).GetValue();
+    }
+
+    public static async Task<PackageDetails?> GetPackageDetails(PackageIdentity packageIdentity)
+    {
+        var packageInfo = await GetPackageInfo(packageIdentity);
+
+        if (packageInfo is null)
+            return null;
+
+        return await GetPackageDetails(packageInfo);
     }
 
     public static async Task<ICollection<TransitiveDependencies>> GetTransitivePackages(ICollection<PackageReferenceInfo> allTopLevelPackages)
@@ -175,15 +193,20 @@ public static class NuGetService
 
     private static NuGetFramework ToPlatformVersionIndependent(NuGetFramework framework)
     {
+        // e.g net6.0-windows project can use net6.0-windows7.0 package
         return new(framework.Framework, framework.Version, framework.Platform, FrameworkConstants.EmptyVersion);
     }
 
-    private static T? GetNearestFramework<T>(IReadOnlyCollection<T> items, NuGetFramework framework)
+    public static T? GetNearestFramework<T>(this IReadOnlyCollection<T> items, NuGetFramework framework)
         where T : class, IFrameworkSpecific
     {
         return NuGetFrameworkUtility.GetNearest(items, framework)
-               // e.g net6.0-windows project can use net6.0-windows7.0 package
                ?? NuGetFrameworkUtility.GetNearest(items, ToPlatformVersionIndependent(framework), item => ToPlatformVersionIndependent(item.TargetFramework));
+    }
+
+    public static bool IsCompatibleWith(this NuGetFramework projectFramework, NuGetFramework candidate)
+    {
+        return NuGetFrameworkUtility.IsCompatibleWithFallbackCheck(ToPlatformVersionIndependent(projectFramework), ToPlatformVersionIndependent(candidate));
     }
 
     private abstract class CacheEntry<T> where T : class
@@ -346,20 +369,20 @@ public static class NuGetService
         {
             // Don't scan packages with pseudo-references, they don't get physically included, but cause vulnerability warnings.
             if (string.Equals(packageIdentity.Id, NetStandardPackageId, StringComparison.OrdinalIgnoreCase))
-                return new([], []);
+                return new(packageIdentity, [], []);
 
             var resource = await repository.GetResourceAsync<DownloadResource>(session.CancellationToken);
 
             using var downloadResult = await resource.GetDownloadResourceResultAsync(packageIdentity, session.PackageDownloadContext, session.GlobalPackagesFolder, NullLogger.Instance, session.CancellationToken);
 
             if (downloadResult.Status != DownloadResourceResultStatus.Available)
-                return new([], []);
+                return new(packageIdentity, [], []);
 
             var dependencyGroups = await downloadResult.PackageReader.GetPackageDependenciesAsync(session.CancellationToken);
 
             var supportedFrameworks = downloadResult.PackageReader.GetSupportedFrameworks();
 
-            return new(dependencyGroups.ToArray(), supportedFrameworks.ToArray());
+            return new(packageIdentity, dependencyGroups.ToArray(), supportedFrameworks.ToArray());
         }
 
         // ReSharper disable once NotAccessedPositionalProperty.Local
@@ -390,7 +413,7 @@ public static class NuGetService
             if (dependencyGroups is not { Count: > 0 })
                 return [];
 
-            var dependentPackages = GetNearestFramework(dependencyGroups, targetFramework)?.Packages
+            var dependentPackages = dependencyGroups.GetNearestFramework(targetFramework)?.Packages
                                     // fallback to all when GetNearestFramework fails, better have some false positives than to miss one
                                     ?? dependencyGroups.SelectMany(group => group.Packages).Distinct();
 
