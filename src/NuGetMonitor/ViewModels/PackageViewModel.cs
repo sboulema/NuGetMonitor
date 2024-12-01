@@ -13,8 +13,12 @@ namespace NuGetMonitor.ViewModels;
 
 internal sealed partial class PackageViewModel : INotifyPropertyChanged
 {
-    public PackageViewModel(IGrouping<PackageReference, PackageReferenceEntry> items, PackageItemType itemType, ISolutionService solutionService)
+    private readonly NuGetMonitorViewModel _parent;
+
+    public PackageViewModel(NuGetMonitorViewModel parent, IGrouping<PackageReference, PackageReferenceEntry> items, PackageItemType itemType, ISolutionService solutionService)
     {
+        _parent = parent;
+
         Items = items;
         PackageReference = items.Key;
         Projects = items.GroupBy(item => (itemType == PackageItemType.PackageVersion ? item.VersionSource : item.ProjectItemInTargetFramework.ProjectItem).GetContainingProject()).Select(item => new ProjectViewModel(item.Key, solutionService)).ToArray();
@@ -40,7 +44,7 @@ internal sealed partial class PackageViewModel : INotifyPropertyChanged
 
     public bool IsLoading => Package == null;
 
-    public ICommand UpdateCommand => new DelegateCommand(() => IsUpdateAvailable, () => { NuGetMonitorViewModel.Update(this); });
+    public ICommand UpdateCommand => new DelegateCommand(() => IsUpdateAvailable, () => { _parent.Update(this); });
 
     // ! ProjectUrl is checked in CanExecute
     public ICommand OpenProjectUrlCommand => new DelegateCommand(() => PackageInfo?.ProjectUrl != null, OpenProjectUrl);
@@ -75,7 +79,7 @@ internal sealed partial class PackageViewModel : INotifyPropertyChanged
         if (SelectedVersion is null)
             return;
 
-        PackageReference = PackageReference with { VersionRange = new VersionRange(SelectedVersion) };
+        PackageReference = PackageReference with { VersionRange = new(SelectedVersion) };
         IsUpdateAvailable = false;
         ActiveVersion = SelectedVersion;
     }
@@ -98,10 +102,7 @@ internal sealed partial class PackageViewModel : INotifyPropertyChanged
 
             var packageIdentity = PackageReference.FindBestMatch(Package?.Versions);
 
-            if (packageIdentity != null)
-            {
-                PackageInfo = await NuGetService.GetPackageInfo(packageIdentity);
-            }
+            PackageInfo = await NuGetService.GetPackageInfo(packageIdentity);
         }
         catch (OperationCanceledException)
         {

@@ -38,6 +38,8 @@ public sealed class ProjectInTargetFramework
 
     public string Name => Path.GetFileName(Project.FullPath);
 
+    public string NameAndFramework => $"{Name} ({TargetFramework})";
+
     public IEnumerable<ProjectInTargetFramework> GetReferencedProjects(IEnumerable<ProjectInTargetFramework> allProjects)
     {
         return Project.GetItems("ProjectReference")

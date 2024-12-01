@@ -142,3 +142,6 @@ dotnet_diagnostic.CA1845.severity = silent
 
 # CA1867: Use char overload => Not available in NetFramework
 dotnet_diagnostic.CA1867.severity = silent
+
+# CA1062: Validate arguments of public methods
+dotnet_diagnostic.CA1062.severity = none

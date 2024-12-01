@@ -1,7 +1,6 @@
 ﻿using Microsoft.Extensions.Caching.Memory;
 using NuGet.Common;
 using NuGet.Frameworks;
-using NuGet.Packaging;
 using NuGet.Packaging.Core;
 using NuGet.Protocol.Core.Types;
 using NuGet.Versioning;
@@ -54,22 +53,40 @@ public static class NuGetService
     {
         var session = _session;
 
-        var package = await GetPackageCacheEntry(packageId, session).GetValue();
+        var package = await PackageCacheEntry.Get(packageId, session);
 
         session.ThrowIfCancellationRequested();
 
         return package;
     }
 
-    public static async Task<PackageInfo?> GetPackageInfo(PackageIdentity packageIdentity)
+    public static async Task<PackageInfo?> GetPackageInfo(PackageIdentity? packageIdentity)
     {
+        if (packageIdentity is null)
+            return null;
+
         var session = _session;
 
-        var packageInfo = await GetPackageInfoCacheEntry(packageIdentity, session).GetValue();
+        var packageInfo = await PackageInfoCacheEntry.Get(packageIdentity, session);
 
         session.ThrowIfCancellationRequested();
 
         return packageInfo;
+    }
+
+    public static async Task<PackageDetails?> GetPackageDetails(PackageInfo packageInfo)
+    {
+        return await PackageDetailsCacheEntry.Get(packageInfo.PackageIdentity, packageInfo.Package.RepositoryContext.SourceRepository, packageInfo.Session);
+    }
+
+    public static async Task<PackageDetails?> GetPackageDetails(PackageIdentity packageIdentity)
+    {
+        var packageInfo = await GetPackageInfo(packageIdentity);
+
+        if (packageInfo is null)
+            return null;
+
+        return await GetPackageDetails(packageInfo);
     }
 
     public static async Task<ICollection<TransitiveDependencies>> GetTransitivePackages(ICollection<PackageReferenceInfo> allTopLevelPackages)
@@ -119,7 +136,7 @@ public static class NuGetService
                     var version = versionSource.GetVersion();
                     if (version is not null && NuGetVersion.TryParse(version.OriginalString, out var parsedVersion) && parsedVersion > identity.Version)
                     {
-                        var pinned = await GetPackageInfoCacheEntry(new(identity.Id, parsedVersion), session).GetValue();
+                        var pinned = await PackageInfoCacheEntry.Get(new(identity.Id, parsedVersion), session);
                         if (pinned is not null)
                         {
                             package = pinned;
@@ -152,91 +169,19 @@ public static class NuGetService
 
     private static async Task<PackageReferenceInfo?> FindPackageInfo(PackageReference item, HashSet<PackageReferenceEntry> packageReferenceEntries, NuGetSession session)
     {
-        var package = await GetPackageCacheEntry(item.Id, session).GetValue();
+        var package = await PackageCacheEntry.Get(item.Id, session);
 
         var identity = item.FindBestMatch(package?.Versions);
         if (identity is null)
             return null;
 
-        var packageInfo = await GetPackageInfoCacheEntry(identity, session).GetValue();
+        var packageInfo = await PackageInfoCacheEntry.Get(identity, session);
         return packageInfo is null ? null : new PackageReferenceInfo(packageInfo, packageReferenceEntries);
     }
 
     private static async Task<PackageInfo[]> GetPackageDependenciesInFramework(this PackageInfo packageInfo, NuGetFramework targetFramework)
     {
-        return await GetPackageDependenciesInFrameworkCacheEntry(packageInfo, targetFramework).GetValue() ?? Array.Empty<PackageInfo>();
-    }
-
-    private static PackageCacheEntry GetPackageCacheEntry(string packageId, NuGetSession session)
-    {
-        PackageCacheEntry Factory(ICacheEntry cacheEntry)
-        {
-            cacheEntry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(30);
-
-            return new(packageId, session);
-        }
-
-        lock (session)
-        {
-            return session.Cache.GetOrCreate(packageId, Factory) ??
-                   throw new InvalidOperationException("Failed to get package from cache");
-        }
-    }
-
-    private static PackageInfoCacheEntry GetPackageInfoCacheEntry(PackageIdentity packageIdentity, NuGetSession session)
-    {
-        PackageInfoCacheEntry Factory(ICacheEntry cacheEntry)
-        {
-            cacheEntry.AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24);
-
-            return new(packageIdentity, session);
-        }
-
-        lock (session)
-        {
-            return session.Cache.GetOrCreate(packageIdentity, Factory) ??
-                   throw new InvalidOperationException("Failed to get package from cache");
-        }
-    }
-
-    // ReSharper disable NotAccessedPositionalProperty.Local
-    private sealed record PackageDependencyCacheEntryKey(PackageIdentity PackageIdentity);
-
-    private sealed record PackageDependenciesInFrameworkCacheEntryKey(PackageIdentity PackageIdentity, NuGetFramework TargetFramework);
-    // ReSharper restore NotAccessedPositionalProperty.Local
-
-    private static PackageDependenciesCacheEntry GetPackageDependencyCacheEntry(PackageIdentity packageIdentity, SourceRepository repository, NuGetSession session)
-    {
-        PackageDependenciesCacheEntry Factory(ICacheEntry cacheEntry)
-        {
-            cacheEntry.AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24);
-
-            return new(packageIdentity, repository, session);
-        }
-
-        lock (session)
-        {
-            return session.Cache.GetOrCreate(new PackageDependencyCacheEntryKey(packageIdentity), Factory) ??
-                   throw new InvalidOperationException("Failed to get package dependency from cache");
-        }
-    }
-
-    private static PackageDependenciesInFrameworkCacheEntry GetPackageDependenciesInFrameworkCacheEntry(PackageInfo packageInfo, NuGetFramework targetFramework)
-    {
-        PackageDependenciesInFrameworkCacheEntry Factory(ICacheEntry cacheEntry)
-        {
-            cacheEntry.AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24);
-
-            return new(packageInfo, targetFramework);
-        }
-
-        var session = packageInfo.Session;
-
-        lock (session)
-        {
-            return session.Cache.GetOrCreate(new PackageDependenciesInFrameworkCacheEntryKey(packageInfo.PackageIdentity, targetFramework), Factory)
-                   ?? throw new InvalidOperationException("Failed to get package dependency in framework from cache");
-        }
+        return await PackageDependenciesInFrameworkCacheEntry.Get(packageInfo, targetFramework) ?? Array.Empty<PackageInfo>();
     }
 
     private static bool IsOutdated(PackageIdentity packageIdentity, IEnumerable<NuGetVersion> versions)
@@ -248,15 +193,20 @@ public static class NuGetService
 
     private static NuGetFramework ToPlatformVersionIndependent(NuGetFramework framework)
     {
+        // e.g net6.0-windows project can use net6.0-windows7.0 package
         return new(framework.Framework, framework.Version, framework.Platform, FrameworkConstants.EmptyVersion);
     }
 
-    private static T? GetNearestFramework<T>(ICollection<T> items, NuGetFramework framework)
+    public static T? GetNearestFramework<T>(this IReadOnlyCollection<T> items, NuGetFramework framework)
         where T : class, IFrameworkSpecific
     {
         return NuGetFrameworkUtility.GetNearest(items, framework)
-               // e.g net6.0-windows project can use net6.0-windows7.0 package
                ?? NuGetFrameworkUtility.GetNearest(items, ToPlatformVersionIndependent(framework), item => ToPlatformVersionIndependent(item.TargetFramework));
+    }
+
+    public static bool IsCompatibleWith(this NuGetFramework projectFramework, NuGetFramework candidate)
+    {
+        return NuGetFrameworkUtility.IsCompatibleWithFallbackCheck(ToPlatformVersionIndependent(projectFramework), ToPlatformVersionIndependent(candidate));
     }
 
     private abstract class CacheEntry<T> where T : class
@@ -268,7 +218,7 @@ public static class NuGetService
             Load(generator);
         }
 
-        public Task<T?> GetValue()
+        protected Task<T?> GetValue()
         {
             return _taskCompletionSource.Task;
         }
@@ -286,13 +236,26 @@ public static class NuGetService
                 _taskCompletionSource.SetResult(default);
             }
         }
+
+        protected static TEntry GetOrCreate<TEntry>(NuGetSession session, object key, Func<TEntry> factory)
+        {
+            lock (session)
+            {
+                return session.Cache.GetOrCreate(key, _ => factory()) ?? throw new InvalidOperationException("Failed to get item from cache");
+            }
+        }
     }
 
     private sealed class PackageCacheEntry : CacheEntry<Package>
     {
-        public PackageCacheEntry(string packageId, NuGetSession session)
+        private PackageCacheEntry(string packageId, NuGetSession session)
             : base(() => GetPackage(packageId, session))
         {
+        }
+
+        public static Task<Package?> Get(string packageId, NuGetSession session)
+        {
+            return GetOrCreate(session, packageId, () => new PackageCacheEntry(packageId, session)).GetValue();
         }
 
         private static async Task<Package?> GetPackage(string packageId, NuGetSession session)
@@ -354,14 +317,19 @@ public static class NuGetService
 
     private sealed class PackageInfoCacheEntry : CacheEntry<PackageInfo>
     {
-        public PackageInfoCacheEntry(PackageIdentity packageIdentity, NuGetSession session)
+        private PackageInfoCacheEntry(PackageIdentity packageIdentity, NuGetSession session)
             : base(() => GetPackageInfo(packageIdentity, session))
         {
         }
 
+        public static Task<PackageInfo?> Get(PackageIdentity packageIdentity, NuGetSession session)
+        {
+            return GetOrCreate(session, packageIdentity, () => new PackageInfoCacheEntry(packageIdentity, session)).GetValue();
+        }
+
         private static async Task<PackageInfo?> GetPackageInfo(PackageIdentity packageIdentity, NuGetSession session)
         {
-            var package = await GetPackageCacheEntry(packageIdentity.Id, session).GetValue();
+            var package = await PackageCacheEntry.Get(packageIdentity.Id, session);
             if (package is null)
                 return null;
 
@@ -385,37 +353,52 @@ public static class NuGetService
         }
     }
 
-    private sealed class PackageDependenciesCacheEntry : CacheEntry<PackageDependencyGroup[]>
+    private sealed class PackageDetailsCacheEntry : CacheEntry<PackageDetails>
     {
-        public PackageDependenciesCacheEntry(PackageIdentity packageIdentity, SourceRepository repository, NuGetSession session)
-            : base(() => GetDirectDependencies(packageIdentity, repository, session))
+        private PackageDetailsCacheEntry(PackageIdentity packageIdentity, SourceRepository repository, NuGetSession session)
+            : base(() => GetDetails(packageIdentity, repository, session))
         {
         }
 
-        private static async Task<PackageDependencyGroup[]?> GetDirectDependencies(PackageIdentity packageIdentity, SourceRepository repository, NuGetSession session)
+        public static Task<PackageDetails?> Get(PackageIdentity packageIdentity, SourceRepository repository, NuGetSession session)
+        {
+            return GetOrCreate(session, new CacheEntryKey(packageIdentity), () => new PackageDetailsCacheEntry(packageIdentity, repository, session)).GetValue();
+        }
+
+        private static async Task<PackageDetails?> GetDetails(PackageIdentity packageIdentity, SourceRepository repository, NuGetSession session)
         {
             // Don't scan packages with pseudo-references, they don't get physically included, but cause vulnerability warnings.
             if (string.Equals(packageIdentity.Id, NetStandardPackageId, StringComparison.OrdinalIgnoreCase))
-                return Array.Empty<PackageDependencyGroup>();
+                return new(packageIdentity, [], []);
 
             var resource = await repository.GetResourceAsync<DownloadResource>(session.CancellationToken);
 
             using var downloadResult = await resource.GetDownloadResourceResultAsync(packageIdentity, session.PackageDownloadContext, session.GlobalPackagesFolder, NullLogger.Instance, session.CancellationToken);
 
             if (downloadResult.Status != DownloadResourceResultStatus.Available)
-                return Array.Empty<PackageDependencyGroup>();
+                return new(packageIdentity, [], []);
 
             var dependencyGroups = await downloadResult.PackageReader.GetPackageDependenciesAsync(session.CancellationToken);
 
-            return dependencyGroups.ToArray();
+            var supportedFrameworks = downloadResult.PackageReader.GetSupportedFrameworks();
+
+            return new(packageIdentity, dependencyGroups.ToArray(), supportedFrameworks.ToArray());
         }
+
+        // ReSharper disable once NotAccessedPositionalProperty.Local
+        private sealed record CacheEntryKey(PackageIdentity PackageIdentity);
     }
 
     private sealed class PackageDependenciesInFrameworkCacheEntry : CacheEntry<PackageInfo[]>
     {
-        public PackageDependenciesInFrameworkCacheEntry(PackageInfo packageInfo, NuGetFramework targetFramework)
+        private PackageDependenciesInFrameworkCacheEntry(PackageInfo packageInfo, NuGetFramework targetFramework)
             : base(() => GetDirectDependencies(packageInfo, targetFramework))
         {
+        }
+
+        public static Task<PackageInfo[]?> Get(PackageInfo packageInfo, NuGetFramework targetFramework)
+        {
+            return GetOrCreate(packageInfo.Session, new CacheEntryKey(packageInfo.PackageIdentity, targetFramework), () => new PackageDependenciesInFrameworkCacheEntry(packageInfo, targetFramework)).GetValue();
         }
 
         private static async Task<PackageInfo[]?> GetDirectDependencies(PackageInfo packageInfo, NuGetFramework targetFramework)
@@ -423,25 +406,27 @@ public static class NuGetService
             var session = packageInfo.Session;
             var sourceRepository = packageInfo.Package.RepositoryContext.SourceRepository;
 
-            var dependencyGroups = await GetPackageDependencyCacheEntry(packageInfo.PackageIdentity, sourceRepository, session).GetValue();
+            var packageDetails = await PackageDetailsCacheEntry.Get(packageInfo.PackageIdentity, sourceRepository, session);
 
-            if (dependencyGroups == null || dependencyGroups.Length < 1)
-                return Array.Empty<PackageInfo>();
+            var dependencyGroups = packageDetails?.DependencyGroups;
 
-            var dependentPackages = GetNearestFramework(dependencyGroups, targetFramework)?.Packages
+            if (dependencyGroups is not { Count: > 0 })
+                return [];
+
+            var dependentPackages = dependencyGroups.GetNearestFramework(targetFramework)?.Packages
                                     // fallback to all when GetNearestFramework fails, better have some false positives than to miss one
                                     ?? dependencyGroups.SelectMany(group => group.Packages).Distinct();
 
             async Task<PackageInfo?> ToPackageInfo(PackageDependency packageDependency)
             {
-                var package = await GetPackageCacheEntry(packageDependency.Id, session).GetValue();
+                var package = await PackageCacheEntry.Get(packageDependency.Id, session);
 
                 if (package is null)
                     return null;
 
                 var dependencyVersion = packageDependency.VersionRange.FindBestMatch(package.Versions);
 
-                var info = await GetPackageInfoCacheEntry(new(package.Id, dependencyVersion), session).GetValue();
+                var info = await PackageInfoCacheEntry.Get(new(package.Id, dependencyVersion), session);
 
                 return info;
             }
@@ -450,5 +435,9 @@ public static class NuGetService
 
             return packageInfos?.ExceptNullItems().ToArray();
         }
+
+        // ReSharper disable NotAccessedPositionalProperty.Local
+        private sealed record CacheEntryKey(PackageIdentity PackageIdentity, NuGetFramework TargetFramework);
+        // ReSharper restore NotAccessedPositionalProperty.Local
     }
 }
