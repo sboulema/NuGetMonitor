@@ -94,7 +94,7 @@ internal sealed partial class NuGetMonitorViewModel : INotifyPropertyChanged
                 .SelectMany(item => item.Items)
                 .Select(item => item.ProjectItemInTargetFramework)
                 .Where(item => item.Project.IsTransitivePinningEnabled)
-                .SelectMany(project => project.Project.CentralVersionMap.Values.Select(item => new PackageReferenceEntry(item.EvaluatedInclude, item.GetVersion() ?? VersionRange.None, item, project, item.GetMetadataValue("Justification"), false)))
+                .SelectMany(project => project.Project.CentralVersionMap.Values.Select(item => new PackageReferenceEntry(item.EvaluatedInclude, item.GetVersion() ?? VersionRange.None, VersionKind.CentralDefinition, item, project, item.GetMetadataValue("Justification"), false)))
                 .Where(item => !packageIds.Contains(item.Identity.Id))
                 .GroupBy(item => item.Identity)
                 .Select(item => new PackageViewModel(this, item, PackageItemType.PackageVersion, _solutionService))
@@ -226,11 +226,17 @@ internal sealed partial class NuGetMonitorViewModel : INotifyPropertyChanged
     {
         foreach (var viewModel in viewModels)
         {
-            var packageDetails = await NuGetService.GetPackageDetails(new PackageIdentity(viewModel.PackageReference.Id, viewModel.SelectedVersion));
+            var selectedVersion = viewModel.SelectedVersion;
+            var packageReference = viewModel.PackageReference;
+
+            var packageDetails = await NuGetService.GetPackageDetails(new PackageIdentity(packageReference.Id, selectedVersion));
             if (packageDetails == null)
                 continue;
 
-            var projects = viewModel.Items.Select(referenceEntry => referenceEntry.ProjectItemInTargetFramework.Project);
+            var projects = viewModel.Items
+                .Where(referenceEntry => referenceEntry.VersionKind != VersionKind.CentralDefinition && referenceEntry.Identity.Id == packageReference.Id && referenceEntry.Identity.VersionRange.Equals(packageReference.VersionRange))
+                .Select(referenceEntry => referenceEntry.ProjectItemInTargetFramework.Project)
+                .Distinct();
 
             var incompatibleProjects = projects
                 .Where(project => !packageDetails.SupportedFrameworks.Any(supportedFramework => project.TargetFramework.IsCompatibleWith(supportedFramework)))

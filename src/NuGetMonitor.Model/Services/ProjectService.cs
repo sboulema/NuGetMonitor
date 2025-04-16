@@ -197,18 +197,29 @@ public static class ProjectService
         if (id.Equals(NetStandardPackageId, StringComparison.OrdinalIgnoreCase))
             return null;
 
-        var version = projectItem.GetVersion() ?? projectItem.GetVersionOverride();
         var project = projectItemInTargetFramework.Project;
 
-        if (version is null && project.CentralVersionMap.TryGetValue(id, out var mappedVersion))
+        var versionKind = VersionKind.Version;
+        var version = projectItem.GetVersion();
+        if (version is null)
         {
-            versionSource = mappedVersion;
-            version = versionSource.GetVersion();
+            version = projectItem.GetVersionOverride();
+
+            if (version is not null)
+            {
+                versionKind = VersionKind.LocalOverride;
+            }
+            else if (project.CentralVersionMap.TryGetValue(id, out var mappedVersion))
+            {
+                versionSource = mappedVersion;
+                version = versionSource.GetVersion();
+                versionKind = VersionKind.CentralOverride;
+            }
         }
 
         return version is null
             ? null
-            : new PackageReferenceEntry(id, version, versionSource, projectItemInTargetFramework, versionSource.GetMetadataValue("Justification"), projectItem.GetIsPrivateAsset());
+            : new PackageReferenceEntry(id, version, versionKind, versionSource, projectItemInTargetFramework, versionSource.GetMetadataValue("Justification"), projectItem.GetIsPrivateAsset());
     }
 
     internal static bool IsTrue(this ProjectProperty? property)
@@ -225,7 +236,7 @@ public static class ProjectService
         return VersionRange.TryParse(versionValue, out var version) ? version : null;
     }
 
-    internal static VersionRange? GetVersionOverride(this ProjectItem projectItem)
+    public static VersionRange? GetVersionOverride(this ProjectItem projectItem)
     {
         var versionValue = projectItem.GetMetadata("VersionOverride")?.EvaluatedValue;
         if (versionValue.IsNullOrEmpty())
