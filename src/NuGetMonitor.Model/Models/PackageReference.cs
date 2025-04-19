@@ -1,8 +1,10 @@
-﻿using NuGet.Packaging.Core;
+﻿using System.Diagnostics;
+using NuGet.Packaging.Core;
 using NuGet.Versioning;
 
 namespace NuGetMonitor.Model.Models;
 
+[DebuggerDisplay("{Id}, {VersionRange}")]
 public sealed record PackageReference(string Id, VersionRange VersionRange)
 {
     public PackageIdentity? FindBestMatch(IEnumerable<NuGetVersion>? versions)

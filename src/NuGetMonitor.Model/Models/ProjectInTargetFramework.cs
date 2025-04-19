@@ -10,7 +10,7 @@ using TomsToolbox.Essentials;
 namespace NuGetMonitor.Model.Models;
 
 [DebuggerDisplay("Project: {Name}, Framework: {TargetFramework}")]
-public sealed class ProjectInTargetFramework
+public sealed class ProjectInTargetFramework : IEquatable<ProjectInTargetFramework>
 {
     private static readonly ReadOnlyDictionary<string, ProjectItem> _emptyVersionMap = new(new Dictionary<string, ProjectItem>());
     private static readonly DelegateEqualityComparer<ProjectItem> _itemIncludeComparer = new(item => item?.EvaluatedInclude.ToUpperInvariant());
@@ -93,5 +93,28 @@ public sealed class ProjectInTargetFramework
             1 => candidates[0],
             _ => NuGetFrameworkUtility.GetNearest(candidates, TargetFramework, item => item.TargetFramework) ?? candidates[0]
         };
+    }
+
+    public bool Equals(ProjectInTargetFramework? other)
+    {
+        if (other is null)
+            return false;
+        if (ReferenceEquals(this, other))
+            return true;
+
+        return Project.Equals(other.Project) && TargetFramework.Equals(other.TargetFramework);
+    }
+
+    public override bool Equals(object? obj)
+    {
+        return Equals(obj as ProjectInTargetFramework);
+    }
+
+    public override int GetHashCode()
+    {
+        unchecked
+        {
+            return (Project.GetHashCode() * 397) ^ TargetFramework.GetHashCode();
+        }
     }
 }

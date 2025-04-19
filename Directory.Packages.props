@@ -4,19 +4,19 @@
     <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
   </PropertyGroup>
   <ItemGroup>
-    <PackageVersion Include="Community.VisualStudio.Toolkit.17" Version="17.0.527" />
+    <PackageVersion Include="Community.VisualStudio.Toolkit.17" Version="17.0.533" />
     <PackageVersion Include="ConfigureAwait.Fody" Version="3.3.2" />
     <PackageVersion Include="DataGridExtensions" Version="2.6.0" />
-    <PackageVersion Include="Fody" Version="6.8.2" />
+    <PackageVersion Include="Fody" Version="6.9.2" />
     <PackageVersion Include="Microsoft.Build" Version="[17.4.0]" Justification="VSIX limitation" />
     <PackageVersion Include="Microsoft.Build.Utilities.Core" Version="[17.4.0]" Justification="VSIX limitation" />
     <PackageVersion Include="Microsoft.Extensions.Caching.Memory" Version="8.0.1" />
-    <PackageVersion Include="Microsoft.VSSDK.BuildTools" Version="17.12.2069" />
+    <PackageVersion Include="Microsoft.VSSDK.BuildTools" Version="17.13.2126" />
     <PackageVersion Include="NuGet.Protocol" Version="[6.5.1]" Justification="VSIX limitation (Newtonsoft.Json 13.0.1)" />
     <PackageVersion Include="PropertyChanged.Fody" Version="4.1.0" />
     <PackageVersion Include="Throttle.Fody" Version="1.7.0" />
-    <PackageVersion Include="TomsToolbox.Essentials" Version="2.21.0" />
-    <PackageVersion Include="TomsToolbox.Wpf.Styles" Version="2.21.0" />
+    <PackageVersion Include="TomsToolbox.Essentials" Version="2.22.0" />
+    <PackageVersion Include="TomsToolbox.Wpf.Styles" Version="2.22.0" />
     <PackageVersion Include="VSIX-SdkProjectAdapter" Version="3.0.0" />
   </ItemGroup>
 
