@@ -73,7 +73,7 @@ public sealed class ProjectInTargetFramework : IEquatable<ProjectInTargetFramewo
             .Select(item => new
             {
                 Identity = new PackageIdentity(item.EvaluatedInclude, NuGetVersion.Parse(item.GetMetadataValue("Version"))),
-                Justification = item.GetMetadataValue("Justification")
+                Justification = item.GetJustification()
             }
             )
             .ToDictionary(item => item.Identity, item => item.Justification);

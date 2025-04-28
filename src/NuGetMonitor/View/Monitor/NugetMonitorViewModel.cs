@@ -94,10 +94,10 @@ internal sealed partial class NuGetMonitorViewModel : INotifyPropertyChanged
                 .SelectMany(item => item.Items)
                 .Select(item => item.ProjectItemInTargetFramework)
                 .Where(item => item.Project.IsTransitivePinningEnabled)
-                .SelectMany(project => project.Project.CentralVersionMap.Values.Select(item => new PackageReferenceEntry(item.EvaluatedInclude, item.GetVersion() ?? VersionRange.None, VersionKind.CentralDefinition, item, project, item.GetMetadataValue("Justification"), false)))
+                .SelectMany(project => project.Project.CentralVersionMap.Values.Select(item => new PackageReferenceEntry(item.EvaluatedInclude, item.GetVersion() ?? VersionRange.None, VersionKind.CentralDefinition, item, project, false)))
                 .Where(item => !packageIds.Contains(item.Identity.Id))
                 .GroupBy(item => item.Identity)
-                .Select(item => new PackageViewModel(this, item, PackageItemType.PackageVersion, _solutionService))
+                .Select(group => new PackageViewModel(this, group, PackageItemType.PackageVersion, _solutionService))
                 .ToArray();
 
             Packages = packages.Concat(transitivePins).ToArray();

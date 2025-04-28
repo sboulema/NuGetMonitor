@@ -184,6 +184,11 @@
               </DataTemplate>
             </DataGridTemplateColumn.CellTemplate>
           </DataGridTemplateColumn>
+          <DataGridCheckBoxColumn IsReadOnly="True"
+                                  Header="Pinned"
+                                  Width="50"
+                                  Binding="{Binding IsPinned, FallbackValue=false, Mode=OneWay}"
+                                  dgx:DataGridFilterColumn.IsFilterVisible="False" />
           <DataGridTextColumn Header="Issues"
                               Width="120"
                               Binding="{Binding PackageInfo.Issues, FallbackValue=''}"

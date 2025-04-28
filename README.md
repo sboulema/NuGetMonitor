@@ -51,12 +51,18 @@ Shared package references, e.g. in the `Directory.Build.props` file, are handled
 
 CentralPackageManagement (`PackageVersion` entries) are supported as well.
 
+A version can be pinned by adding the `IsPinned` property to `PackageReference` or `PackageVersion` entries, to stop NuGetMonitor
+from offering to update this version, if e.g. updating the package might break some functionaility.
+This is an alternate approach to using the package range notation `[13.0.1]`, that avoids side effects on dependent projects, e.g. when creating a NuGet package.
+```xml
+<PackageReference Include="Newtonsoft.Json" Version="13.0.1" IsPinned="true">
+```
 A justification property can be added to `PackageReference` or `PackageVersion` entries, to e.g. document why a reference is pinned and can't be updated
 ```xml
 <PackageReference Include="Newtonsoft.Json" Version="[13.0.1]" Justification="Can't update due to Visual Studio extension limitations">
 ```
-
-A mitigation element can be added to suppress warnings for transitive dependencies that can't be updated due to project limitations but have been evaluated to not affect the product security.
+A mitigation element can be added to suppress warnings for transitive dependencies that can't be updated due to project limitations
+but have been evaluated to not affect the product security.
 ```xml
 <PackageMitigation Include="Newtonsoft.Json" Version="13.0.1" Justification="Can't update due to Visual Studio extension limitations">
 ```

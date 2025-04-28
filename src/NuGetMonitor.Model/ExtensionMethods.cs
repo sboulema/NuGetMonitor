@@ -1,4 +1,6 @@
-﻿namespace NuGetMonitor.Model;
+﻿using Microsoft.Build.Evaluation;
+
+namespace NuGetMonitor.Model;
 
 public static class ExtensionMethods
 {
@@ -21,5 +23,17 @@ public static class ExtensionMethods
                 return $"{count} {plural}";
             }
         }
+    }
+
+    public static bool GetIsPinned(this ProjectItem projectItem)
+    {
+        var metadataValue = projectItem.GetMetadataValue("IsPinned");
+
+         return bool.TryParse(metadataValue, out var value) && value;
+    }
+
+    public static string GetJustification(this ProjectItem projectItem)
+    {
+        return projectItem.GetMetadataValue("Justification");
     }
 }
