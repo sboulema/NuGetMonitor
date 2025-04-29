@@ -140,7 +140,7 @@ public static class NuGetService
                         if (pinned is not null)
                         {
                             package = pinned;
-                            package.IsPinned = true;
+                            package.IsTransitivePinned = true;
                         }
                     }
                 }

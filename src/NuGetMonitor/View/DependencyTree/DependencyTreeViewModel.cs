@@ -52,7 +52,7 @@ internal sealed partial class ChildNode : INotifyPropertyChanged
 
     public bool IsVulnerable => _packageInfo.IsVulnerable;
 
-    public bool IsPinned => _packageInfo.IsPinned;
+    public bool IsTransitivePinned => _packageInfo.IsTransitivePinned;
 
     public ICommand CopyPackageReferenceCommand => new DelegateCommand(() => CopyNode(PackageNode.PackageReference));
 
