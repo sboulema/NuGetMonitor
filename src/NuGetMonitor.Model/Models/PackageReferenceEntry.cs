@@ -15,14 +15,15 @@ public enum VersionKind
 [DebuggerDisplay("{Identity}, {ProjectItemInTargetFramework}")]
 public sealed record PackageReferenceEntry
 {
-    public PackageReferenceEntry(string id, VersionRange versionRange, VersionKind versionKind, ProjectItem versionSource, ProjectItemInTargetFramework projectItemInTargetFramework, string justification, bool isPrivateAsset)
+    public PackageReferenceEntry(string id, VersionRange versionRange, VersionKind versionKind, ProjectItem versionSource, ProjectItemInTargetFramework projectItemInTargetFramework, bool isPrivateAsset)
     {
         VersionKind = versionKind;
         VersionSource = versionSource;
         ProjectItemInTargetFramework = projectItemInTargetFramework;
-        Justification = justification;
+        Justification = versionSource.GetJustification();
         IsPrivateAsset = isPrivateAsset;
-        Identity = new(id, versionRange);
+        IsPinned = versionSource.GetIsPinned();
+        Identity = new(id, versionRange, IsPinned);
     }
 
     public PackageReference Identity { get; }
@@ -36,4 +37,6 @@ public sealed record PackageReferenceEntry
     public string Justification { get; }
 
     public bool IsPrivateAsset { get; }
+
+    public bool IsPinned { get; }
 }

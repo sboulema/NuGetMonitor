@@ -24,6 +24,7 @@ internal sealed partial class PackageViewModel : INotifyPropertyChanged
         Projects = items.GroupBy(item => (itemType == PackageItemType.PackageVersion ? item.VersionSource : item.ProjectItemInTargetFramework.ProjectItem).GetContainingProject()).Select(item => new ProjectViewModel(item.Key, solutionService)).ToArray();
         ActiveVersion = NuGetVersion.TryParse(PackageReference.VersionRange.OriginalString, out var simpleVersion) ? simpleVersion : PackageReference.VersionRange;
         Justifications = string.Join(", ", Items.Select(reference => reference.Justification).Distinct());
+        IsPinned = items.Key.IsPinned;
     }
 
     public IGrouping<PackageReference, PackageReferenceEntry> Items { get; }
@@ -52,6 +53,8 @@ internal sealed partial class PackageViewModel : INotifyPropertyChanged
     public PackageInfo? PackageInfo { get; private set; }
 
     public string Justifications { get; }
+
+    public bool IsPinned { get; }
 
     public async Task Load()
     {
@@ -86,7 +89,7 @@ internal sealed partial class PackageViewModel : INotifyPropertyChanged
 
     private void OnSelectedVersionChanged()
     {
-        IsUpdateAvailable = (SelectedVersion is not null) && ActiveVersion switch
+        IsUpdateAvailable = !IsPinned && (SelectedVersion is not null) && ActiveVersion switch
         {
             NuGetVersion version => version != SelectedVersion,
             VersionRange versionRange => versionRange.FindBestMatch(Package?.Versions) != SelectedVersion,

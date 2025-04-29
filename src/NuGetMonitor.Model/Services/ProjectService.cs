@@ -217,9 +217,10 @@ public static class ProjectService
             }
         }
 
-        return version is null
-            ? null
-            : new PackageReferenceEntry(id, version, versionKind, versionSource, projectItemInTargetFramework, versionSource.GetMetadataValue("Justification"), projectItem.GetIsPrivateAsset());
+        if (version is null)
+            return null;
+
+        return new(id, version, versionKind, versionSource, projectItemInTargetFramework, projectItem.GetIsPrivateAsset());
     }
 
     internal static bool IsTrue(this ProjectProperty? property)
