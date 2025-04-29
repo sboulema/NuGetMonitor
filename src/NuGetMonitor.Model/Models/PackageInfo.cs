@@ -41,7 +41,10 @@ public sealed class PackageInfo
 
     public Uri ProjectUrl { get; }
 
-    public bool IsPinned { get; set; }
+    /// <summary>
+    /// Indicates whether the entry is a transitive package version pinned via CentralPackageManagement when CentralPackageTransitivePinningEnabled
+    /// </summary>
+    public bool IsTransitivePinned { get; set; }
 
     private IEnumerable<string?> GetIssues()
     {

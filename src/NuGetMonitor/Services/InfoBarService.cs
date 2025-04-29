@@ -146,11 +146,11 @@ internal static class InfoBarService
 
         var topLevelPackages = topLevelPackageInfos
             .Where(item => item.PackageReferenceEntries.Any(entry => NuGetVersion.TryParse(entry.Identity.VersionRange.OriginalString, out _)))
-            .Select(item => item.PackageInfo)
+            .Select(item => new { item.PackageInfo, IsPinned = item.PackageReferenceEntries.All(entry => entry.IsPinned) })
             .ToArray();
 
-        yield return topLevelPackages.CountedDescription("update", item => item.IsOutdated);
-        yield return topLevelPackages.CountedDescription("deprecation", item => item.IsDeprecated);
-        yield return topLevelPackages.CountedDescription("vulnerability", item => item.IsVulnerable && item.VulnerabilityMitigation.IsNullOrEmpty());
+        yield return topLevelPackages.CountedDescription("update", item => item.PackageInfo.IsOutdated && !item.IsPinned);
+        yield return topLevelPackages.CountedDescription("deprecation", item => item.PackageInfo.IsDeprecated && !item.IsPinned);
+        yield return topLevelPackages.CountedDescription("vulnerability", item => item.PackageInfo.IsVulnerable && item.PackageInfo.VulnerabilityMitigation.IsNullOrEmpty());
     }
 }
