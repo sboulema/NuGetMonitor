@@ -248,6 +248,9 @@ public static class ProjectService
 
     internal static bool GetIsPrivateAsset(this ProjectItem projectItem)
     {
+        if (projectItem.IsGlobalPackageReference())
+            return true;
+
         var value = projectItem.GetMetadata("PrivateAssets")?.EvaluatedValue;
 
         return string.Equals(value, "all", StringComparison.OrdinalIgnoreCase);

@@ -14,6 +14,7 @@ using Microsoft.VisualStudio.Shell.Interop;
 using NuGet.Packaging.Core;
 using NuGet.Versioning;
 using NuGetMonitor.Abstractions;
+using NuGetMonitor.Model;
 using NuGetMonitor.Model.Models;
 using NuGetMonitor.Model.Services;
 using NuGetMonitor.Services;
@@ -233,8 +234,12 @@ internal sealed partial class NuGetMonitorViewModel : INotifyPropertyChanged
             if (packageDetails == null)
                 continue;
 
+            // e.g. Analyzer packages do not specify any target framework, they are just compatible with everything
+            if (packageDetails.SupportedFrameworks.Count == 0)
+                continue;
+
             var projects = viewModel.Items
-                .Where(referenceEntry => referenceEntry.VersionKind != VersionKind.CentralDefinition && referenceEntry.Identity.Id == packageReference.Id && referenceEntry.Identity.VersionRange.Equals(packageReference.VersionRange))
+                .Where(referenceEntry => referenceEntry.VersionKind is not VersionKind.CentralDefinition && !referenceEntry.VersionSource.IsGlobalPackageReference() && referenceEntry.Identity.Id == packageReference.Id && referenceEntry.Identity.VersionRange.Equals(packageReference.VersionRange))
                 .Select(referenceEntry => referenceEntry.ProjectItemInTargetFramework.Project)
                 .Distinct();
 

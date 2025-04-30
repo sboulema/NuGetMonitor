@@ -36,4 +36,9 @@ public static class ExtensionMethods
     {
         return projectItem.GetMetadataValue("Justification");
     }
+
+    public static bool IsGlobalPackageReference(this ProjectItem projectItem)
+    {
+        return projectItem.ItemType.Equals("GlobalPackageReference", StringComparison.OrdinalIgnoreCase);
+    }
 }
