@@ -10,18 +10,18 @@
     <PackageVersion Include="Fody" Version="6.9.2" />
     <PackageVersion Include="Microsoft.Build" Version="[17.4.0]" Justification="VSIX limitation" />
     <PackageVersion Include="Microsoft.Build.Utilities.Core" Version="[17.4.0]" Justification="VSIX limitation" />
-    <PackageVersion Include="Microsoft.Extensions.Caching.Memory" Version="9.0.4" />
-    <PackageVersion Include="Microsoft.VSSDK.BuildTools" Version="17.13.2126" />
+    <PackageVersion Include="Microsoft.Extensions.Caching.Memory" Version="9.0.7" />
+    <PackageVersion Include="Microsoft.VSSDK.BuildTools" Version="17.14.2094" />
     <PackageVersion Include="NuGet.Protocol" Version="[6.5.1]" Justification="VSIX limitation (Newtonsoft.Json 13.0.1)" />
     <PackageVersion Include="PropertyChanged.Fody" Version="4.1.0" />
     <PackageVersion Include="Throttle.Fody" Version="1.7.0" />
-    <PackageVersion Include="TomsToolbox.Essentials" Version="2.22.0" />
-    <PackageVersion Include="TomsToolbox.Wpf.Styles" Version="2.22.0" />
+    <PackageVersion Include="TomsToolbox.Essentials" Version="2.22.1" />
+    <PackageVersion Include="TomsToolbox.Wpf.Styles" Version="2.22.1" />
     <PackageVersion Include="VSIX-SdkProjectAdapter" Version="3.0.0" />
   </ItemGroup>
 
   <ItemGroup Label="Transitive fixes">
-    <PackageVersion Include="System.Text.Json" Version="9.0.4" />
+    <PackageVersion Include="System.Text.Json" Version="9.0.7" />
   </ItemGroup>
 
   <ItemGroup Label="Mitigations">
