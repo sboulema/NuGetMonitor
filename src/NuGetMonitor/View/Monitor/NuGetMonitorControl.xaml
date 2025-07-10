@@ -147,8 +147,10 @@
             </DataGridTemplateColumn.CellTemplate>
           </DataGridTemplateColumn>
           <DataGridTemplateColumn SortMemberPath="IsUpdateAvailable"
-                                  Width="36"
-                                  dgx:DataGridFilterColumn.Template="{StaticResource {x:Static dgx:DataGridFilter.CheckBoxColumnFilterTemplateKey}}">
+                                  Header="Update"
+                                  Width="50"
+                                  dgx:DataGridFilterColumn.Template="{StaticResource {x:Static dgx:DataGridFilter.CheckBoxColumnFilterTemplateKey}}"
+                                  dgx:DataGridFilterColumn.IsFilterVisible="False">
             <DataGridTemplateColumn.CellTemplate>
               <DataTemplate>
                 <Button ToolTip="Update this package"

@@ -88,7 +88,7 @@ internal sealed partial class NuGetMonitorViewModel : INotifyPropertyChanged
                 .ToArray();
 
             var packageIds = packages
-                .Select(item => item.PackageReference.Id)
+                .Select(item => item.PackageReference)
                 .ToHashSet();
 
             var transitivePins = packages
@@ -96,7 +96,7 @@ internal sealed partial class NuGetMonitorViewModel : INotifyPropertyChanged
                 .Select(item => item.ProjectItemInTargetFramework)
                 .Where(item => item.Project.IsTransitivePinningEnabled)
                 .SelectMany(project => project.Project.CentralVersionMap.Values.Select(item => new PackageReferenceEntry(item.EvaluatedInclude, item.GetVersion() ?? VersionRange.None, VersionKind.CentralDefinition, item, project, false)))
-                .Where(item => !packageIds.Contains(item.Identity.Id))
+                .Where(item => !packageIds.Contains(item.Identity))
                 .GroupBy(item => item.Identity)
                 .Select(group => new PackageViewModel(this, group, PackageItemType.PackageVersion, _solutionService))
                 .ToArray();
