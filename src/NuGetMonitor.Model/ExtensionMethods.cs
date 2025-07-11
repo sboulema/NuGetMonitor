@@ -1,4 +1,5 @@
 ﻿using Microsoft.Build.Evaluation;
+using NuGet.Versioning;
 
 namespace NuGetMonitor.Model;
 
@@ -30,6 +31,13 @@ public static class ExtensionMethods
         var metadataValue = projectItem.GetMetadataValue("IsPinned");
 
          return bool.TryParse(metadataValue, out var value) && value;
+    }
+
+    public static VersionRange? GetPinnedRange(this ProjectItem projectItem)
+    {
+        var metadataValue = projectItem.GetMetadataValue("PinnedRange");
+
+        return VersionRange.TryParse(metadataValue, out var range) ? range : null;
     }
 
     public static string GetJustification(this ProjectItem projectItem)

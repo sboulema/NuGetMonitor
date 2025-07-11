@@ -5,7 +5,7 @@ using NuGet.Versioning;
 namespace NuGetMonitor.Model.Models;
 
 [DebuggerDisplay("{Id}, {VersionRange}")]
-public sealed record PackageReference(string Id, VersionRange VersionRange, bool IsPinned)
+public sealed record PackageReference(string Id, VersionRange VersionRange, bool IsPinned, VersionRange? PinnedRange)
 {
     public PackageIdentity? FindBestMatch(IEnumerable<NuGetVersion>? versions)
     {

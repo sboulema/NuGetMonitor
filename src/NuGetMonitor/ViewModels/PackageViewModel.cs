@@ -25,6 +25,7 @@ internal sealed partial class PackageViewModel : INotifyPropertyChanged
         ActiveVersion = NuGetVersion.TryParse(PackageReference.VersionRange.OriginalString, out var simpleVersion) ? simpleVersion : PackageReference.VersionRange;
         Justifications = string.Join(", ", Items.Select(reference => reference.Justification).Distinct());
         IsPinned = items.Key.IsPinned;
+        PinnedRange = items.Key.PinnedRange;
     }
 
     public IGrouping<PackageReference, PackageReferenceEntry> Items { get; }
@@ -55,6 +56,8 @@ internal sealed partial class PackageViewModel : INotifyPropertyChanged
     public string Justifications { get; }
 
     public bool IsPinned { get; }
+    
+    public VersionRange? PinnedRange { get; }
 
     public async Task Load()
     {
@@ -62,7 +65,12 @@ internal sealed partial class PackageViewModel : INotifyPropertyChanged
         {
             Package = await NuGetService.GetPackage(PackageReference.Id);
 
-            var versions = Package?.Versions ?? Array.Empty<NuGetVersion>();
+            var versions = Package?.Versions ?? [];
+
+            if (PackageReference is { PinnedRange: { } range })
+            {
+                versions = versions.Where(range.Satisfies).ToArray();
+            }
 
             SelectedVersion = ActiveVersion switch
             {
@@ -89,7 +97,7 @@ internal sealed partial class PackageViewModel : INotifyPropertyChanged
 
     private void OnSelectedVersionChanged()
     {
-        IsUpdateAvailable = !IsPinned && (SelectedVersion is not null) && ActiveVersion switch
+        IsUpdateAvailable = (!IsPinned || PinnedRange != null) && (SelectedVersion is not null) && ActiveVersion switch
         {
             NuGetVersion version => version != SelectedVersion,
             VersionRange versionRange => versionRange.FindBestMatch(Package?.Versions) != SelectedVersion,

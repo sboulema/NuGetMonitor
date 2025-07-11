@@ -4,44 +4,59 @@ This product bundles the following components under the described licenses:
 
 Community.VisualStudio.Toolkit.17
 
-Id:      Community.VisualStudio.Toolkit.17
-Version: 17.0.507
-Project: https://github.com/VsixCommunity/Community.VisualStudio.Toolkit
-License: Apache-2.0
+Id:        Community.VisualStudio.Toolkit.17
+Version:   17.0.533
+Project:   https://github.com/VsixCommunity/Community.VisualStudio.Toolkit
+Copyright: © Mads Kristensen. All rights reserved.
+License:   Apache-2.0
 
 --------------------------------------------------------------------------------
 
 Data Grid Extensions
 
-Id:      DataGridExtensions
-Version: 2.5.15
-Project: https://github.com/dotnet/DataGridExtensions
-License: MIT
+Id:        DataGridExtensions
+Version:   2.6.0
+Project:   https://github.com/dotnet/DataGridExtensions
+Copyright: Copyright (c) .NET Foundation and Contributors.
+License:   MIT
 
 --------------------------------------------------------------------------------
 
 Microsoft.Extensions.Caching.Memory
 
-Id:      Microsoft.Extensions.Caching.Memory
-Version: 7.0.0
-Project: https://dot.net/
-License: MIT
+Id:        Microsoft.Extensions.Caching.Memory
+Version:   9.0.7
+Project:   https://dot.net/
+Copyright: © Microsoft Corporation. All rights reserved.
+License:   MIT
 
 --------------------------------------------------------------------------------
 
 NuGet.Protocol
 
-Id:      NuGet.Protocol
-Version: 6.7.0
-Project: https://aka.ms/nugetprj
-License: Apache-2.0
+Id:        NuGet.Protocol
+Version:   6.5.1
+Project:   https://aka.ms/nugetprj
+Copyright: © Microsoft Corporation. All rights reserved.
+License:   Apache-2.0
+
+--------------------------------------------------------------------------------
+
+Tom's Toolbox Essentials Module
+
+Id:        TomsToolbox.Essentials
+Version:   2.22.1
+Project:   https://github.com/tom-englert/TomsToolbox
+Copyright: © 2012-2025 tom-englert.de
+License:   MIT
 
 --------------------------------------------------------------------------------
 
 Tom's Toolbox WPF Styles Module
 
-Id:      TomsToolbox.Wpf.Styles
-Version: 2.9.1
-Project: https://github.com/tom-englert/TomsToolbox
-License: MIT
+Id:        TomsToolbox.Wpf.Styles
+Version:   2.22.1
+Project:   https://github.com/tom-englert/TomsToolbox
+Copyright: © 2012-2025 tom-englert.de
+License:   MIT
 

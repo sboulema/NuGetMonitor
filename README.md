@@ -55,12 +55,19 @@ A version can be pinned by adding the `IsPinned` property to `PackageReference` 
 from offering to update this version, if e.g. updating the package might break some functionality.
 This is an alternate approach to using the package range notation `[13.0.1]`, that avoids side effects on dependent projects, e.g. when creating a NuGet package.
 ```xml
-<PackageReference Include="Newtonsoft.Json" Version="13.0.1" IsPinned="true">
+<PackageReference Include="Newtonsoft.Json" Version="13.0.1" IsPinned="true" />
 ```
+
+A version can also be pinned to a specific range by adding the `PinnedRange` property to `PackageReference` or `PackageVersion` entries, to limit updates to a specific range of versions.
+```xml
+<PackageReference Include="Newtonsoft.Json" Version="13.0.1" "PinnedRange="[13.*, 14.0)" />
+```
+
 A justification property can be added to `PackageReference` or `PackageVersion` entries, to e.g. document why a reference is pinned and can't be updated
 ```xml
 <PackageReference Include="Newtonsoft.Json" Version="[13.0.1]" Justification="Can't update due to Visual Studio extension limitations">
 ```
+
 A mitigation element can be added to suppress warnings for transitive dependencies that can't be updated due to project limitations
 but have been evaluated to not affect the product security.
 ```xml
