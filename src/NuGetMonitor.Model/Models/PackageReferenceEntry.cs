@@ -22,8 +22,9 @@ public sealed record PackageReferenceEntry
         ProjectItemInTargetFramework = projectItemInTargetFramework;
         Justification = versionSource.GetJustification();
         IsPrivateAsset = isPrivateAsset;
-        IsPinned = versionSource.GetIsPinned();
-        Identity = new(id, versionRange, IsPinned);
+        PinnedRange = versionSource.GetPinnedRange();
+        IsPinned = versionSource.GetIsPinned() || PinnedRange != null;
+        Identity = new(id, versionRange, IsPinned, PinnedRange);
     }
 
     public PackageReference Identity { get; }
@@ -39,4 +40,6 @@ public sealed record PackageReferenceEntry
     public bool IsPrivateAsset { get; }
 
     public bool IsPinned { get; }
+
+    public VersionRange? PinnedRange { get; }
 }
