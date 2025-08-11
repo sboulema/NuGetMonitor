@@ -50,7 +50,7 @@ jobs:
     environment: Release
     steps:
       - name: Download artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
 
       - name: Tag release
         id: tag_release
@@ -76,7 +76,7 @@ jobs:
     environment: Release
     steps:
       - name: Download artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
 
       - name: Publish to Marketplace
         uses: cezarypiatek/VsixPublisherAction@1.1
@@ -93,7 +93,7 @@ jobs:
     environment: Release
     steps:
       - name: Download artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
 
       - name: Publish to Open VSIX Gallery
         run: |
