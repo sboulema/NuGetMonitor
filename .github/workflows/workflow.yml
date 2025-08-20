@@ -10,8 +10,8 @@ on:
 env:
   version: '1.6.${{ github.run_number }}'
   repoUrl: ${{ github.server_url }}/${{ github.repository }}
-  vsixPath: ${{ github.workspace }}/NuGetMonitor/src/NuGetMonitor/bin/release/net48/win/NuGetMonitor.vsix
-  publishManifestPath: NuGetMonitor/publish-manifest.json
+  vsixBuildPath: ${{ github.workspace }}/src/NuGetMonitor/bin/release/net48/win/NuGetMonitor.vsix
+  publishManifestPath: publish-manifest.json
 
 jobs:
   build:
@@ -38,7 +38,7 @@ jobs:
         with:
           name: NuGetMonitor
           path: |
-            **/*.vsix
+            ${{ env.vsixBuildPath }}
             publish-manifest.json
             readme.md
 
@@ -51,6 +51,8 @@ jobs:
     steps:
       - name: Download artifact
         uses: actions/download-artifact@v5
+        with:
+          name: NuGetMonitor
 
       - name: Tag release
         id: tag_release
@@ -77,11 +79,13 @@ jobs:
     steps:
       - name: Download artifact
         uses: actions/download-artifact@v5
+        with:
+          name: NuGetMonitor
 
       - name: Publish to Marketplace
         uses: cezarypiatek/VsixPublisherAction@1.1
         with:
-          extension-file: ${{ env.vsixPath }}
+          extension-file: NuGetMonitor.vsix
           publish-manifest-file: ${{ env.publishManifestPath }}
           personal-access-code: ${{ secrets.VS_PUBLISHER_ACCESS_TOKEN }}
 
@@ -94,7 +98,9 @@ jobs:
     steps:
       - name: Download artifact
         uses: actions/download-artifact@v5
+        with:
+          name: NuGetMonitor
 
       - name: Publish to Open VSIX Gallery
         run: |
-            curl -L 'https://www.vsixgallery.com/api/upload?repo=${{ env.repoUrl }}&issuetracker=${{ env.repoUrl }}/issues' -F 'file=@"${{ env.vsixPath }}"'
+            curl -L 'https://www.vsixgallery.com/api/upload?repo=${{ env.repoUrl }}&issuetracker=${{ env.repoUrl }}/issues' -F 'file=@"NuGetMonitor.vsix"'
