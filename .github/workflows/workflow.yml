@@ -33,12 +33,15 @@ jobs:
           DeployExtension: False
           Version: ${{ env.version }}
 
+      - name: Copy VSIX
+        run: cp ${{ env.vsixBuildPath }} ${{ github.workspace }}/NuGetMonitor.vsix
+
       - name: Publish Build Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: NuGetMonitor
           path: |
-            ${{ env.vsixBuildPath }}
+            NuGetMonitor.vsix
             publish-manifest.json
             readme.md
 
