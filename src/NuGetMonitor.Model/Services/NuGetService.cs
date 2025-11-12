@@ -260,7 +260,11 @@ public static class NuGetService
 
         private static async Task<Package?> GetPackage(string packageId, NuGetSession session)
         {
-            foreach (var repositoryContext in session.SourceRepositories)
+            var sourceRepositories = session.SourceRepositories;
+            if (sourceRepositories.Count == 0)
+                return null;
+
+            foreach (var repositoryContext in sourceRepositories)
             {
                 var unsortedVersions = await GetPackageVersions(packageId, session, repositoryContext);
 
@@ -271,7 +275,8 @@ public static class NuGetService
                 return new(packageId, versions, repositoryContext);
             }
 
-            return null;
+            // No versions found in any source, this package is probably unlisted
+            return new(packageId, [], sourceRepositories.First());
         }
 
         private static async Task<NuGetVersion[]> GetPackageVersions(string packageId, NuGetSession session, RepositoryContext repositoryContext)
