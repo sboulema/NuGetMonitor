@@ -48,7 +48,7 @@ internal static class InfoBarService
             return;
 
         var transitivePackages = transitiveDependencies
-            .SelectMany(dependency => dependency.ParentsByChild.Keys)
+            .SelectMany(dependency => dependency.TransitivePackages)
             .Distinct()
             .ToArray();
 

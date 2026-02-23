@@ -89,82 +89,142 @@ public static class NuGetService
         return await GetPackageDetails(packageInfo);
     }
 
-    public static async Task<ICollection<TransitiveDependencies>> GetTransitivePackages(ICollection<PackageReferenceInfo> allTopLevelPackages)
+    public static async Task<ICollection<TransitiveDependencies>> GetTransitiveDependencies(ICollection<PackageReferenceInfo> allTopLevelPackages)
     {
         var topLevelPackagesByProject = allTopLevelPackages
-            .SelectMany(item => item.PackageReferenceEntries.Select(entry => new { entry.ProjectItemInTargetFramework.Project, item.PackageInfo }))
+            .SelectMany(item => item.PackageReferenceEntries.Where(entry => !entry.IsPrivateAsset).Select(entry => new { entry.ProjectItemInTargetFramework.Project, item.PackageInfo }))
             .GroupBy(item => item.Project)
             .ToDictionary(item => item.Key, item => item.Select(entry => entry.PackageInfo).ToArray());
 
-        return await Task.WhenAll(topLevelPackagesByProject.Select(item => GetTransitiveDependencies(item.Key, item.Value)));
+        var transitiveDependenciesByProject = new Dictionary<ProjectInTargetFramework, TransitiveDependencies>();
+
+        foreach (var project in topLevelPackagesByProject.Keys)
+        {
+            await EvaluateTransitiveDependencies(project, topLevelPackagesByProject, transitiveDependenciesByProject);
+        }
+
+        return transitiveDependenciesByProject.Values;
     }
 
-    public static async Task<TransitiveDependencies> GetTransitiveDependencies(ProjectInTargetFramework project, ICollection<PackageInfo> topLevelPackages)
+    private static async Task EvaluateTransitiveDependencies(ProjectInTargetFramework projectInTargetFramework, Dictionary<ProjectInTargetFramework, PackageInfo[]> topLevelPackagesByProject, IDictionary<ProjectInTargetFramework, TransitiveDependencies> results)
+    {
+        var allProjects = topLevelPackagesByProject.Keys;
+
+        var referencedProjects = projectInTargetFramework
+            .GetReferencedProjects(allProjects)
+            .ToArray();
+
+        foreach (var project in referencedProjects)
+        {
+            await EvaluateTransitiveDependencies(project, topLevelPackagesByProject, results);
+        }
+
+        if (results.ContainsKey(projectInTargetFramework))
+            return;
+
+        var inheritedDependencies = referencedProjects
+            .Select(results.GetValueOrDefault)
+            .ExceptNullItems()
+            .SelectMany(item => item.AllDependencies)
+            .GroupBy(item => item.PackageIdentity.Id)
+            .ToDictionary(item => item.Key, item => item.OrderByDescending(i => i.PackageIdentity.Version).First());
+
+        var topLevelPackages = topLevelPackagesByProject[projectInTargetFramework];
+
+        var transitiveDependencies = await GetTransitiveDependencies(projectInTargetFramework, topLevelPackages, inheritedDependencies);
+
+        results[projectInTargetFramework] = transitiveDependencies;
+    }
+
+    /// <summary>
+    /// Resolves all transitive (indirect) package dependencies for a project by walking the dependency tree.
+    /// Applies central version management and vulnerability mitigations when applicable.
+    /// Excludes dependencies introduced by referenced projects, only returns dependencies introduced by the project itself.
+    /// </summary>
+    public static async Task<TransitiveDependencies> GetTransitiveDependencies(ProjectInTargetFramework project, ICollection<PackageInfo> topLevelPackages, IReadOnlyDictionary<string, PackageInfo> inheritedDependencies)
     {
         var targetFramework = project.TargetFramework;
 
+        // Initialize data structures for breadth-first traversal of the dependency graph
         var inputQueue = new Queue<PackageInfo>(topLevelPackages);
+        // Track parent-child relationships to understand the dependency chain
         var parentsByChild = new Dictionary<PackageInfo, HashSet<PackageInfo>>();
+        // Track processed packages to avoid duplicate processing and resolve version conflicts
         var processedItemsByPackageId = new Dictionary<string, PackageInfo>(StringComparer.OrdinalIgnoreCase);
 
+        // Perform breadth-first traversal of the package dependency tree
         while (inputQueue.Count > 0)
         {
-            var packageReferenceInfo = inputQueue.Dequeue();
+            var parentPackageReferenceInfo = inputQueue.Dequeue();
 
-            var session = packageReferenceInfo.Session;
+            var session = parentPackageReferenceInfo.Session;
 
             session.ThrowIfCancellationRequested();
 
-            var packageIdentity = packageReferenceInfo.PackageIdentity;
+            var parentPackageIdentity = parentPackageReferenceInfo.PackageIdentity;
 
-            if (processedItemsByPackageId.TryGetValue(packageIdentity.Id, out var existing) && existing.PackageIdentity.Version >= packageIdentity.Version)
+            // Skip if this package is already included via an inherited dependency at a higher or equal version
+            if (inheritedDependencies.TryGetValue(parentPackageIdentity.Id, out var inherited) && inherited.PackageIdentity.Version >= parentPackageIdentity.Version)
                 continue;
 
-            processedItemsByPackageId[packageIdentity.Id] = packageReferenceInfo;
+            // Skip if we've already processed this package at a higher or equal version
+            // This implements version conflict resolution - highest version wins
+            if (processedItemsByPackageId.TryGetValue(parentPackageIdentity.Id, out var existing) && existing.PackageIdentity.Version >= parentPackageIdentity.Version)
+                continue;
 
-            var dependencies = await packageReferenceInfo.GetPackageDependenciesInFramework(targetFramework);
+            processedItemsByPackageId[parentPackageIdentity.Id] = parentPackageReferenceInfo;
+
+            // Get all direct dependencies of the current package for the target framework
+            var dependencies = await parentPackageReferenceInfo.GetPackageDependenciesInFramework(targetFramework);
 
             foreach (var dependency in dependencies)
             {
-                var package = dependency;
-                var identity = package.PackageIdentity;
+                var dependentPackage = dependency;
+                var dependentPackageIdentity = dependentPackage.PackageIdentity;
 
                 session.ThrowIfCancellationRequested();
 
-                if (project.IsTransitivePinningEnabled && project.CentralVersionMap.TryGetValue(identity.Id, out var versionSource))
+                // Apply transitive pinning if enabled via Central Package Management
+                // This overrides transitive dependency versions with centrally managed versions
+                if (project.IsTransitivePinningEnabled && project.CentralVersionMap.TryGetValue(dependentPackageIdentity.Id, out var versionSource))
                 {
                     var version = versionSource.GetVersion();
-                    if (version is not null && NuGetVersion.TryParse(version.OriginalString, out var parsedVersion) && parsedVersion > identity.Version)
+                    if (version is not null && NuGetVersion.TryParse(version.OriginalString, out var parsedVersion) && parsedVersion > dependentPackageIdentity.Version)
                     {
-                        var pinned = await PackageInfoCacheEntry.Get(new(identity.Id, parsedVersion), session);
+                        var pinned = await PackageInfoCacheEntry.Get(new(dependentPackageIdentity.Id, parsedVersion), session);
                         if (pinned is not null)
                         {
-                            package = pinned;
-                            package.IsTransitivePinned = true;
+                            dependentPackage = pinned;
+                            dependentPackage.IsTransitivePinned = true;
                         }
                     }
                 }
 
-                package.VulnerabilityMitigation = project.PackageMitigations.GetValueOrDefault(identity);
+                // Apply any vulnerability mitigations defined for this package
+                dependentPackage.VulnerabilityMitigation = project.PackageMitigations.GetValueOrDefault(dependentPackageIdentity);
 
+                // Record the parent-child relationship for dependency tracking
                 parentsByChild
-                    .ForceValue(package, _ => new())
-                    .Add(packageReferenceInfo);
+                    .ForceValue(dependentPackage, _ => [])
+                    .Add(parentPackageReferenceInfo);
 
-                inputQueue.Enqueue(package);
+                // Add the dependency to the queue for further processing
+                inputQueue.Enqueue(dependentPackage);
             }
         }
 
+        // Extract only the transitive dependencies (exclude top-level packages)
         var transitivePackageIdentities = processedItemsByPackageId.Values
             .Where(item => !topLevelPackages.Contains(item))
             .Select(item => item.PackageIdentity)
             .ToHashSet();
 
+        // Filter parent-child relationships to include only transitive packages
         parentsByChild = parentsByChild
             .Where(item => transitivePackageIdentities.Contains(item.Key.PackageIdentity))
             .ToDictionary();
 
-        return new(project, parentsByChild);
+        return new(project, topLevelPackages, inheritedDependencies.Values.ToArray(), new TransitivePackages(parentsByChild));
     }
 
     private static async Task<PackageReferenceInfo?> FindPackageInfo(PackageReference item, HashSet<PackageReferenceEntry> packageReferenceEntries, NuGetSession session)

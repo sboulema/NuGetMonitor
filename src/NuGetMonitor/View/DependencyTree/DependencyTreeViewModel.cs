@@ -2,9 +2,9 @@
 using System.Windows;
 using System.Windows.Data;
 using System.Windows.Input;
+using System.Windows.Threading;
 using Microsoft.VisualStudio.Shell;
 using NuGet.Frameworks;
-using TomsToolbox.Wpf;
 using NuGet.Packaging.Core;
 using NuGetMonitor.Abstractions;
 using NuGetMonitor.Model.Models;
@@ -12,6 +12,7 @@ using NuGetMonitor.Model.Services;
 using PropertyChanged;
 using Throttle;
 using TomsToolbox.Essentials;
+using TomsToolbox.Wpf;
 
 namespace NuGetMonitor.View.DependencyTree;
 
@@ -35,7 +36,7 @@ internal sealed partial class ChildNode : INotifyPropertyChanged
         _transitiveDependencies = transitiveDependencies;
         _solutionService = solutionService;
 
-        transitiveDependencies.ParentsByChild.TryGetValue(packageInfo, out _dependsOn);
+        transitiveDependencies.TransitivePackages.TryGetParents(packageInfo, out _dependsOn);
     }
 
     public PackageIdentity PackageIdentity => _packageInfo.PackageIdentity;
@@ -114,9 +115,9 @@ internal sealed partial class RootNode : INotifyPropertyChanged
     {
         _transitiveDependencies = transitiveDependencies;
 
-        var children = _transitiveDependencies.ParentsByChild
-            .OrderBy(item => item.Key.PackageIdentity)
-            .Select(item => new ChildNode(item.Key, _transitiveDependencies, solutionService))
+        var children = _transitiveDependencies.TransitivePackages
+            .OrderBy(item => item.PackageIdentity)
+            .Select(item => new ChildNode(item, _transitiveDependencies, solutionService))
             .ToArray();
 
         _children = new ListCollectionView(children);
@@ -163,10 +164,14 @@ internal sealed partial class DependencyTreeViewModel : INotifyPropertyChanged
         solutionService.SolutionOpened += SolutionEvents_OnAfterOpenSolution;
         solutionService.SolutionClosed += SolutionEvents_OnAfterCloseSolution;
 
-        Load().FireAndForget();
+#pragma warning disable VSTHRD001
+#pragma warning disable VSTHRD110
+        Dispatcher.CurrentDispatcher.BeginInvoke(() => Load().FireAndForget());
+#pragma warning restore VSTHRD110
+#pragma warning restore VSTHRD001
     }
 
-    public bool IsLoading { get; set; } = true;
+    public bool IsLoading { get; set; }
 
     [OnChangedMethod(nameof(OnFilterChanged))]
     public bool ShowUpToDate { get; set; } = true;
@@ -204,6 +209,9 @@ internal sealed partial class DependencyTreeViewModel : INotifyPropertyChanged
 
     private async Task Load()
     {
+        if (IsLoading)
+            return;
+
         try
         {
             IsLoading = true;
@@ -217,7 +225,7 @@ internal sealed partial class DependencyTreeViewModel : INotifyPropertyChanged
             if (topLevelPackages.Count == 0)
                 return;
 
-            var transitivePackages = await NuGetService.GetTransitivePackages(topLevelPackages).ConfigureAwait(true);
+            var transitivePackages = await NuGetService.GetTransitiveDependencies(topLevelPackages).ConfigureAwait(true);
 
             TransitivePackages = transitivePackages
                 .OrderBy(item => item.ProjectName)

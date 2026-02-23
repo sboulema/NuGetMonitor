@@ -4,6 +4,7 @@ using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Threading;
 using Community.VisualStudio.Toolkit;
 using DataGridExtensions;
 using Microsoft.Build.Construction;
@@ -39,14 +40,18 @@ internal sealed partial class NuGetMonitorViewModel : INotifyPropertyChanged
         solutionService.SolutionOpened += SolutionEvents_OnAfterOpenSolution;
         solutionService.SolutionClosed += SolutionEvents_OnAfterCloseSolution;
 
-        Load();
+#pragma warning disable VSTHRD001
+#pragma warning disable VSTHRD110
+        Dispatcher.CurrentDispatcher.BeginInvoke(() => Load().FireAndForget());
+#pragma warning restore VSTHRD110
+#pragma warning restore VSTHRD001
     }
 
     public ICollection<PackageViewModel>? Packages { get; private set; }
 
     public ObservableCollection<PackageViewModel> SelectedPackages { get; } = new();
 
-    public bool IsLoading { get; set; } = true;
+    public bool IsLoading { get; set; }
 
     public ICommand UpdateSelectedCommand => new DelegateCommand(() => SelectedPackages.Any(item => item.IsUpdateAvailable), UpdateSelected);
 
@@ -62,7 +67,7 @@ internal sealed partial class NuGetMonitorViewModel : INotifyPropertyChanged
 
     private void SolutionEvents_OnAfterOpenSolution(object? sender, EventArgs e)
     {
-        Load();
+        Load().FireAndForget();
     }
 
     private void SolutionEvents_OnAfterCloseSolution(object? sender, EventArgs e)
@@ -70,8 +75,11 @@ internal sealed partial class NuGetMonitorViewModel : INotifyPropertyChanged
         Packages = null;
     }
 
-    private async void Load()
+    private async Task Load()
     {
+        if (IsLoading)
+            return;
+
         try
         {
             IsLoading = true;
@@ -131,12 +139,12 @@ internal sealed partial class NuGetMonitorViewModel : INotifyPropertyChanged
 
         MonitorService.CheckForUpdates();
 
-        Load();
+        Load().FireAndForget();
     }
 
     public void Update(PackageViewModel packageViewModel)
     {
-        Update(new[] { packageViewModel });
+        Update([packageViewModel]);
     }
 
     private void UpdateSelected()

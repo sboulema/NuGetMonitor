@@ -67,7 +67,7 @@ internal static class MonitorService
 
             Log("Check transitive packages");
 
-            var transitiveDependencies = await NuGetService.GetTransitivePackages(topLevelPackages);
+            var transitiveDependencies = await NuGetService.GetTransitiveDependencies(topLevelPackages);
 
             InfoBarService.ShowTransitivePackageIssues(transitiveDependencies);
         }
