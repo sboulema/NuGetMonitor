@@ -17,7 +17,7 @@ public sealed class TransitivePackages(IReadOnlyDictionary<PackageInfo, HashSet<
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 }
 
-public sealed record TransitiveDependencies(ProjectInTargetFramework Project, ICollection<PackageInfo> TopLevelPackages, ICollection<PackageInfo> InheritedDependencies, TransitivePackages TransitivePackages)
+public sealed record TransitiveDependencies(ProjectInTargetFramework Project, ICollection<PackageInfo> TopLevelPackages, IReadOnlyDictionary<string, PackageInfo> InheritedDependencies, TransitivePackages TransitivePackages)
 {
     public string ProjectName => Path.GetFileName(ProjectFullPath);
 
@@ -25,5 +25,5 @@ public sealed record TransitiveDependencies(ProjectInTargetFramework Project, IC
 
     public NuGetFramework TargetFramework => Project.TargetFramework;
 
-    public IEnumerable<PackageInfo> AllDependencies => TopLevelPackages.Concat(TransitivePackages).Concat(InheritedDependencies);
+    public IEnumerable<PackageInfo> AllDependencies => TopLevelPackages.Concat(TransitivePackages).Concat(InheritedDependencies.Values);
 }

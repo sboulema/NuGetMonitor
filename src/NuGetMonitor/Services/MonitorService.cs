@@ -70,6 +70,18 @@ internal static class MonitorService
             var transitiveDependencies = await NuGetService.GetTransitiveDependencies(topLevelPackages);
 
             InfoBarService.ShowTransitivePackageIssues(transitiveDependencies);
+
+            foreach (var (project, packageInfos, inheritedDependencies, _) in transitiveDependencies)
+            {
+                var redundantDependencies = packageInfos
+                    .Where(item => inheritedDependencies.TryGetValue(item.PackageIdentity.Id, out var inherited) && inherited.PackageIdentity.Version >= item.PackageIdentity.Version)
+                    .ToArray();
+
+                if (redundantDependencies.Length <= 0)
+                    continue;
+
+                Log($"Project {project.NameAndFramework} has {redundantDependencies.Length} potentially redundant dependencies: {string.Join(", ", redundantDependencies.Select(item => item.PackageIdentity.Id))}");
+            }
         }
         catch (Exception ex) when (ex is not (OperationCanceledException or ObjectDisposedException))
         {

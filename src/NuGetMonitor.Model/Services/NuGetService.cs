@@ -224,7 +224,7 @@ public static class NuGetService
             .Where(item => transitivePackageIdentities.Contains(item.Key.PackageIdentity))
             .ToDictionary();
 
-        return new(project, topLevelPackages, inheritedDependencies.Values.ToArray(), new TransitivePackages(parentsByChild));
+        return new(project, topLevelPackages, inheritedDependencies, new TransitivePackages(parentsByChild));
     }
 
     private static async Task<PackageReferenceInfo?> FindPackageInfo(PackageReference item, HashSet<PackageReferenceEntry> packageReferenceEntries, NuGetSession session)
