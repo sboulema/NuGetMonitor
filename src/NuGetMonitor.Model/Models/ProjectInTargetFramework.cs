@@ -43,6 +43,7 @@ public sealed class ProjectInTargetFramework : IEquatable<ProjectInTargetFramewo
     public IEnumerable<ProjectInTargetFramework> GetReferencedProjects(IEnumerable<ProjectInTargetFramework> allProjects)
     {
         return Project.GetItems("ProjectReference")
+            .Where(item => item.ReferenceOutputAssembly())
             .Select(item => item.EvaluatedInclude)
             .Select(path => Path.GetFullPath(Path.Combine(Project.DirectoryPath, path)))
             .Select(path => GetBestMatch(allProjects, path))

@@ -26,6 +26,13 @@ public static class ExtensionMethods
         }
     }
 
+    public static bool ReferenceOutputAssembly(this ProjectItem projectItem)
+    {
+        var metadataValue = projectItem.GetMetadataValue("ReferenceOutputAssembly");
+
+        return !bool.TryParse(metadataValue, out var value) || value;
+    }
+
     public static bool GetIsPinned(this ProjectItem projectItem)
     {
         var metadataValue = projectItem.GetMetadataValue("IsPinned");

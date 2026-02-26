@@ -165,7 +165,7 @@ public static class ProjectService
         {
             Log(LogLevel.Error, $"Get package reference item failed: {ex}");
 
-            return Enumerable.Empty<ProjectItemInTargetFramework>();
+            return [];
         }
     }
 
