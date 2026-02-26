@@ -1,6 +1,8 @@
 ﻿using Community.VisualStudio.Toolkit;
 using Microsoft.VisualStudio.Shell;
+using NuGetMonitor.Model.Models;
 using NuGetMonitor.Model.Services;
+using NuGetMonitor.Options;
 using TomsToolbox.Essentials;
 
 namespace NuGetMonitor.Services;
@@ -71,21 +73,29 @@ internal static class MonitorService
 
             InfoBarService.ShowTransitivePackageIssues(transitiveDependencies);
 
-            foreach (var (project, packageInfos, inheritedDependencies, _) in transitiveDependencies)
-            {
-                var redundantDependencies = packageInfos
-                    .Where(item => inheritedDependencies.TryGetValue(item.PackageIdentity.Id, out var inherited) && inherited.PackageIdentity.Version >= item.PackageIdentity.Version)
-                    .ToArray();
-
-                if (redundantDependencies.Length <= 0)
-                    continue;
-
-                Log($"Project {project.NameAndFramework} has {redundantDependencies.Length} potentially redundant dependencies: {string.Join(", ", redundantDependencies.Select(item => item.PackageIdentity.Id))}");
-            }
+            LogRedundantPackageReferences(transitiveDependencies);
         }
         catch (Exception ex) when (ex is not (OperationCanceledException or ObjectDisposedException))
         {
             Log($"Check for updates failed: {ex}");
+        }
+    }
+
+    private static void LogRedundantPackageReferences(ICollection<TransitiveDependencies> transitiveDependencies)
+    {
+        if (!GeneralOptions.Instance.LogRedundantPackageReferences)
+            return;
+
+        foreach (var (project, packageInfos, inheritedDependencies, _) in transitiveDependencies)
+        {
+            var redundantDependencies = packageInfos
+                .Where(item => inheritedDependencies.TryGetValue(item.PackageIdentity.Id, out var inherited) && inherited.PackageIdentity.Version >= item.PackageIdentity.Version)
+                .ToArray();
+
+            if (redundantDependencies.Length <= 0)
+                continue;
+
+            Log($"Project {project.NameAndFramework} has {redundantDependencies.Length} potentially redundant dependencies: {string.Join(", ", redundantDependencies.Select(item => item.PackageIdentity.Id))}");
         }
     }
 }

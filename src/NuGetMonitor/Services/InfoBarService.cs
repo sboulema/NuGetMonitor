@@ -12,7 +12,7 @@ namespace NuGetMonitor.Services;
 
 internal static class InfoBarService
 {
-    private static readonly List<InfoBar> _infoBars = new();
+    private static readonly List<InfoBar> _infoBars = [];
 
     private enum Actions
     {
@@ -76,7 +76,7 @@ internal static class InfoBarService
         ShowInfoBar(textSpans).FireAndForget();
     }
 
-    private static async Task ShowInfoBar(IEnumerable<InfoBarTextSpan> textSpans, TimeSpan? timeOut = default)
+    private static async Task ShowInfoBar(IEnumerable<InfoBarTextSpan> textSpans, TimeSpan? timeOut = null)
     {
         var model = new InfoBarModel(textSpans, KnownMonikers.NuGet, isCloseButtonVisible: true);
 

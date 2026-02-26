@@ -100,13 +100,13 @@ public static class NuGetService
 
         foreach (var project in topLevelPackagesByProject.Keys)
         {
-            await EvaluateTransitiveDependencies(project, topLevelPackagesByProject, transitiveDependenciesByProject);
+            await EvaluateTransitiveDependencies(project, topLevelPackagesByProject, transitiveDependenciesByProject, 0);
         }
 
         return transitiveDependenciesByProject.Values;
     }
 
-    private static async Task EvaluateTransitiveDependencies(ProjectInTargetFramework projectInTargetFramework, Dictionary<ProjectInTargetFramework, PackageInfo[]> topLevelPackagesByProject, IDictionary<ProjectInTargetFramework, TransitiveDependencies> results)
+    private static async Task EvaluateTransitiveDependencies(ProjectInTargetFramework projectInTargetFramework, Dictionary<ProjectInTargetFramework, PackageInfo[]> topLevelPackagesByProject, IDictionary<ProjectInTargetFramework, TransitiveDependencies> results, int recursionLevel)
     {
         var allProjects = topLevelPackagesByProject.Keys;
 
@@ -114,9 +114,12 @@ public static class NuGetService
             .GetReferencedProjects(allProjects)
             .ToArray();
 
-        foreach (var project in referencedProjects)
+        if (recursionLevel < 1000)
         {
-            await EvaluateTransitiveDependencies(project, topLevelPackagesByProject, results);
+            foreach (var project in referencedProjects)
+            {
+                await EvaluateTransitiveDependencies(project, topLevelPackagesByProject, results, recursionLevel + 1);
+            }
         }
 
         if (results.ContainsKey(projectInTargetFramework))
@@ -241,7 +244,7 @@ public static class NuGetService
 
     private static async Task<PackageInfo[]> GetPackageDependenciesInFramework(this PackageInfo packageInfo, NuGetFramework targetFramework)
     {
-        return await PackageDependenciesInFrameworkCacheEntry.Get(packageInfo, targetFramework) ?? Array.Empty<PackageInfo>();
+        return await PackageDependenciesInFrameworkCacheEntry.Get(packageInfo, targetFramework) ?? [];
     }
 
     private static bool IsOutdated(PackageIdentity packageIdentity, IEnumerable<NuGetVersion> versions)
@@ -293,7 +296,7 @@ public static class NuGetService
             }
             catch
             {
-                _taskCompletionSource.SetResult(default);
+                _taskCompletionSource.SetResult(null);
             }
         }
 

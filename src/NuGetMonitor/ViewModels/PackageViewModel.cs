@@ -1,6 +1,7 @@
 ﻿using System.ComponentModel;
 using System.Diagnostics;
 using System.Windows.Input;
+using Microsoft.VisualStudio.Shell;
 using NuGet.Versioning;
 using NuGetMonitor.Abstractions;
 using NuGetMonitor.Model.Models;
@@ -8,6 +9,8 @@ using NuGetMonitor.Model.Services;
 using NuGetMonitor.View.Monitor;
 using PropertyChanged;
 using TomsToolbox.Wpf;
+
+using Package = NuGetMonitor.Model.Models.Package;
 
 namespace NuGetMonitor.ViewModels;
 
@@ -59,7 +62,7 @@ internal sealed partial class PackageViewModel : INotifyPropertyChanged
     
     public VersionRange? PinnedRange { get; }
 
-    public async Task Load()
+    public async Task LoadAsync()
     {
         try
         {
@@ -105,7 +108,12 @@ internal sealed partial class PackageViewModel : INotifyPropertyChanged
         };
     }
 
-    private async void OnPackageReferenceChanged()
+    private void OnPackageReferenceChanged()
+    {
+        OnPackageReferenceChangedAsync().FireAndForget();
+    }
+
+    private async Task OnPackageReferenceChangedAsync()
     {
         try
         {

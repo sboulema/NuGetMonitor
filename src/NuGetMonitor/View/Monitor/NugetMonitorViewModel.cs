@@ -113,7 +113,7 @@ internal sealed partial class NuGetMonitorViewModel : INotifyPropertyChanged
 
             IsLoading = false;
 
-            var loadVersionTasks = Packages.Select(item => item.Load());
+            var loadVersionTasks = Packages.Select(item => item.LoadAsync());
 
             await Task.WhenAll(loadVersionTasks);
 
@@ -144,16 +144,19 @@ internal sealed partial class NuGetMonitorViewModel : INotifyPropertyChanged
 
     public void Update(PackageViewModel packageViewModel)
     {
-        Update([packageViewModel]);
+        UpdateAsync([packageViewModel]).FireAndForget();
     }
 
     private void UpdateSelected()
     {
-        Update(SelectedPackages.ToArray());
+        UpdateAsync(SelectedPackages.ToArray()).FireAndForget();
     }
 
-    private async void Update(ICollection<PackageViewModel> packageViewModels)
+    private async Task UpdateAsync(ICollection<PackageViewModel> packageViewModels)
     {
+        if (IsLoading)
+            return;
+
         try
         {
             IsLoading = true;

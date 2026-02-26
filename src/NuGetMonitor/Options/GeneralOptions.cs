@@ -26,5 +26,11 @@ public sealed class GeneralOptions : BaseOptionModel<GeneralOptions>
     [Description("Open the built-in NuGet Package Manager instead of the NuGet Monitor Package Manager.")]
     [DefaultValue(true)]
     public bool OpenNuGetPackageManager { get; set; } = false;
+
+    [Category("Notifications")]
+    [DisplayName("Log redundant package references")]
+    [Description("Log all potentially redundant package references where the package is already introduced by a referenced project")]
+    [DefaultValue(true)]
+    public bool LogRedundantPackageReferences { get; set; } = true;
 }
 
