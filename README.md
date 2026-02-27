@@ -16,7 +16,7 @@ for the installed NuGet packages in the current solution.
 
 ## Supported Visual Studio versions
 
-- Visual Studio 2022
+- Visual Studio 2026
 
 ## Installing
 

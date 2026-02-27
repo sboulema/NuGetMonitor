@@ -10,7 +10,7 @@
     <PackageVersion Include="Fody" Version="6.9.3" />
     <PackageVersion Include="Microsoft.Build" Version="17.4.0" IsPinned="true" Justification="VSIX limitation" />
     <PackageVersion Include="Microsoft.Build.Utilities.Core" Version="17.4.0" IsPinned="true" Justification="VSIX limitation" />
-    <PackageVersion Include="Microsoft.Extensions.Caching.Memory" Version="10.0.3" />
+    <PackageVersion Include="Microsoft.Extensions.Caching.Memory" Version="9.0.13" IsPinned="true" Justification="VSIX limitation" />
     <PackageVersion Include="Microsoft.VSSDK.BuildTools" Version="17.14.2120" />
     <PackageVersion Include="NuGet.Protocol" Version="6.5.1" IsPinned="true" Justification="VSIX limitation (Newtonsoft.Json 13.0.1)" />
     <PackageVersion Include="PropertyChanged.Fody" Version="4.1.0" />
