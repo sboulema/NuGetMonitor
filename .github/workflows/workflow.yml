@@ -86,7 +86,7 @@ jobs:
           name: NuGetMonitor
 
       - name: Publish to Marketplace
-        uses: cezarypiatek/VsixPublisherAction@1.1
+        uses: cezarypiatek/VsixPublisherAction@1.2
         with:
           extension-file: NuGetMonitor.vsix
           publish-manifest-file: ${{ env.publishManifestPath }}
