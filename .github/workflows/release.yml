@@ -1,11 +1,9 @@
-name: NuGetMonitor
+name: Release
 
-on:
-  push:
-    branches:
-      - main
-      - 'feature/**'
-  pull_request:
+on: workflow_dispatch
+
+permissions:
+  actions: read
 
 env:
   version: '1.6.${{ github.run_number }}'
@@ -14,54 +12,18 @@ env:
   publishManifestPath: publish-manifest.json
 
 jobs:
-  build:
-    name: 🛠️ Build
-    runs-on: windows-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: Setup MSBuild
-        uses: microsoft/setup-msbuild@v3
-
-      - name: NuGet restore
-        run: nuget restore NuGetMonitor.sln
-
-      - name: Build VSIX
-        run: msbuild NuGetMonitor.sln /t:Rebuild /p:Configuration=Release
-        env:
-          DeployExtension: False
-          Version: ${{ env.version }}
-
-      - name: Copy VSIX
-        run: cp ${{ env.vsixBuildPath }} ${{ github.workspace }}/NuGetMonitor.vsix
-
-      - name: Publish Build Artifacts
-        uses: actions/upload-artifact@v7
-        with:
-          name: NuGetMonitor
-          path: |
-            NuGetMonitor.vsix
-            publish-manifest.json
-            readme.md
-
   release:
-    if: github.ref_name == 'main'
     name: 🔖 Tag & Release
-    needs: build
     runs-on: windows-latest
-    environment: Release
+    permissions:
+      contents: write
     steps:
       - name: Download artifact
-        uses: actions/download-artifact@v8
+        uses: dawidd6/action-download-artifact@v21
+        id: download_artifact
         with:
           name: NuGetMonitor
-
-      - name: Tag release
-        id: tag_release
-        uses: mathieudutour/github-tag-action@v6.2
-        with:
-          custom_tag: '${{ env.version }}'
+          workflow: build.yml
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create a GitHub release
@@ -74,16 +36,16 @@ jobs:
           skipIfReleaseExists: true
 
   publishMarketplace:
-    if: github.ref_name == 'main'
     name: 🚀 Publish to Marketplace
-    needs: build
     runs-on: windows-latest
-    environment: Release
     steps:
       - name: Download artifact
-        uses: actions/download-artifact@v8
+        uses: dawidd6/action-download-artifact@v21
+        id: download_artifact
         with:
           name: NuGetMonitor
+          workflow: build.yml
+          github_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Publish to Marketplace
         uses: cezarypiatek/VsixPublisherAction@1.2
@@ -93,16 +55,16 @@ jobs:
           personal-access-code: ${{ secrets.VS_PUBLISHER_ACCESS_TOKEN }}
 
   publishOpenVSIXGallery:
-    if: github.ref_name == 'main'
     name: 🚀 Publish to Open VSIX Gallery
-    needs: build
     runs-on: windows-latest
-    environment: Release
     steps:
       - name: Download artifact
-        uses: actions/download-artifact@v8
+        uses: dawidd6/action-download-artifact@v21
+        id: download_artifact
         with:
           name: NuGetMonitor
+          workflow: build.yml
+          github_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Publish to Open VSIX Gallery
         run: |
