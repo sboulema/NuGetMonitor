@@ -1,0 +1,44 @@
+name: NuGetMonitor
+
+on:
+  push:
+    branches:
+      - main
+      - 'feature/**'
+  pull_request:
+
+env:
+  version: '1.6.${{ github.run_number }}'
+  vsixBuildPath: ${{ github.workspace }}/src/NuGetMonitor/bin/release/net48/win/NuGetMonitor.vsix
+
+jobs:
+  build:
+    name: 🛠️ Build
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v3
+
+      - name: NuGet restore
+        run: nuget restore NuGetMonitor.sln
+
+      - name: Build VSIX
+        run: msbuild NuGetMonitor.sln /t:Rebuild /p:Configuration=Release
+        env:
+          DeployExtension: False
+          Version: ${{ env.version }}
+
+      - name: Copy VSIX
+        run: cp ${{ env.vsixBuildPath }} ${{ github.workspace }}/NuGetMonitor.vsix
+
+      - name: Publish Build Artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: NuGetMonitor
+          path: |
+            NuGetMonitor.vsix
+            publish-manifest.json
+            readme.md
