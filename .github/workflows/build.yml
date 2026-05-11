@@ -1,4 +1,4 @@
-name: NuGetMonitor
+name: Build
 
 on:
   push:
@@ -8,7 +8,6 @@ on:
   pull_request:
 
 env:
-  version: '1.6.${{ github.run_number }}'
   vsixBuildPath: ${{ github.workspace }}/src/NuGetMonitor/bin/release/net48/win/NuGetMonitor.vsix
 
 jobs:
@@ -29,7 +28,6 @@ jobs:
         run: msbuild NuGetMonitor.sln /t:Rebuild /p:Configuration=Release
         env:
           DeployExtension: False
-          Version: ${{ env.version }}
 
       - name: Copy VSIX
         run: cp ${{ env.vsixBuildPath }} ${{ github.workspace }}/NuGetMonitor.vsix
@@ -38,7 +36,4 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: NuGetMonitor
-          path: |
-            NuGetMonitor.vsix
-            publish-manifest.json
-            readme.md
+          path: NuGetMonitor.vsix
