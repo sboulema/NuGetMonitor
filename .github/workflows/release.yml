@@ -45,6 +45,7 @@ jobs:
 
   release:
     name: 🔖 Tag & Release
+    needs: build
     runs-on: windows-latest
     permissions:
       contents: write
@@ -72,6 +73,7 @@ jobs:
 
   publishMarketplace:
     name: 🚀 Publish to Marketplace
+    needs: build
     runs-on: windows-latest
     steps:
       - name: Download artifact
@@ -87,6 +89,7 @@ jobs:
           personal-access-code: ${{ secrets.VS_PUBLISHER_ACCESS_TOKEN }}
 
   publishOpenVSIXGallery:
+    needs: build
     name: 🚀 Publish to Open VSIX Gallery
     runs-on: windows-latest
     steps:
