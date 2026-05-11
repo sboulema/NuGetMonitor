@@ -3,7 +3,7 @@
 A Visual Studio extension that checks and notifies about available updates
 for the installed NuGet packages in the current solution.
 
-[![Build Status](https://github.com/sboulema/NuGetMonitor/actions/workflows/workflow.yml/badge.svg)](https://github.com/sboulema/NuGetMonitor/actions/workflows/workflow.yml)
+[![Build Status](https://github.com/sboulema/NuGetMonitor/actions/workflows/build.yml/badge.svg)](https://github.com/sboulema/NuGetMonitor/actions/workflows/build.yml)
 [![Sponsor](https://img.shields.io/badge/-Sponsor-fafbfc?logo=GitHub%20Sponsors)](https://github.com/sponsors/sboulema)
 
 ## Features
