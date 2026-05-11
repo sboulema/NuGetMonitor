@@ -6,7 +6,7 @@ permissions:
   actions: read
 
 env:
-  version: '1.6.${{ github.run_number }}'
+  version: '1.7.${{ github.run_number }}'
   repoUrl: ${{ github.server_url }}/${{ github.repository }}
   vsixBuildPath: ${{ github.workspace }}/src/NuGetMonitor/bin/release/net48/win/NuGetMonitor.vsix
   publishManifestPath: publish-manifest.json
