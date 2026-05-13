@@ -1,28 +1,23 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net48</TargetFramework>
     <UseWPF>true</UseWPF>
-    <OutputType>Library</OutputType>
-    <RuntimeIdentifier>win</RuntimeIdentifier>
     <StartAction>Program</StartAction>
     <StartProgram Condition="'$(DevEnvDir)' != ''">$(DevEnvDir)devenv.exe</StartProgram>
     <StartArguments>/rootsuffix Exp</StartArguments>
     <IsDeploymentTarget>true</IsDeploymentTarget>
+    <NoWarn>$(NoWarn);CVSTBLD002</NoWarn>
+    <!-- CVSTBLD002: community.visualstudio.toolkit.17 generates false positive Newtonsoft.Json version warning -->
   </PropertyGroup>
-  <ItemGroup>
-    <None Update="source.extension.vsixmanifest">
-      <SubType>Designer</SubType>
-    </None>
-  </ItemGroup>
   <ItemGroup>
     <PackageReference Include="DataGridExtensions" />
     <PackageReference Include="Fody" PrivateAssets="all" />
     <PackageReference Include="Community.VisualStudio.Toolkit.17" />
+    <PackageReference Include="Microsoft.VisualStudio.SDK" ExcludeAssets="runtime" />
     <PackageReference Include="Microsoft.VSSDK.BuildTools" PrivateAssets="all" />
     <PackageReference Include="PropertyChanged.Fody" PrivateAssets="all" />
     <PackageReference Include="Throttle.Fody" PrivateAssets="all" />
     <PackageReference Include="TomsToolbox.Wpf.Styles" />
-    <PackageReference Include="VSIX-SdkProjectAdapter" PrivateAssets="all" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="..\..\LICENSE">
@@ -42,4 +37,58 @@
   <ItemGroup>
     <ProjectReference Include="..\NuGetMonitor.Model\NuGetMonitor.Model.csproj" />
   </ItemGroup>
+
+  <PropertyGroup Label="VSIX Parts">
+    <VSSDKBuildToolsAutoSetup>true</VSSDKBuildToolsAutoSetup>
+    <VsixDeployOnDebug>true</VsixDeployOnDebug>
+    <GeneratePkgDefFile>true</GeneratePkgDefFile>
+    <UseCodebase>true</UseCodebase>
+    <VSCTResourceName>Menus.ctmenu</VSCTResourceName>
+  </PropertyGroup>
+
+  <ItemGroup Label="VSIX Parts">
+
+    <ProjectCapability Include="CreateVsixContainer" />
+
+    <None Update="**\*.vsixmanifest">
+      <SubType>Designer</SubType>
+    </None>
+
+    <!-- Neutral VSPackage resources -->
+    <EmbeddedResource Update="VSPackage.resx">
+      <MergeWithCTO>true</MergeWithCTO>
+      <ManifestResourceName>VSPackage</ManifestResourceName>
+    </EmbeddedResource>
+
+    <!-- Localized VSPackage resources -->
+    <EmbeddedResource Update="VSPackage.*.resx">
+      <MergeWithCTO>true</MergeWithCTO>
+      <LogicalName>%(FileName).resources</LogicalName>
+      <DependentUpon>VSPackage.resx</DependentUpon>
+    </EmbeddedResource>
+
+    <_VSCTLocalizedFiles Include="*.*.vsct" />
+    <_VSCTNeutralFile Include="*.vsct" Exclude="@(_VSCTLocalizedFiles)"/>
+
+    <!-- Neutral .vsct file, only include if there are no localized files -->
+    <VSCTCompile Include="@(_VSCTNeutralFile)" Condition="@(_VSCTLocalizedFiles->'%(Identity)')==''">
+      <ResourceName>$(VSCTResourceName)</ResourceName>
+      <SubType>Designer</SubType>
+    </VSCTCompile>
+
+    <!-- Localized .vsct files -->
+    <VSCTCompile Include="@(_VSCTLocalizedFiles)">
+      <ResourceName>$(VSCTResourceName)</ResourceName>
+      <SubType>Designer</SubType>
+      <DependentUpon>@(_VSCTNeutralFile)</DependentUpon>
+    </VSCTCompile>
+
+  </ItemGroup>
+
+  <Target Name="GetVsixVersion" Returns="$(VsixVersion)">
+    <PropertyGroup>
+      <VsixVersion Condition="'$(VsixVersion)' == ''">$(Version)</VsixVersion>
+    </PropertyGroup>
+  </Target>
+
 </Project>

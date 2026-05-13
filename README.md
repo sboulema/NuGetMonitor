@@ -16,12 +16,13 @@ for the installed NuGet packages in the current solution.
 
 ## Supported Visual Studio versions
 
-- Visual Studio 2022 (Untested)
-- Visual Studio 2026
+- Visual Studio 2026 (18.5.2 or higher)
+
+> Due to limitations of the Visual Studio Marketplace the extension can be installed on VS2022, but it won't run.
 
 ## Installing
 
-[Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=SamirBoulema.NuGetMonitor) [![Visual Studio Marketplace](https://img.shields.io/vscode-marketplace/v/SamirBoulema.NuGetMonitor.svg?style=flat)](https://marketplace.visualstudio.com/items?itemName=SamirBoulema.NuGetMonitor)
+[Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=SamirBoulema.NuGetMonitor)
 
 [GitHub Releases](https://github.com/sboulema/NuGetMonitor/releases)
 
