@@ -7,7 +7,6 @@
 [assembly: ProvideCodeBase(AssemblyName = "Microsoft.Extensions.Logging.Abstractions")]
 [assembly: ProvideCodeBase(AssemblyName = "Microsoft.Extensions.Options")]
 [assembly: ProvideCodeBase(AssemblyName = "Microsoft.Extensions.Primitives")]
-[assembly: ProvideCodeBase(AssemblyName = "Microsoft.VisualStudio.Extensibility.Editor.Contracts")]
 [assembly: ProvideCodeBase(AssemblyName = "Microsoft.Xaml.Behaviors")]
 [assembly: ProvideCodeBase(AssemblyName = "NuGet.Common")]
 [assembly: ProvideCodeBase(AssemblyName = "NuGet.Configuration")]
