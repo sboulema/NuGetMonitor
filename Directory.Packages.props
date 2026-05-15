@@ -11,7 +11,6 @@
     <PackageVersion Include="Microsoft.Build" Version="18.4.0" />
     <PackageVersion Include="Microsoft.Build.Utilities.Core" Version="18.4.0" />
     <PackageVersion Include="Microsoft.Extensions.Caching.Memory" Version="10.0.7" />
-    <PackageVersion Include="Microsoft.VisualStudio.SDK" Version="17.14.40265" />
     <PackageVersion Include="Microsoft.VSSDK.BuildTools" Version="18.5.40034" />
     <PackageVersion Include="NuGet.Protocol" Version="7.3.1" />
     <PackageVersion Include="PropertyChanged.Fody" Version="4.1.0" />

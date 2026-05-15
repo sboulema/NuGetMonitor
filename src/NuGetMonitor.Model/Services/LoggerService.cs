@@ -30,5 +30,6 @@ public static class LoggerService
     public static void AddSink(ILoggerSink sink)
     {
         _sinks.Add(sink);
+        sink.Log(LogLevel.Info, $"Version: {typeof(LoggerService).Assembly.GetName().Version}");
     }
 }

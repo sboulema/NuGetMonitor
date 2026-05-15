@@ -13,7 +13,6 @@
     <PackageReference Include="DataGridExtensions" />
     <PackageReference Include="Fody" PrivateAssets="all" />
     <PackageReference Include="Community.VisualStudio.Toolkit.17" />
-    <PackageReference Include="Microsoft.VisualStudio.SDK" ExcludeAssets="runtime" />
     <PackageReference Include="Microsoft.VSSDK.BuildTools" PrivateAssets="all" />
     <PackageReference Include="PropertyChanged.Fody" PrivateAssets="all" />
     <PackageReference Include="Throttle.Fody" PrivateAssets="all" />
