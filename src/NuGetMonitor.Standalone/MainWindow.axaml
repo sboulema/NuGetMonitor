@@ -1,0 +1,150 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:NuGetMonitor"
+        xmlns:monitor="clr-namespace:NuGetMonitor.View.Monitor"
+        xmlns:dependencyTree="clr-namespace:NuGetMonitor.View.DependencyTree"
+        x:Class="NuGetMonitor.MainWindow"
+        x:DataType="local:MainViewModel"
+        mc:Ignorable="d"
+        Title="NuGet Monitor"
+        Width="1600" Height="900">
+
+  <DockPanel>
+
+    <!-- Toolbar -->
+    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="4" Margin="2">
+      <Button Content="📂 Open Solution…" Command="{Binding BrowseCommand}" />
+      <Button x:Name="RecentButton" Content="🕐 Open Recent ▾">
+        <Button.Flyout>
+          <MenuFlyout ItemsSource="{Binding RecentSolutions}" Placement="BottomEdgeAlignedLeft">
+            <MenuFlyout.ItemContainerTheme>
+              <ControlTheme TargetType="MenuItem" BasedOn="{StaticResource {x:Type MenuItem}}">
+                <Setter Property="Header" Value="{Binding}" />
+                <Setter Property="Command" Value="{Binding $parent[Window].DataContext.OpenRecentCommand}" />
+                <Setter Property="CommandParameter" Value="{Binding}" />
+              </ControlTheme>
+            </MenuFlyout.ItemContainerTheme>
+          </MenuFlyout>
+        </Button.Flyout>
+      </Button>
+    </StackPanel>
+
+    <!-- Status bar -->
+    <Border DockPanel.Dock="Bottom" Background="#1E1E1E" Padding="4,2">
+      <TextBlock Text="{Binding StatusMessage}" Foreground="White" FontSize="11" />
+    </Border>
+
+    <!-- Main content area with Grid for splitters -->
+    <Grid>
+      <Grid.RowDefinitions>
+        <RowDefinition Height="*" />
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="150" MinHeight="50" />
+      </Grid.RowDefinitions>
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="*" />
+        <ColumnDefinition Width="Auto" />
+        <ColumnDefinition Width="250" MinWidth="100" />
+      </Grid.ColumnDefinitions>
+
+      <!-- Main content with TabControl -->
+      <TabControl Grid.Row="0" Grid.Column="0">
+        <TabControl.Styles>
+          <Style Selector="TabItem">
+            <Setter Property="FontSize" Value="16" />
+            <Setter Property="Padding" Value="8,2" />
+          </Style>
+        </TabControl.Styles>
+        <TabItem Header="Packages">
+          <monitor:NuGetMonitorControl DataContext="{Binding NuGetMonitorViewModel}" />
+        </TabItem>
+        <TabItem Header="Dependency Tree">
+          <dependencyTree:DependencyTreeControl />
+        </TabItem>
+      </TabControl>
+
+      <!-- Vertical GridSplitter (between main content and info panel) -->
+      <GridSplitter Grid.Row="0" 
+                    Grid.Column="1" 
+                    Width="4" 
+                    VerticalAlignment="Stretch" 
+                    Background="#E0E0E0" />
+
+      <!-- Info Panel (right side) -->
+      <Border Grid.Row="0" 
+              Grid.Column="2" 
+              BorderBrush="#CCCCCC" 
+              BorderThickness="1,0,0,0" 
+              Background="White">
+        <DockPanel>
+          <TextBlock DockPanel.Dock="Top" 
+                     Text="Info Messages" 
+                     FontWeight="Bold" 
+                     Foreground="Black" 
+                     Padding="4,2"
+                     Background="#F0F0F0" />
+          <ListBox ItemsSource="{Binding InfoBarMessages}" 
+                   Background="White"
+                   Padding="2">
+            <ListBox.ItemTemplate>
+              <DataTemplate>
+                <TextBlock Text="{Binding FormattedMessage}" 
+                           Foreground="Black" 
+                           FontSize="11"
+                           TextWrapping="Wrap" />
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+        </DockPanel>
+      </Border>
+
+      <!-- Horizontal GridSplitter (between main content and log panel) -->
+      <GridSplitter Grid.Row="1" 
+                    Grid.Column="0"
+                    Grid.ColumnSpan="3"
+                    Height="4" 
+                    HorizontalAlignment="Stretch" 
+                    Background="#E0E0E0" />
+
+      <!-- Logging Panel (bottom) -->
+      <Border Grid.Row="2" 
+              Grid.Column="0"
+              Grid.ColumnSpan="3"
+              BorderBrush="#CCCCCC" 
+              BorderThickness="0,1,0,0" 
+              Background="White">
+        <DockPanel>
+          <TextBlock DockPanel.Dock="Top" 
+                     Text="Logs" 
+                     FontWeight="Bold" 
+                     Foreground="Black" 
+                     Padding="4,2"
+                     Background="#F0F0F0" />
+          <ListBox ItemsSource="{Binding LogEntries}" 
+                   Background="White"
+                   Padding="2">
+            <ListBox.Styles>
+              <Style Selector="ListBoxItem">
+                <Setter Property="Padding" Value="4,1" />
+                <Setter Property="MinHeight" Value="0" />
+              </Style>
+            </ListBox.Styles>
+            <ListBox.ItemTemplate>
+              <DataTemplate>
+                <TextBlock Text="{Binding FormattedMessage}" 
+                           Foreground="Black" 
+                           FontFamily="Consolas,Courier New,monospace"
+                           FontSize="11"
+                           LineHeight="14" />
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+        </DockPanel>
+      </Border>
+
+    </Grid>
+
+  </DockPanel>
+</Window>

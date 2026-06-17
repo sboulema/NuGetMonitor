@@ -1,0 +1,174 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:monitor="clr-namespace:NuGetMonitor.View.Monitor"
+             mc:Ignorable="d" d:DesignHeight="450" d:DesignWidth="800"
+             x:Class="NuGetMonitor.View.Monitor.NuGetMonitorControl"
+             x:DataType="monitor:NuGetMonitorViewModel">
+  <Grid>
+    <DockPanel>
+      <!-- Toolbar -->
+      <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="4" Margin="2">
+        <Button Content="⬆ Update Selected"
+                Command="{Binding UpdateSelectedCommand}"
+                ToolTip.Tip="Update Selected Items" />
+        <Button Content="🔄 Refresh"
+                Command="{Binding RefreshCommand}"
+                CommandParameter="{Binding #DataGrid}"
+                ToolTip.Tip="Refresh" />
+      </StackPanel>
+
+      <!-- DataGrid -->
+      <DataGrid x:Name="DataGrid"
+                ItemsSource="{Binding Packages}"
+                AutoGenerateColumns="False"
+                IsReadOnly="True"
+                BorderThickness="0,1,0,0"
+                GridLinesVisibility="All"
+                CanUserReorderColumns="True"
+                CanUserResizeColumns="True"
+                CanUserSortColumns="True"
+                SelectionMode="Extended">
+        <DataGrid.Styles>
+          <Style Selector="DataGridCell">
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Padding" Value="6,0" />
+            <Setter Property="MinHeight" Value="0" />
+          </Style>
+          <Style Selector="DataGridRow">
+            <Setter Property="MinHeight" Value="0" />
+          </Style>
+          <Style Selector="DataGridColumnHeader">
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Padding" Value="6,4" />
+            <Setter Property="MinHeight" Value="0" />
+          </Style>
+          <Style Selector="DataGridCell.RightAlign TextBlock">
+            <Setter Property="TextAlignment" Value="Right" />
+          </Style>
+        </DataGrid.Styles>
+        <DataGrid.Columns>
+          <!-- Package Column -->
+          <DataGridTextColumn Header="Package"
+                              SortMemberPath="PackageReference.Id"
+                              Binding="{Binding PackageReference.Id}"
+                              MinWidth="300"
+                              IsReadOnly="True" />
+
+          <!-- Installed Version Column -->
+          <DataGridTextColumn Header="Installed Version"
+                              SortMemberPath="ActiveVersion"
+                              Binding="{Binding ActiveVersion}"
+                              MinWidth="120"
+                              IsReadOnly="True">
+            <DataGridTextColumn.CellStyleClasses>
+              <x:String>RightAlign</x:String>
+            </DataGridTextColumn.CellStyleClasses>
+          </DataGridTextColumn>
+
+          <!-- Available Versions Column -->
+          <DataGridTemplateColumn Header="Available Versions" MinWidth="120">
+            <DataGridTemplateColumn.CellTemplate>
+              <DataTemplate>
+                <Grid HorizontalAlignment="Right">
+                  <ComboBox ItemsSource="{Binding Package.Versions, FallbackValue=[]}"
+                            SelectedItem="{Binding SelectedVersion}"
+                            MinWidth="100"
+                            BorderThickness="0"
+                            IsVisible="{Binding !IsLoading}" />
+                  <TextBlock Text="Loading..."
+                             VerticalAlignment="Center"
+                             HorizontalAlignment="Center"
+                             IsVisible="{Binding IsLoading}" />
+                </Grid>
+              </DataTemplate>
+            </DataGridTemplateColumn.CellTemplate>
+          </DataGridTemplateColumn>
+
+          <!-- Update Button Column -->
+          <DataGridTemplateColumn Header="Update"
+                                  Width="100"
+                                  SortMemberPath="IsUpdateAvailable">
+            <DataGridTemplateColumn.CellTemplate>
+              <DataTemplate>
+                <Button Content="⬆"
+                        Command="{Binding UpdateCommand}"
+                        HorizontalAlignment="Center"
+                        ToolTip.Tip="Update this package"
+                        IsVisible="{Binding IsUpdateAvailable}" />
+              </DataTemplate>
+            </DataGridTemplateColumn.CellTemplate>
+          </DataGridTemplateColumn>
+
+          <!-- Pinned Column -->
+          <DataGridCheckBoxColumn Header="Pinned"
+                                  SortMemberPath="IsPinned"
+                                  Binding="{Binding IsPinned, Mode=OneWay}"
+                                  Width="100"
+                                  IsReadOnly="True" />
+
+          <!-- Issues Column -->
+          <DataGridTextColumn Header="Issues"
+                              SortMemberPath="PackageInfo.Issues"
+                              Binding="{Binding PackageInfo.Issues, FallbackValue=''}"
+                              MinWidth="120"
+                              IsReadOnly="True" />
+
+          <!-- Justifications Column -->
+          <DataGridTextColumn Header="Justifications"
+                              SortMemberPath="Justifications"
+                              Binding="{Binding Justifications}"
+                              MinWidth="120"
+                              IsReadOnly="True" />
+
+          <!-- Projects Column -->
+          <DataGridTemplateColumn Header="Projects" MinWidth="150">
+            <DataGridTemplateColumn.CellTemplate>
+              <DataTemplate>
+                <ItemsControl ItemsSource="{Binding Projects}">
+                  <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                      <StackPanel Orientation="Horizontal" Spacing="4" />
+                    </ItemsPanelTemplate>
+                  </ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                      <Button Content="{Binding Name}"
+                              Command="{Binding OpenProjectCommand}"
+                              Classes="link"
+                              Padding="2,0" />
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </DataTemplate>
+            </DataGridTemplateColumn.CellTemplate>
+          </DataGridTemplateColumn>
+
+          <!-- Project URL Column -->
+          <DataGridTemplateColumn Header="Project URL" MinWidth="200">
+            <DataGridTemplateColumn.CellTemplate>
+              <DataTemplate>
+                <Button Content="{Binding PackageInfo.ProjectUrl, FallbackValue=''}"
+                        Command="{Binding OpenProjectUrlCommand}"
+                        Classes="link"
+                        Padding="2,0"
+                        HorizontalAlignment="Left" />
+              </DataTemplate>
+            </DataGridTemplateColumn.CellTemplate>
+          </DataGridTemplateColumn>
+        </DataGrid.Columns>
+      </DataGrid>
+    </DockPanel>
+
+    <!-- Loading Overlay -->
+    <Border IsVisible="{Binding IsLoading}"
+            Background="#80000000"
+            HorizontalAlignment="Stretch"
+            VerticalAlignment="Stretch">
+      <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="8">
+        <TextBlock Text="Loading packages…" Foreground="White" FontSize="13" HorizontalAlignment="Center" />
+      </StackPanel>
+    </Border>
+  </Grid>
+</UserControl>

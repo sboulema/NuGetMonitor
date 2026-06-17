@@ -1,9 +1,7 @@
 ﻿using Community.VisualStudio.Toolkit;
-using Microsoft.VisualStudio.Shell;
 using NuGetMonitor.Model.Models;
 using NuGetMonitor.Model.Services;
 using NuGetMonitor.Options;
-using TomsToolbox.Essentials;
 
 namespace NuGetMonitor.Services;
 
@@ -29,8 +27,20 @@ internal static class MonitorService
     private static void Reset()
     {
         InfoBarService.CloseInfoBars();
-        NuGetService.Reset(VS.Solutions.GetCurrentSolution()?.FullPath);
+        NuGetService.Reset(GetCurrentSolution()?.FullPath);
         ProjectService.ClearCache();
+    }
+
+    private static Solution? GetCurrentSolution()
+    {
+        try
+        {
+            return VS.Solutions.GetCurrentSolution();
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     private static void SolutionEvents_OnAfterOpenSolution(Solution? solution) => CheckForUpdates();

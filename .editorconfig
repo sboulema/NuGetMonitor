@@ -148,3 +148,6 @@ dotnet_diagnostic.CA1867.severity = silent
 
 # CA1062: Validate arguments of public methods
 dotnet_diagnostic.CA1062.severity = none
+
+# IDE0305: Simplify collection initialization
+dotnet_diagnostic.IDE0305.severity = suggestion

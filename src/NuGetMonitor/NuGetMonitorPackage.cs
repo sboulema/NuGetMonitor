@@ -1,9 +1,7 @@
-﻿using System.IO;
-using System.Reflection;
+﻿using System.Reflection;
 using System.Runtime.InteropServices;
 using Community.VisualStudio.Toolkit;
 using Microsoft.VisualStudio;
-using Microsoft.VisualStudio.Shell;
 using NuGetMonitor.Model.Services;
 using NuGetMonitor.Options;
 using NuGetMonitor.Services;

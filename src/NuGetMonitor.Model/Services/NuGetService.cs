@@ -204,7 +204,7 @@ public static class NuGetService
                 }
 
                 // Apply any vulnerability mitigations defined for this package
-                dependentPackage.VulnerabilityMitigation = project.PackageMitigations.GetValueOrDefault(dependentPackageIdentity);
+                dependentPackage.VulnerabilityMitigation = project.PackageMitigations.TryGetValue(dependentPackageIdentity, out var mitigation) ? mitigation : null;
 
                 // Record the parent-child relationship for dependency tracking
                 parentsByChild

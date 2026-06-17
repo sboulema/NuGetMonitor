@@ -14,9 +14,13 @@
     <PackageReference Include="Fody" PrivateAssets="all" />
     <PackageReference Include="Community.VisualStudio.Toolkit.17" />
     <PackageReference Include="Microsoft.VSSDK.BuildTools" PrivateAssets="all" />
+    <PackageReference Include="NuGet.Protocol" ExcludeAssets="" />
     <PackageReference Include="PropertyChanged.Fody" PrivateAssets="all" />
     <PackageReference Include="Throttle.Fody" PrivateAssets="all" />
     <PackageReference Include="TomsToolbox.Wpf.Styles" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\NugetMonitor.Shared\**\*.cs" Link="%(RecursiveDir)%(Filename)%(Extension)" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="..\..\LICENSE">

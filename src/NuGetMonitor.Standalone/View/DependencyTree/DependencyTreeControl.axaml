@@ -1,0 +1,93 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:local="clr-namespace:NuGetMonitor.View.DependencyTree"
+             mc:Ignorable="d" d:DesignHeight="450" d:DesignWidth="800"
+             x:Class="NuGetMonitor.View.DependencyTree.DependencyTreeControl"
+             x:DataType="local:DependencyTreeViewModel">
+
+  <UserControl.Resources>
+    <!-- Context menu for tree nodes -->
+    <ContextMenu x:Key="PackageContextMenu" x:DataType="local:ChildNode">
+      <MenuItem Header="Copy PackageReference"
+                Command="{Binding CopyPackageReferenceCommand}" />
+      <MenuItem Header="Copy PackageVersion"
+                Command="{Binding CopyPackageVersionCommand}" />
+      <MenuItem Header="Copy PackageMitigation"
+                Command="{Binding CopyPackageMitigationCommand}" />
+    </ContextMenu>
+  </UserControl.Resources>
+
+  <UserControl.DataTemplates>
+    <!-- ChildNode (nested) template -->
+    <TreeDataTemplate DataType="local:ChildNode" ItemsSource="{Binding Children}">
+      <StackPanel Orientation="Horizontal"
+                  Margin="2"
+                  ContextMenu="{StaticResource PackageContextMenu}">
+        <TextBlock Text="{Binding PackageIdentity}" />
+        <TextBlock FontWeight="Bold"
+                   Text=" *"
+                   IsVisible="{Binding IsTransitivePinned}"
+                   ToolTip.Tip="This package is transitive pinned." />
+        <TextBlock Text="{Binding Issues}"
+                   Foreground="Gray" />
+      </StackPanel>
+    </TreeDataTemplate>
+
+    <!-- RootNode template -->
+    <TreeDataTemplate DataType="local:RootNode" ItemsSource="{Binding Children}">
+      <StackPanel Orientation="Horizontal" Margin="2">
+        <TextBlock FontWeight="Bold" Text="{Binding ProjectName}" />
+        <TextBlock FontWeight="Bold" Text=" [" />
+        <TextBlock FontWeight="Bold" Text="{Binding TargetFramework}" />
+        <TextBlock FontWeight="Bold" Text="]" />
+      </StackPanel>
+    </TreeDataTemplate>
+  </UserControl.DataTemplates>
+
+  <Grid>
+    <DockPanel>
+      <!-- Toolbar -->
+      <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="4" Margin="2">
+        <Button Content="🔄 Refresh"
+                Command="{Binding RefreshCommand}"
+                ToolTip.Tip="Refresh" />
+        <Separator Width="1" Background="#CCCCCC" Margin="4,2" />
+        <TextBlock Text="🔍" VerticalAlignment="Center" />
+        <TextBox x:Name="SearchText"
+                 Width="200"
+                 Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                 PlaceholderText="Search packages…" />
+        <Separator Width="1" Background="#CCCCCC" Margin="4,2" />
+        <CheckBox Content="Show up-to-date"
+                  IsChecked="{Binding ShowUpToDate}" />
+        <CheckBox Content="Show outdated"
+                  IsChecked="{Binding ShowOutdated}" />
+        <CheckBox Content="Show vulnerable"
+                  IsChecked="{Binding ShowVulnerable}" />
+      </StackPanel>
+
+      <!-- Tree View -->
+      <TreeView ItemsSource="{Binding TransitivePackages}"
+                BorderThickness="0,1,0,0">
+        <TreeView.Styles>
+          <!-- Expand root nodes (RootNode) by default; child nodes stay collapsed -->
+          <Style Selector="TreeView > TreeViewItem">
+            <Setter Property="IsExpanded" Value="True" />
+          </Style>
+        </TreeView.Styles>
+      </TreeView>
+    </DockPanel>
+
+    <!-- Loading Overlay -->
+    <Border IsVisible="{Binding IsLoading}"
+            Background="#80000000"
+            HorizontalAlignment="Stretch"
+            VerticalAlignment="Stretch">
+      <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="8">
+        <TextBlock Text="Loading…" Foreground="White" FontSize="13" HorizontalAlignment="Center" />
+      </StackPanel>
+    </Border>
+  </Grid>
+</UserControl>

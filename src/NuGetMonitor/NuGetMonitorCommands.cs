@@ -1,5 +1,4 @@
 ﻿using System.ComponentModel.Design;
-using Microsoft.VisualStudio.Shell;
 using NuGetMonitor.View.DependencyTree;
 using NuGetMonitor.View.Monitor;
 
