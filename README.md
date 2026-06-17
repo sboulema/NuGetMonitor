@@ -18,7 +18,7 @@ for the installed NuGet packages in the current solution.
 
 - Visual Studio 2026 (18.5.2 or higher)
 
-> Due to limitations of the Visual Studio Marketplace the extension can be installed on VS2022, but it won't run.
+> The extension can be installed on VS2022 and might work, but it's not tested.
 
 ## Installing
 
