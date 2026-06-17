@@ -81,7 +81,7 @@
           </Grid>
           <TextBlock FontWeight="Bold" Text=" *"
                      Visibility="{Binding IsTransitivePinned, Converter={toms:BooleanToVisibilityConverter}}"
-                     ToolTip="This package is transitive pinned."/>
+                     ToolTip="This package is transitively pinned."/>
           <TextBlock Text="{Binding Issues}"
                      Foreground="{DynamicResource {x:Static SystemColors.ControlDarkDarkBrushKey}}" />
         </StackPanel>
