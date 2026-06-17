@@ -10,7 +10,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		Directory.Packages.props = Directory.Packages.props
 		publish-manifest.json = publish-manifest.json
 		README.md = README.md
-		.github\workflows\workflow.yml = .github\workflows\workflow.yml
+		.github\workflows\build.yml = .github\workflows\build.yml
+		.github\workflows\release.yml = .github\workflows\release.yml
 	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NuGetMonitor", "src\NuGetMonitor\NuGetMonitor.csproj", "{C1A48EF4-3E62-4C4C-8A3E-E1BA33FCAF14}"
