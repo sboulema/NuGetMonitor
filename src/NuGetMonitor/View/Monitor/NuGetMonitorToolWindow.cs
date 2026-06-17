@@ -1,5 +1,4 @@
 ﻿using System.Runtime.InteropServices;
-using Microsoft.VisualStudio.Shell;
 
 namespace NuGetMonitor.View.Monitor;
 

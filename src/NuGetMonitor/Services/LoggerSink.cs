@@ -1,6 +1,5 @@
 ﻿using Community.VisualStudio.Toolkit;
 using Microsoft.VisualStudio;
-using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 using NuGetMonitor.Model.Abstractions;
 using NuGetMonitor.Model.Services;

@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net48</TargetFrameworks>
+    <TargetFrameworks>net48;net10.0</TargetFrameworks>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
@@ -10,7 +10,7 @@
     <PackageReference Include="Microsoft.Build" ExcludeAssets="runtime" />
     <PackageReference Include="Microsoft.Build.Utilities.Core" ExcludeAssets="runtime" />
     <PackageReference Include="Microsoft.Extensions.Caching.Memory" />
-    <PackageReference Include="NuGet.Protocol" />
+    <PackageReference Include="NuGet.Protocol" ExcludeAssets="runtime" Justification="Provided with MSBuild" />
     <PackageReference Include="TomsToolbox.Essentials" />
     <PackageReference Include="ConfigureAwait.Fody" PrivateAssets="all" />
     <PackageReference Include="Fody" PrivateAssets="all" />

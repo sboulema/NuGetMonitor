@@ -1,17 +1,5 @@
-﻿using System.Collections.ObjectModel;
-using System.ComponentModel;
-using System.Text;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Input;
-using System.Windows.Threading;
-using Community.VisualStudio.Toolkit;
-using DataGridExtensions;
-using Microsoft.Build.Construction;
+﻿using Microsoft.Build.Construction;
 using Microsoft.Build.Evaluation;
-using Microsoft.VisualStudio;
-using Microsoft.VisualStudio.Shell;
-using Microsoft.VisualStudio.Shell.Interop;
 using NuGet.Packaging.Core;
 using NuGet.Versioning;
 using NuGetMonitor.Abstractions;
@@ -20,8 +8,10 @@ using NuGetMonitor.Model.Models;
 using NuGetMonitor.Model.Services;
 using NuGetMonitor.Services;
 using NuGetMonitor.ViewModels;
-using TomsToolbox.Essentials;
-using TomsToolbox.Wpf;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Text;
+using System.Windows.Input;
 
 namespace NuGetMonitor.View.Monitor;
 
@@ -31,20 +21,18 @@ internal sealed partial class NuGetMonitorViewModel : INotifyPropertyChanged
 {
     private static readonly string[] _versionMetadataNames = ["Version", "VersionOverride"];
 
-    private readonly ISolutionService _solutionService;
-
-    public NuGetMonitorViewModel(ISolutionService solutionService)
+    public NuGetMonitorViewModel()
     {
-        _solutionService = solutionService;
-
-        solutionService.SolutionOpened += SolutionEvents_OnAfterOpenSolution;
-        solutionService.SolutionClosed += SolutionEvents_OnAfterCloseSolution;
+        PlatformAbstractions.SolutionOpened += SolutionEvents_OnAfterOpenSolution;
+        PlatformAbstractions.SolutionClosed += SolutionEvents_OnAfterCloseSolution;
 
 #pragma warning disable VSTHRD001
 #pragma warning disable VSTHRD110
-        Dispatcher.CurrentDispatcher.BeginInvoke(() => Load().FireAndForget());
+#pragma warning disable VSSDK008
+        DispatcherExtensions.CurrentDispatcher.BeginInvoke(() => Load().FireAndForget());
 #pragma warning restore VSTHRD110
 #pragma warning restore VSTHRD001
+#pragma warning restore VSSDK008
     }
 
     public ICollection<PackageViewModel>? Packages { get; private set; }
@@ -55,15 +43,9 @@ internal sealed partial class NuGetMonitorViewModel : INotifyPropertyChanged
 
     public ICommand UpdateSelectedCommand => new DelegateCommand(() => SelectedPackages.Any(item => item.IsUpdateAvailable), UpdateSelected);
 
-    public ICommand RefreshCommand => new DelegateCommand<DataGrid>(Refresh);
-
-    public static ICommand ShowDependencyTreeCommand => new DelegateCommand(ShowDependencyTree);
-
-    public ICommand ShowNuGetPackageManagerCommand => new DelegateCommand(() => _solutionService.ShowPackageManager());
+    public ICommand NormalizePackageReferencesCommand => new DelegateCommand(NormalizePackageReferences);
 
     public ICommand CopyIssueDetailsCommand => new DelegateCommand(CanCopyIssueDetails, CopyIssueDetails);
-
-    public ICommand NormalizePackageReferencesCommand => new DelegateCommand(NormalizePackageReferences);
 
     private void SolutionEvents_OnAfterOpenSolution(object? sender, EventArgs e)
     {
@@ -86,13 +68,13 @@ internal sealed partial class NuGetMonitorViewModel : INotifyPropertyChanged
 
             Packages = null;
 
-            var projectFolders = await _solutionService.GetProjectFilePaths();
+            var projectFolders = await PlatformAbstractions.GetProjectFilePaths();
 
             var packageReferences = await ProjectService.GetPackageReferences(projectFolders);
 
             var packages = packageReferences
                 .GroupBy(item => item.Identity)
-                .Select(group => new PackageViewModel(this, group, PackageItemType.PackageReference, _solutionService))
+                .Select(group => new PackageViewModel(this, group, PackageItemType.PackageReference))
                 .ToArray();
 
             var packageIds = packages
@@ -106,7 +88,7 @@ internal sealed partial class NuGetMonitorViewModel : INotifyPropertyChanged
                 .SelectMany(project => project.Project.CentralVersionMap.Values.Select(item => new PackageReferenceEntry(item.EvaluatedInclude, item.GetVersion() ?? VersionRange.None, VersionKind.CentralDefinition, item, project, false)))
                 .Where(item => !packageIds.Contains(item.Identity))
                 .GroupBy(item => item.Identity)
-                .Select(group => new PackageViewModel(this, group, PackageItemType.PackageVersion, _solutionService))
+                .Select(group => new PackageViewModel(this, group, PackageItemType.PackageVersion))
                 .ToArray();
 
             Packages = packages.Concat(transitivePins).ToArray();
@@ -126,20 +108,6 @@ internal sealed partial class NuGetMonitorViewModel : INotifyPropertyChanged
         {
             IsLoading = false;
         }
-    }
-
-    private static void ShowDependencyTree()
-    {
-        NuGetMonitorCommands.Instance?.ShowDependencyTreeToolWindow();
-    }
-
-    private void Refresh(DataGrid dataGrid)
-    {
-        dataGrid.GetFilter().Clear();
-
-        MonitorService.CheckForUpdates();
-
-        Load().FireAndForget();
     }
 
     public void Update(PackageViewModel packageViewModel)
@@ -261,12 +229,9 @@ internal sealed partial class NuGetMonitorViewModel : INotifyPropertyChanged
             if (incompatibleProjects.Length <= 0)
                 continue;
 
-            var response = await VS.MessageBox.ShowAsync(
-                $"Package {packageDetails.Identity} ({string.Join(", ", packageDetails.SupportedFrameworks)}) is not compatible with projects {string.Join(",", incompatibleProjects.Select(p => p.NameAndFramework))}",
-                "Do you want to update anyway?",
-                OLEMSGICON.OLEMSGICON_WARNING, OLEMSGBUTTON.OLEMSGBUTTON_YESNO, OLEMSGDEFBUTTON.OLEMSGDEFBUTTON_SECOND);
-
-            if (response != VSConstants.MessageBoxResult.IDYES)
+            if (!await PlatformAbstractions.ShowNoYesMessageBox(
+                    $"Package {packageDetails.Identity} ({string.Join(", ", packageDetails.SupportedFrameworks)}) is not compatible with projects {string.Join(",", incompatibleProjects.Select(p => p.NameAndFramework))}",
+                    "Do you want to update anyway?"))
                 return false;
         }
 
@@ -280,17 +245,17 @@ internal sealed partial class NuGetMonitorViewModel : INotifyPropertyChanged
 
     private async Task NormalizePackageReferencesAsync()
     {
-        var projectItems = Packages
-            .SelectMany(p => p.Items.Select(item => item.ProjectItemInTargetFramework.ProjectItem));
+        var projectItems = Packages?
+            .SelectMany(p => p.Items.Select(item => item.ProjectItemInTargetFramework.ProjectItem)) ?? [];
 
         var numberOfUpdatedItems = ProjectService.NormalizePackageReferences(projectItems);
 
         await ShowInfoBar($"{numberOfUpdatedItems} package references normalized");
     }
 
-    private async Task ShowInfoBar(string text)
+    private static async Task ShowInfoBar(string text)
     {
-        await _solutionService.ShowInfoBar(text);
+        await PlatformAbstractions.ShowInfoBar(text);
     }
 
     private bool CanCopyIssueDetails()
@@ -310,6 +275,7 @@ internal sealed partial class NuGetMonitorViewModel : INotifyPropertyChanged
             package.PackageInfo?.AppendIssueDetails(text);
         }
 
-        Clipboard.SetText(text.ToString());
+        // Copy to clipboard
+        ClipboardService.SetText(text.ToString());
     }
 }

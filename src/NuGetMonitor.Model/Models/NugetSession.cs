@@ -42,9 +42,32 @@ public sealed class NuGetSession : IDisposable
 
     public void Dispose()
     {
-        _cancellationTokenSource.Cancel();
-        _cancellationTokenSource.Dispose();
-        SourceCacheContext.Dispose();
-        Cache.Dispose();
+        try
+        {
+            _cancellationTokenSource.Cancel();
+            _cancellationTokenSource.Dispose();
+        }
+        catch (ObjectDisposedException)
+        {
+            // CancellationTokenSource has already been disposed, ignore.
+        }
+
+        try
+        {
+            SourceCacheContext.Dispose();
+        }
+        catch (ObjectDisposedException)
+        {
+            // SourceCacheContext has already been disposed, ignore.
+        }
+
+        try
+        {
+            Cache.Dispose();
+        }
+        catch (ObjectDisposedException)
+        {
+            // Cache has already been disposed, ignore.
+        }
     }
 }

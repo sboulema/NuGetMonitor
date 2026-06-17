@@ -1,6 +1,4 @@
-﻿using NuGetMonitor.Services;
-
-namespace NuGetMonitor.View.Monitor;
+﻿namespace NuGetMonitor.View.Monitor;
 
 /// <summary>
 /// Interaction logic for NugetMonitorControl.xaml
@@ -11,6 +9,6 @@ public sealed partial class NuGetMonitorControl
     {
         InitializeComponent();
 
-        DataContext = new NuGetMonitorViewModel(SolutionService.Instance);
+        DataContext = new NuGetMonitorViewModel();
     }
 }

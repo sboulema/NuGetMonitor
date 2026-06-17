@@ -1,6 +1,4 @@
-﻿using Microsoft.VisualStudio.Shell;
-
-[assembly: ProvideCodeBase(AssemblyName = "DataGridExtensions")]
+﻿[assembly: ProvideCodeBase(AssemblyName = "DataGridExtensions")]
 [assembly: ProvideCodeBase(AssemblyName = "Microsoft.Extensions.Caching.Abstractions")]
 [assembly: ProvideCodeBase(AssemblyName = "Microsoft.Extensions.Caching.Memory")]
 [assembly: ProvideCodeBase(AssemblyName = "Microsoft.Extensions.DependencyInjection.Abstractions")]

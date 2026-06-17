@@ -26,6 +26,8 @@ for the installed NuGet packages in the current solution.
 
 [GitHub Releases](https://github.com/sboulema/NuGetMonitor/releases)
 
+> A platform-independent standalone version is also available in the GitHub releases as `NuGetMonitor.Standalone.zip`.
+
 [Open VSIX Gallery](https://www.vsixgallery.com/extension/NuGetMonitor.2a6fbffe-f3fd-4bf8-98cc-5ae2c833a1c7)
 
 ## Usage
@@ -34,9 +36,10 @@ for the installed NuGet packages in the current solution.
 
 ![InfoBar](art/Screenshot2.png)
 
-Dependent on the size of the solution it may take some time until the info bars appear. 
+Dependent on the size of the solution it may take some time until the info bars appear.
 
 ---
+
 ### Package Manager
 
 The package manager can be opened via the entry in the `Tools` menu.
@@ -56,26 +59,32 @@ CentralPackageManagement (`PackageVersion` entries) are supported as well.
 A version can be pinned by adding the `IsPinned` property to `PackageReference` or `PackageVersion` entries, to stop NuGetMonitor
 from offering to update this version, if e.g. updating the package might break some functionality.
 This is an alternate approach to using the package range notation `[13.0.1]`, that avoids side effects on dependent projects, e.g. when creating a NuGet package.
+
 ```xml
 <PackageReference Include="Newtonsoft.Json" Version="13.0.1" IsPinned="true" />
 ```
 
 A version can also be pinned to a specific range by adding the `PinnedRange` property to `PackageReference` or `PackageVersion` entries, to limit updates to a specific range of versions.
+
 ```xml
 <PackageReference Include="Newtonsoft.Json" Version="13.0.1" "PinnedRange="[13.*, 14.0)" />
 ```
 
 A justification property can be added to `PackageReference` or `PackageVersion` entries, to e.g. document why a reference is pinned and can't be updated
+
 ```xml
 <PackageReference Include="Newtonsoft.Json" Version="[13.0.1]" Justification="Can't update due to Visual Studio extension limitations">
 ```
 
 A mitigation element can be added to suppress warnings for transitive dependencies that can't be updated due to project limitations
 but have been evaluated to not affect the product security.
+
 ```xml
 <PackageMitigation Include="Newtonsoft.Json" Version="13.0.1" Justification="Can't update due to Visual Studio extension limitations">
 ```
+
 ---
+
 ### Dependency Tree
 
 This view allows to investigate how transitive dependencies are introduced into the projects.
