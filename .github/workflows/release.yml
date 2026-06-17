@@ -9,6 +9,7 @@ env:
   version: '1.7.${{ github.run_number }}'
   repoUrl: ${{ github.server_url }}/${{ github.repository }}
   vsixBuildPath: ${{ github.workspace }}/src/NuGetMonitor/bin/release/net48/NuGetMonitor.vsix
+  standaloneBuildPath: ${{ github.workspace }}/src/NuGetMonitor.Standalone/bin/release/net10.0
   publishManifestPath: publish-manifest.json
 
 jobs:
@@ -43,6 +44,12 @@ jobs:
             publish-manifest.json
             readme.md
 
+      - name: Publish Standalone Build Artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: NuGetMonitor.Standalone
+          path: ${{ env.standaloneBuildPath }}
+
   release:
     name: 🔖 Tag & Release
     needs: build
@@ -54,6 +61,19 @@ jobs:
         uses: actions/download-artifact@v8
         with:
           name: NuGetMonitor
+          path: NuGetMonitor
+
+      - name: Download standalone artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: NuGetMonitor.Standalone
+          path: NuGetMonitor.Standalone
+
+      - name: Package NuGetMonitor artifact
+        run: Get-ChildItem -Path NuGetMonitor -Recurse -File | Compress-Archive -DestinationPath NuGetMonitor.zip -Force
+
+      - name: Package standalone artifact
+        run: Get-ChildItem -Path NuGetMonitor.Standalone -Recurse -File | Compress-Archive -DestinationPath NuGetMonitor.Standalone.zip -Force
 
       - name: Tag release
         id: tag_release
@@ -68,7 +88,7 @@ jobs:
           tag: ${{ steps.tag_release.outputs.new_tag }}
           name: ${{ steps.tag_release.outputs.new_tag }}
           body: ${{ steps.tag_release.outputs.changelog }}
-          artifacts: "**/*.vsix"
+          artifacts: "NuGetMonitor.zip,NuGetMonitor.Standalone.zip"
           skipIfReleaseExists: true
 
   publishMarketplace:

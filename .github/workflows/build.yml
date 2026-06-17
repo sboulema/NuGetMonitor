@@ -9,6 +9,7 @@ on:
 
 env:
   vsixBuildPath: ${{ github.workspace }}/src/NuGetMonitor/bin/release/net48/NuGetMonitor.vsix
+  standaloneBuildPath: ${{ github.workspace }}/src/NuGetMonitor.Standalone/bin/release/net10.0
 
 jobs:
   build:
@@ -35,3 +36,9 @@ jobs:
         with:
           name: NuGetMonitor
           path: NuGetMonitor.vsix
+
+      - name: Publish Standalone Build Artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: NuGetMonitor.Standalone
+          path: ${{ env.standaloneBuildPath }}
