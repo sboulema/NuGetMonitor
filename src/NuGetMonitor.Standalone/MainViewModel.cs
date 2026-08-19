@@ -12,7 +12,7 @@ internal sealed partial class MainViewModel : INotifyPropertyChanged
     private readonly LoggerSink _loggerSink;
     private readonly InfoBarService _infoBarService = InfoBarService.Instance;
     private readonly MonitorService _monitorService;
-    private readonly Settings _settings = Settings.Load();
+    private readonly Settings _settings = Settings.Instance;
 
     public string? SolutionPath { get; private set; }
 

@@ -32,5 +32,10 @@ public sealed class GeneralOptions : BaseOptionModel<GeneralOptions>
     [Description("Log all potentially redundant package references where the package is already introduced by a referenced project")]
     [DefaultValue(true)]
     public bool LogRedundantPackageReferences { get; set; } = true;
+
+    // Not shown on the options page; maintained internally by the "Choose columns" flyout in the tool window.
+    [Browsable(false)]
+    [DefaultValue("")]
+    public string HiddenColumns { get; set; } = string.Empty;
 }
 

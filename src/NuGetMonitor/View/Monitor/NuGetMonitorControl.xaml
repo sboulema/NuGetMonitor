@@ -12,7 +12,8 @@
              xmlns:monitor="clr-namespace:NuGetMonitor.View.Monitor"
              toolkit:Themes.UseVsTheme="True"
              mc:Ignorable="d" d:DesignHeight="450" d:DesignWidth="800"
-             d:DataContext="{d:DesignInstance monitor:NuGetMonitorViewModel}">
+             d:DataContext="{d:DesignInstance monitor:NuGetMonitorViewModel}"
+             x:Name="Root">
   <UserControl.Resources>
     <ResourceDictionary Source="/NuGetMonitor;component/Resources/VSColorScheme.xaml" />
   </UserControl.Resources>
@@ -53,6 +54,12 @@
         <Button Command="{Binding CopyIssueDetailsCommand}" ToolTip="Copy issue details">
           <imaging:CrispImage Width="16" Height="16" Moniker="{x:Static imageCatalog:KnownMonikers.Copy}" />
         </Button>
+        <ToggleButton x:Name="ColumnsToggleButton" ToolTip="Choose columns">
+          <ToggleButton.Style>
+            <Style TargetType="ToggleButton" BasedOn="{StaticResource {x:Static ToolBar.ToggleButtonStyleKey}}" />
+          </ToggleButton.Style>
+          <imaging:CrispImage Width="16" Height="16" Moniker="{x:Static imageCatalog:KnownMonikers.AddOrRemoveColumns}" />
+        </ToggleButton>
       </ToolBar>
       <DataGrid x:Name="DataGrid"
                 ItemsSource="{Binding Packages}"
@@ -95,7 +102,8 @@
           </Style>
         </DataGrid.RowStyle>
         <DataGrid.Columns>
-          <DataGridTextColumn Binding="{Binding PackageReference.Id}"
+          <DataGridTextColumn x:Name="PackageColumn"
+                              Binding="{Binding PackageReference.Id}"
                               Header="Package"
                               MinWidth="300" />
           <DataGridTextColumn Binding="{Binding ActiveVersion}"
@@ -237,11 +245,30 @@
             </DataGridTemplateColumn.CellTemplate>
           </DataGridTemplateColumn>
           <!-- Add an extra padding column, so we can always scroll to the last column. -->
-          <DataGridTextColumn Width="{Binding DataContext.(DataGrid.ActualWidth), Source={StaticResource DataGridRelay}}"
+          <DataGridTextColumn x:Name="PaddingColumn"
+                              Width="{Binding DataContext.(DataGrid.ActualWidth), Source={StaticResource DataGridRelay}}"
                               dgx:DataGridFilterColumn.IsFilterVisible="False" />
         </DataGrid.Columns>
       </DataGrid>
     </DockPanel>
+    <Popup PlacementTarget="{Binding ElementName=ColumnsToggleButton}"
+           IsOpen="{Binding IsChecked, ElementName=ColumnsToggleButton, Mode=TwoWay}"
+           StaysOpen="False"
+           AllowsTransparency="True"
+           Placement="Bottom">
+      <Border Background="{DynamicResource {x:Static SystemColors.WindowBrushKey}}"
+              BorderBrush="{DynamicResource {x:Static SystemColors.ActiveBorderBrushKey}}"
+              BorderThickness="1"
+              Padding="6">
+        <ItemsControl ItemsSource="{Binding ColumnItems, ElementName=Root}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate>
+              <CheckBox Content="{Binding Header}" IsChecked="{Binding IsVisible, Mode=TwoWay}" Margin="2" />
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </Border>
+    </Popup>
     <toms:LoadingIndicator IsActive="{Binding IsLoading}" Header="Loading..." d:IsHidden="True"/>
   </Grid>
 </UserControl>

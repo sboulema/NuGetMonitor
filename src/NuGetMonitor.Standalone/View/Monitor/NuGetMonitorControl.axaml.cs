@@ -1,6 +1,7 @@
 using Avalonia.Interactivity;
 using NuGetMonitor.ViewModels;
 using PropertyChanged;
+using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 
 namespace NuGetMonitor.View.Monitor;
@@ -14,6 +15,46 @@ public sealed partial class NuGetMonitorControl : UserControl
     {
         InitializeComponent();
         DataGrid.SelectionChanged += DataGrid_SelectionChanged;
+
+        InitializeColumnVisibility();
+    }
+
+    /// <summary>
+    /// Backs the "Choose columns" flyout; one entry per toggleable column of <see cref="DataGrid"/>.
+    /// </summary>
+    public ObservableCollection<ColumnItem> ColumnItems { get; } = new();
+
+    private void InitializeColumnVisibility()
+    {
+        var hiddenColumns = new HashSet<string>(
+            Settings.Instance.HiddenColumns.Split(',').Where(header => !string.IsNullOrEmpty(header)),
+            StringComparer.OrdinalIgnoreCase);
+
+        // Package is the primary identity column; it should always stay visible and isn't offered in the chooser.
+        var toggleableColumns = DataGrid.Columns.Where(column => !string.Equals(column.Header?.ToString(), "Package", StringComparison.Ordinal));
+
+        foreach (var column in toggleableColumns)
+        {
+            var header = column.Header?.ToString();
+
+            if (header is not null && hiddenColumns.Contains(header))
+            {
+                column.IsVisible = false;
+            }
+
+            ColumnItems.Add(new ColumnItem(column, PersistColumnVisibility));
+        }
+    }
+
+    private void PersistColumnVisibility()
+    {
+        var hiddenColumns = DataGrid.Columns
+            .Where(column => !column.IsVisible)
+            .Select(column => column.Header?.ToString())
+            .ExceptNullItems();
+
+        Settings.Instance.HiddenColumns = string.Join(",", hiddenColumns);
+        Settings.Instance.Save();
     }
 
     protected override void OnLoaded(RoutedEventArgs e)
