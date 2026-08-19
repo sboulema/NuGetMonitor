@@ -5,7 +5,8 @@
              xmlns:monitor="clr-namespace:NuGetMonitor.View.Monitor"
              mc:Ignorable="d" d:DesignHeight="450" d:DesignWidth="800"
              x:Class="NuGetMonitor.View.Monitor.NuGetMonitorControl"
-             x:DataType="monitor:NuGetMonitorViewModel">
+             x:DataType="monitor:NuGetMonitorViewModel"
+             x:Name="Root">
   <Grid>
     <DockPanel>
       <!-- Toolbar -->
@@ -17,6 +18,19 @@
                 Command="{Binding RefreshCommand}"
                 CommandParameter="{Binding #DataGrid}"
                 ToolTip.Tip="Refresh" />
+        <Button Content="☰ Columns" ToolTip.Tip="Choose columns">
+          <Button.Flyout>
+            <Flyout Placement="Bottom">
+              <ItemsControl ItemsSource="{Binding #Root.ColumnItems}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate>
+                    <CheckBox Content="{Binding Header}" IsChecked="{Binding IsVisible, Mode=TwoWay}" Margin="2" />
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </Flyout>
+          </Button.Flyout>
+        </Button>
       </StackPanel>
 
       <!-- DataGrid -->

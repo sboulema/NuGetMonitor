@@ -10,7 +10,16 @@ internal sealed class Settings
     private static readonly string _settingsFilePath = Path.Combine(_settingsFileFolder, "settings.json");
     private static readonly JsonSerializerOptions _jsonSerializerOptions = new() { WriteIndented = true };
 
+    /// <summary>
+    /// The single, shared instance to use throughout the app; ensures every part of the UI
+    /// reads and writes the same in-memory state, so one part saving doesn't clobber another's changes.
+    /// </summary>
+    public static Settings Instance { get; } = Load();
+
     public List<string> RecentSolutions { get; init; } = [];
+
+    // Comma-separated header names of the columns the user hid via the "Choose columns" flyout.
+    public string HiddenColumns { get; set; } = string.Empty;
 
     public static Settings Load()
     {
