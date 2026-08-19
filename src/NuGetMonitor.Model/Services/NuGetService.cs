@@ -350,6 +350,9 @@ public static class NuGetService
                 {
                     var dependencyInfoResource = await repositoryContext.SourceRepository.GetResourceAsync<DependencyInfoResource>(session.CancellationToken);
 
+                    if (dependencyInfoResource is null)
+                        return Array.Empty<NuGetVersion>();
+
                     var packages = await dependencyInfoResource.ResolvePackages(packageId, session.SourceCacheContext, NullLogger.Instance, session.CancellationToken);
 
                     return packages
@@ -368,6 +371,9 @@ public static class NuGetService
                 try
                 {
                     var packageResource = await repositoryContext.SourceRepository.GetResourceAsync<FindPackageByIdResource>(session.CancellationToken);
+
+                    if (packageResource is null)
+                        return Array.Empty<NuGetVersion>();
 
                     var versions = await packageResource.GetAllVersionsAsync(packageId, session.SourceCacheContext, NullLogger.Instance, session.CancellationToken);
 
@@ -405,6 +411,9 @@ public static class NuGetService
 
             var packageMetadataResource = await sourceRepository.GetResourceAsync<PackageMetadataResource>(session.CancellationToken);
 
+            if (packageMetadataResource is null)
+                return null;
+
             var metadata = await packageMetadataResource.GetMetadataAsync(packageIdentity, session.SourceCacheContext, NullLogger.Instance, session.CancellationToken);
 
             if (metadata is null)
@@ -441,9 +450,13 @@ public static class NuGetService
 
             var resource = await repository.GetResourceAsync<DownloadResource>(session.CancellationToken);
 
+            if (resource is null)
+                return new(packageIdentity, [], []);
+
             using var downloadResult = await resource.GetDownloadResourceResultAsync(packageIdentity, session.PackageDownloadContext, session.GlobalPackagesFolder, NullLogger.Instance, session.CancellationToken);
 
-            if (downloadResult.Status != DownloadResourceResultStatus.Available)
+            if (downloadResult.Status != DownloadResourceResultStatus.Available ||
+                downloadResult.PackageReader is null)
                 return new(packageIdentity, [], []);
 
             var dependencyGroups = await downloadResult.PackageReader.GetPackageDependenciesAsync(session.CancellationToken);
