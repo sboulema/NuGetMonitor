@@ -244,6 +244,19 @@
               </DataTemplate>
             </DataGridTemplateColumn.CellTemplate>
           </DataGridTemplateColumn>
+          <DataGridTemplateColumn Header="Repository URL"
+                                  dgx:DataGridFilterColumn.IsFilterVisible="False"
+                                  CellStyle="{StaticResource InfoColumnCellStyle}">
+            <DataGridTemplateColumn.CellTemplate>
+              <DataTemplate>
+                <TextBlock Margin="2,0" VerticalAlignment="Center">
+                  <Hyperlink Command="{Binding OpenRepositoryUrlCommand}">
+                    <Run Text="{Binding PackageDetails.RepositoryUrl, Mode=OneWay, FallbackValue=''}" />
+                  </Hyperlink>
+                </TextBlock>
+              </DataTemplate>
+            </DataGridTemplateColumn.CellTemplate>
+          </DataGridTemplateColumn>
           <!-- Add an extra padding column, so we can always scroll to the last column. -->
           <DataGridTextColumn x:Name="PaddingColumn"
                               Width="{Binding DataContext.(DataGrid.ActualWidth), Source={StaticResource DataGridRelay}}"

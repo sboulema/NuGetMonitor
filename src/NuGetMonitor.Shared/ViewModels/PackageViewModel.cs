@@ -1,4 +1,5 @@
-﻿using NuGet.Versioning;
+﻿using NuGet.Packaging.Core;
+using NuGet.Versioning;
 using NuGetMonitor.Model.Models;
 using NuGetMonitor.Model.Services;
 using NuGetMonitor.View.Monitor;
@@ -48,9 +49,13 @@ internal sealed partial class PackageViewModel : INotifyPropertyChanged
     public ICommand UpdateCommand => new DelegateCommand(() => IsUpdateAvailable, () => { _parent.Update(this); });
 
     // ! ProjectUrl is checked in CanExecute
-    public ICommand OpenProjectUrlCommand => new DelegateCommand(() => PackageInfo?.ProjectUrl != null, OpenProjectUrl);
+    public ICommand OpenProjectUrlCommand => new DelegateCommand(() => PackageInfo?.ProjectUrl != null, () => OpenUrl(PackageInfo?.ProjectUrl?.AbsoluteUri));
+
+    public ICommand OpenRepositoryUrlCommand => new DelegateCommand(() => PackageDetails?.RepositoryUrl != null, () => OpenUrl(PackageDetails?.RepositoryUrl));
 
     public PackageInfo? PackageInfo { get; private set; }
+
+    public PackageDetails? PackageDetails { get; private set; }
 
     public string Justifications { get; }
 
@@ -77,6 +82,8 @@ internal sealed partial class PackageViewModel : INotifyPropertyChanged
                 VersionRange versionRange => versionRange.FindBestMatch(versions),
                 _ => null
             };
+
+            PackageDetails = await NuGetService.GetPackageDetails(new PackageIdentity(PackageReference.Id, SelectedVersion));
         }
         catch (OperationCanceledException)
         {
@@ -125,23 +132,22 @@ internal sealed partial class PackageViewModel : INotifyPropertyChanged
         }
     }
 
-    private void OpenProjectUrl()
+    private static void OpenUrl(string? url)
     {
-        var projectUrl = PackageInfo?.ProjectUrl;
-        if (projectUrl == null)
+        if (string.IsNullOrWhiteSpace(url))
             return;
 
         try
         {
             Process.Start(new ProcessStartInfo
             {
-                FileName = projectUrl.AbsoluteUri,
+                FileName = url,
                 UseShellExecute = true
             });
         }
         catch (Exception ex)
         {
-            Log(LogLevel.Error, $"Failed to open project URL: {ex.Message}");
+            Log(LogLevel.Error, $"Failed to open URL {url}: {ex.Message}");
         }
     }
 }

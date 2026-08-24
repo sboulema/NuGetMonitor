@@ -446,24 +446,31 @@ public static class NuGetService
         {
             // Don't scan packages with pseudo-references, they don't get physically included, but cause vulnerability warnings.
             if (string.Equals(packageIdentity.Id, NetStandardPackageId, StringComparison.OrdinalIgnoreCase))
-                return new(packageIdentity, [], []);
+                return PackageDetails.CreateEmpty(packageIdentity);
 
             var resource = await repository.GetResourceAsync<DownloadResource>(session.CancellationToken);
 
             if (resource is null)
-                return new(packageIdentity, [], []);
+                return PackageDetails.CreateEmpty(packageIdentity);
 
             using var downloadResult = await resource.GetDownloadResourceResultAsync(packageIdentity, session.PackageDownloadContext, session.GlobalPackagesFolder, NullLogger.Instance, session.CancellationToken);
 
-            if (downloadResult.Status != DownloadResourceResultStatus.Available ||
-                downloadResult.PackageReader is null)
-                return new(packageIdentity, [], []);
+            var packageReader = downloadResult.PackageReader;
 
-            var dependencyGroups = await downloadResult.PackageReader.GetPackageDependenciesAsync(session.CancellationToken);
+            if (downloadResult.Status != DownloadResourceResultStatus.Available || packageReader is null)
+                return PackageDetails.CreateEmpty(packageIdentity);
 
-            var supportedFrameworks = downloadResult.PackageReader.GetSupportedFrameworks();
+            var dependencyGroups = await packageReader.GetPackageDependenciesAsync(session.CancellationToken);
 
-            return new(packageIdentity, dependencyGroups.ToArray(), supportedFrameworks.ToArray());
+            var supportedFrameworks = packageReader.GetSupportedFrameworks();
+
+            var nuspecReader = await packageReader.GetNuspecReaderAsync(session.CancellationToken);
+
+            var repositoryMetadata = nuspecReader.GetRepositoryMetadata();
+
+            var repositoryUrl = repositoryMetadata.Url;
+
+            return new(packageIdentity, dependencyGroups.ToArray(), supportedFrameworks.ToArray(), repositoryUrl);
         }
 
         // ReSharper disable once NotAccessedPositionalProperty.Local

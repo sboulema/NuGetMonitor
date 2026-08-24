@@ -171,6 +171,19 @@
               </DataTemplate>
             </DataGridTemplateColumn.CellTemplate>
           </DataGridTemplateColumn>
+
+          <!-- Repository URL Column -->
+          <DataGridTemplateColumn Header="Repository URL" MinWidth="200">
+            <DataGridTemplateColumn.CellTemplate>
+              <DataTemplate>
+                <Button Content="{Binding PackageDetails.RepositoryUrl, FallbackValue=''}"
+                        Command="{Binding OpenRepositoryUrlCommand}"
+                        Classes="link"
+                        Padding="2,0"
+                        HorizontalAlignment="Left" />
+              </DataTemplate>
+            </DataGridTemplateColumn.CellTemplate>
+          </DataGridTemplateColumn>
         </DataGrid.Columns>
       </DataGrid>
     </DockPanel>
