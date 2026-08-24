@@ -70,10 +70,10 @@ jobs:
           path: NuGetMonitor.Standalone
 
       - name: Package NuGetMonitor artifact
-        run: Get-ChildItem -Path NuGetMonitor -Recurse -File | Compress-Archive -DestinationPath NuGetMonitor.zip -Force
+        run: Compress-Archive -Path NuGetMonitor\* -DestinationPath NuGetMonitor.zip -Force
 
       - name: Package standalone artifact
-        run: Get-ChildItem -Path NuGetMonitor.Standalone -Recurse -File | Compress-Archive -DestinationPath NuGetMonitor.Standalone.zip -Force
+        run: Compress-Archive -Path NuGetMonitor.Standalone\* -DestinationPath NuGetMonitor.Standalone.zip -Force
 
       - name: Tag release
         id: tag_release
