@@ -49,9 +49,9 @@ internal sealed partial class PackageViewModel : INotifyPropertyChanged
     public ICommand UpdateCommand => new DelegateCommand(() => IsUpdateAvailable, () => { _parent.Update(this); });
 
     // ! ProjectUrl is checked in CanExecute
-    public ICommand OpenProjectUrlCommand => new DelegateCommand(() => PackageInfo?.ProjectUrl != null, () => OpenUrl(PackageInfo?.ProjectUrl?.AbsoluteUri));
+    public ICommand OpenProjectUrlCommand => new DelegateCommand(() => !string.IsNullOrEmpty(PackageInfo?.ProjectUrl?.AbsoluteUri), () => OpenUrl(PackageInfo?.ProjectUrl?.AbsoluteUri));
 
-    public ICommand OpenRepositoryUrlCommand => new DelegateCommand(() => PackageDetails?.RepositoryUrl != null, () => OpenUrl(PackageDetails?.RepositoryUrl));
+    public ICommand OpenRepositoryUrlCommand => new DelegateCommand(() => !string.IsNullOrEmpty(PackageDetails?.RepositoryUrl), () => OpenUrl(PackageDetails?.RepositoryUrl));
 
     public PackageInfo? PackageInfo { get; private set; }
 
@@ -137,7 +137,7 @@ internal sealed partial class PackageViewModel : INotifyPropertyChanged
 
     private static void OpenUrl(string? url)
     {
-        if (string.IsNullOrWhiteSpace(url))
+        if (string.IsNullOrEmpty(url))
             return;
 
         try
