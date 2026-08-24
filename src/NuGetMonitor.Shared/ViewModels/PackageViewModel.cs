@@ -131,6 +131,17 @@ internal sealed partial class PackageViewModel : INotifyPropertyChanged
         if (projectUrl == null)
             return;
 
-        Process.Start(projectUrl.AbsoluteUri);
+        try
+        {
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = projectUrl.AbsoluteUri,
+                UseShellExecute = true
+            });
+        }
+        catch (Exception ex)
+        {
+            Log(LogLevel.Error, $"Failed to open project URL: {ex.Message}");
+        }
     }
 }
