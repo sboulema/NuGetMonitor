@@ -83,6 +83,9 @@ internal sealed partial class PackageViewModel : INotifyPropertyChanged
                 _ => null
             };
 
+            if (SelectedVersion is null)
+                return;
+
             PackageDetails = await NuGetService.GetPackageDetails(new PackageIdentity(PackageReference.Id, SelectedVersion));
         }
         catch (OperationCanceledException)
