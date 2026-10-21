@@ -204,7 +204,11 @@ public static class NuGetService
                 }
 
                 // Apply any vulnerability mitigations defined for this package
-                dependentPackage.VulnerabilityMitigation = project.PackageMitigations.TryGetValue(dependentPackageIdentity, out var mitigation) ? mitigation : null;
+                // Don't reset, the package info is shared and might already have a mitigation from another project, or from a top level reference
+                if (project.PackageMitigations.TryGetValue(dependentPackageIdentity, out var mitigation))
+                {
+                    dependentPackage.VulnerabilityMitigation = mitigation;
+                }
 
                 // Record the parent-child relationship for dependency tracking
                 parentsByChild
@@ -239,7 +243,20 @@ public static class NuGetService
             return null;
 
         var packageInfo = await PackageInfoCacheEntry.Get(identity, session);
-        return packageInfo is null ? null : new PackageReferenceInfo(packageInfo, packageReferenceEntries);
+        if (packageInfo is null)
+            return null;
+
+        // Vulnerability mitigations also apply to top level packages
+        foreach (var entry in packageReferenceEntries)
+        {
+            if (!entry.ProjectItemInTargetFramework.Project.PackageMitigations.TryGetValue(identity, out var mitigation))
+                continue;
+
+            packageInfo.VulnerabilityMitigation = mitigation;
+            break;
+        }
+
+        return new PackageReferenceInfo(packageInfo, packageReferenceEntries);
     }
 
     private static async Task<PackageInfo[]> GetPackageDependenciesInFramework(this PackageInfo packageInfo, NuGetFramework targetFramework)
